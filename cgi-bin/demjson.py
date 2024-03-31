@@ -212,7 +212,7 @@ class _undefined_class(object):
         return self.__module__ + '.undefined'
     def __str__(self):
         return 'undefined'
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 undefined = _undefined_class()
 del _undefined_class
@@ -539,9 +539,9 @@ def utf32le_encode( obj, errors='strict' ):
     """Encodes a Unicode string into a UTF-32LE encoded byte string."""
     import struct
     try:
-        import cStringIO as sio
+        import io as sio
     except ImportError:
-        import StringIO as sio
+        import io as sio
     f = sio.StringIO()
     write = f.write
     pack = struct.pack
@@ -563,9 +563,9 @@ def utf32be_encode( obj, errors='strict' ):
     """Encodes a Unicode string into a UTF-32BE encoded byte string."""
     import struct
     try:
-        import cStringIO as sio
+        import io as sio
     except ImportError:
-        import StringIO as sio
+        import io as sio
     f = sio.StringIO()
     write = f.write
     pack = struct.pack
@@ -594,8 +594,8 @@ def utf32le_decode( obj, errors='strict' ):
     for i in range(0, len(obj), 4):
         seq = obj[i:i+4]
         n = unpack('<L',seq)[0]
-        chars.append( unichr(n) )
-    return u''.join( chars )
+        chars.append( chr(n) )
+    return ''.join( chars )
 
 
 def utf32be_decode( obj, errors='strict' ):
@@ -609,8 +609,8 @@ def utf32be_decode( obj, errors='strict' ):
     for i in range(0, len(obj), 4):
         seq = obj[i:i+4]
         n = unpack('>L',seq)[0]
-        chars.append( unichr(n) )
-    return u''.join( chars )
+        chars.append( chr(n) )
+    return ''.join( chars )
 
 
 def auto_unicode_decode( s ):
@@ -623,7 +623,7 @@ def auto_unicode_decode( s ):
     input is encoded in UTF-8 (the default for JSON).
 
     """
-    if isinstance(s, unicode):
+    if isinstance(s, str):
         return s
     if len(s) < 4:
         return s.decode('utf8')  # not enough bytes, assume default of utf-8
@@ -631,7 +631,7 @@ def auto_unicode_decode( s ):
     import codecs
     bom2 = s[:2]
     bom4 = s[:4]
-    a, b, c, d = map(ord, s[:4])  # values of first four bytes
+    a, b, c, d = list(map(ord, s[:4]))  # values of first four bytes
     if bom4 == codecs.BOM_UTF32_LE:
         encoding = 'utf-32le'
         s = s[4:]
@@ -694,7 +694,7 @@ def surrogate_pair_as_unicode( c1, c2 ):
     b = n2 - 0xDC00
     v = (a << 10) | b
     v += 0x10000
-    return unichr(v)
+    return chr(v)
 
 
 def unicode_as_surrogate_pair( c ):
@@ -710,13 +710,13 @@ def unicode_as_surrogate_pair( c ):
     """
     n = ord(c)
     if n < 0x10000:
-        return (unichr(n),)  # in BMP, surrogate pair not required
+        return (chr(n),)  # in BMP, surrogate pair not required
     v = n - 0x10000
     vh = (v >> 10) & 0x3ff   # highest 10 bits
     vl = v & 0x3ff  # lowest 10 bits
     w1 = 0xD800 | vh
     w2 = 0xDC00 | vl
-    return (unichr(w1), unichr(w2))
+    return (chr(w1), chr(w2))
 
 
 # ----------------------------------------------------------------------
@@ -724,20 +724,20 @@ def unicode_as_surrogate_pair( c ):
 
 def isnumbertype( obj ):
     """Is the object of a Python number type (excluding complex)?"""
-    return isinstance(obj, (int,long,float)) \
+    return isinstance(obj, (int,float)) \
            and not isinstance(obj, bool) \
            or obj is nan or obj is inf or obj is neginf
 
 
 def isstringtype( obj ):
     """Is the object of a Python string type?"""
-    if isinstance(obj, basestring):
+    if isinstance(obj, str):
         return True
     # Must also check for some other pseudo-string types
-    import types, UserString
-    return isinstance(obj, types.StringTypes) \
-           or isinstance(obj, UserString.UserString) \
-           or isinstance(obj, UserString.MutableString)
+    import types, collections
+    return isinstance(obj, (str,)) \
+           or isinstance(obj, collections.UserString) \
+           or isinstance(obj, collections.MutableString)
 
 
 # ----------------------------------------------------------------------
@@ -893,7 +893,7 @@ class JSON(object):
         self._encode_compactly = compactly
         try:
             # see if we were passed a predicate function
-            b = escape_unicode(u'A')
+            b = escape_unicode('A')
             self._encode_unicode_as_escapes = escape_unicode
         except (ValueError, NameError, TypeError):
             # Just set to True or False.  We could use lambda x:True
@@ -906,7 +906,7 @@ class JSON(object):
         # which will quickly tell us which of those characters never
         # need to be escaped.
 
-        self._asciiencodable = [32 <= c < 128 and not self._rev_escapes.has_key(chr(c))
+        self._asciiencodable = [32 <= c < 128 and chr(c) not in self._rev_escapes
                               for c in range(0,255)]
 
     def _set_strictness(self, strict):
@@ -997,9 +997,9 @@ class JSON(object):
         if not self._allow_unicode_whitespace:
             return c in ' \t\n\r'
         else:
-            if not isinstance(c,unicode):
-                c = unicode(c)
-            if c in u' \t\n\r\f\v':
+            if not isinstance(c,str):
+                c = str(c)
+            if c in ' \t\n\r\f\v':
                 return True
             import unicodedata
             return unicodedata.category(c) == 'Zs'
@@ -1012,7 +1012,7 @@ class JSON(object):
         """
         if c == '\r' or c == '\n':
             return True
-        if c == u'\u2028' or c == u'\u2029': # unicodedata.category(c) in  ['Zl', 'Zp']
+        if c == '\u2028' or c == '\u2029': # unicodedata.category(c) in  ['Zl', 'Zp']
             return True
         return False
 
@@ -1028,8 +1028,7 @@ class JSON(object):
 
         """
         import unicodedata
-        txt2 = filter( lambda c: unicodedata.category(unicode(c)) != 'Cf',
-                       txt )
+        txt2 = [c for c in txt if unicodedata.category(str(c)) != 'Cf']
         return txt2
 
 
@@ -1234,7 +1233,7 @@ class JSON(object):
             if n.imag:
                 raise JSONEncodeError('Can not encode a complex number that has a non-zero imaginary part',n)
             n = n.real
-        if isinstance(n, (int,long)):
+        if isinstance(n, int):
             return str(n)
         if decimal and isinstance(n, decimal.Decimal):
             return str(n)
@@ -1314,11 +1313,11 @@ class JSON(object):
                     if n < 128:
                         _append( chr(n) )
                     else:
-                        _append( unichr(n) )
+                        _append( chr(n) )
                     i = k
                     continue
 
-                if escapes.has_key(c):
+                if c in escapes:
                     _append(escapes[c])
                     i += 1
                 elif c == 'u' or c == 'x':
@@ -1334,7 +1333,7 @@ class JSON(object):
                     n = decode_hex( s[i:i+digits] )
                     if high_surrogate:
                         # Decode surrogate pair and clear high surrogate
-                        _append( surrogate_pair_as_unicode( high_surrogate, unichr(n) ) )
+                        _append( surrogate_pair_as_unicode( high_surrogate, chr(n) ) )
                         high_surrogate = None
                     elif n < 128:
                         # ASCII chars always go in as a str
@@ -1342,12 +1341,12 @@ class JSON(object):
                     elif 0xd800 <= n <= 0xdbff: # high surrogate
                         if imax < i + digits + 2 or s[i+digits] != '\\' or s[i+digits+1] != 'u':
                             raise JSONDecodeError('High unicode surrogate must be followed by a low surrogate',s[i-2:])
-                        high_surrogate = unichr(n)  # remember until we get to the low surrogate
+                        high_surrogate = chr(n)  # remember until we get to the low surrogate
                     elif 0xdc00 <= n <= 0xdfff: # low surrogate
                         raise JSONDecodeError('Low unicode surrogate must be proceeded by a high surrogate',s[i-2:])
                     else:
                         # Other chars go in as a unicode char
-                        _append( unichr(n) )
+                        _append( chr(n) )
                     i += digits
                 else:
                     # Unknown escape sequence
@@ -1383,8 +1382,8 @@ class JSON(object):
         """
         # Must handle instances of UserString specially in order to be
         # able to use ord() on it's simulated "characters".
-        import UserString
-        if isinstance(s, (UserString.UserString, UserString.MutableString)):
+        import collections
+        if isinstance(s, (collections.UserString, collections.MutableString)):
             def tochar(c):
                 return c.data
         else:
@@ -1421,8 +1420,8 @@ class JSON(object):
                         i += 1
                     else:
                         break
-                chunks.append( unicode(s[j:i]) )
-            elif revesc.has_key(c):
+                chunks.append( str(s[j:i]) )
+            elif c in revesc:
                 # Has a shortcut escape sequence, like "\n"
                 chunks.append(revesc[c])
                 i += 1
@@ -1752,10 +1751,10 @@ class JSON(object):
                 raise JSONEncodeError('strict JSON does not permit "undefined" values')
         elif isinstance(obj, bool):
             chunklist.append( self.encode_boolean(obj) )
-        elif isinstance(obj, (int,long,float,complex)) or \
+        elif isinstance(obj, (int,float,complex)) or \
                  (decimal and isinstance(obj, decimal.Decimal)):
             chunklist.append( self.encode_number(obj) )
-        elif isinstance(obj, basestring) or isstringtype(obj):
+        elif isinstance(obj, str) or isstringtype(obj):
             chunklist.append( self.encode_string(obj) )
         else:
             self.encode_composite(chunklist, obj, nest_level)
@@ -1773,7 +1772,7 @@ class JSON(object):
         #print 'encode_complex_helper(chunklist=%r, obj=%r, nest_level=%r)'%(chunklist,obj,nest_level)
         try:
             # Is it a dictionary or UserDict?  Try iterkeys method first.
-            it = obj.iterkeys()
+            it = iter(obj.keys())
         except AttributeError:
             try:
                 # Is it a sequence?  Try to make an iterator for it.
@@ -1802,7 +1801,7 @@ class JSON(object):
             try: # while not StopIteration
                 numitems = 0
                 while True:
-                    obj2 = it.next()
+                    obj2 = next(it)
                     if obj2 is obj:
                         raise JSONEncodeError('trying to encode an infinite sequence',obj)
                     if isdict and not isstringtype(obj2):
@@ -2036,7 +2035,7 @@ def decode( txt, strict=False, encoding=None, **kw ):
     """
     # Initialize the JSON object
     j = JSON( strict=strict )
-    for keyword, value in kw.items():
+    for keyword, value in list(kw.items()):
         if keyword.startswith('allow_'):
             behavior = keyword[6:]
             allow = bool(value)
@@ -2051,7 +2050,7 @@ def decode( txt, strict=False, encoding=None, **kw ):
             j.prevent(behavior)
 
     # Convert the input string into unicode if needed.
-    if isinstance(txt,unicode):
+    if isinstance(txt,str):
         unitxt = txt
     else:
         if encoding is None:
@@ -2126,8 +2125,8 @@ def decode( txt, strict=False, encoding=None, **kw ):
                     # Only whitespace, line and paragraph separators,
                     # and format control chars are legal here.
                     import unicodedata
-                    catfirst = unicodedata.category(unicode(first))
-                    catsecond = unicodedata.category(unicode(second))
+                    catfirst = unicodedata.category(str(first))
+                    catsecond = unicodedata.category(str(second))
                     if catfirst not in ('Zs','Zl','Zp','Cf') or \
                            catsecond not in ('Zs','Zl','Zp','Cf'):
                         raise JSONDecodeError('the decoded string is gibberish, is the encoding correct?',encoding)

@@ -40,7 +40,7 @@ import os
 import re
 import traceback
 
-import cStringIO
+import io
 import pg_encoder
 
 
@@ -61,7 +61,7 @@ def get_user_locals(frame):
 
 def filter_var_dict(d):
   ret = {}
-  for (k,v) in d.iteritems():
+  for (k,v) in d.items():
     if k not in IGNORE_VARS:
       ret[k] = v
   return ret
@@ -165,7 +165,7 @@ class PGLogger(bdb.Bdb):
           # encode in a JSON-friendly format now, in order to prevent ill
           # effects of aliasing later down the line ...
           encoded_locals = {}
-          for (k, v) in get_user_locals(cur_frame).iteritems():
+          for (k, v) in get_user_locals(cur_frame).items():
             # don't display some built-in locals ...
             if k != '__module__':
               encoded_locals[k] = pg_encoder.encode(v, self.ignore_id)
@@ -176,7 +176,7 @@ class PGLogger(bdb.Bdb):
         # encode in a JSON-friendly format now, in order to prevent ill
         # effects of aliasing later down the line ...
         encoded_globals = {}
-        for (k, v) in get_user_globals(tos[0]).iteritems():
+        for (k, v) in get_user_globals(tos[0]).items():
           encoded_globals[k] = pg_encoder.encode(v, self.ignore_id)
 
         trace_entry = dict(line=lineno,
@@ -212,7 +212,7 @@ class PGLogger(bdb.Bdb):
         # ok, let's try to sorta 'sandbox' the user script by not
         # allowing certain potentially dangerous operations:
         user_builtins = {}
-        for (k,v) in __builtins__.iteritems():
+        for (k,v) in __builtins__.items():
           if k in ('reload', 'input', 'apply', 'open', 'compile', 
                    '__import__', 'file', 'eval', 'execfile',
                    'exit', 'quit', 'raw_input', 
@@ -222,7 +222,7 @@ class PGLogger(bdb.Bdb):
           user_builtins[k] = v
 
         # redirect stdout of the user program to a memory buffer
-        user_stdout = cStringIO.StringIO()
+        user_stdout = io.StringIO()
         sys.stdout = user_stdout
  
         user_globals = {"__name__"    : "__main__",
@@ -297,7 +297,7 @@ def exec_file_and_pretty_print(mainpyfile):
   import pprint
 
   if not os.path.exists(mainpyfile):
-    print 'Error:', mainpyfile, 'does not exist'
+    print('Error:', mainpyfile, 'does not exist')
     sys.exit(1)
 
   def pretty_print(output_lst):

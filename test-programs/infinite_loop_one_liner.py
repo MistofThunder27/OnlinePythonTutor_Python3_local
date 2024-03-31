@@ -1,1 +1,1 @@
-while 1: print "hahahaha"
+while 1: print("hahahaha")

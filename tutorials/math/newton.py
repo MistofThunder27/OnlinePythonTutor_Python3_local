@@ -34,5 +34,5 @@ def sqrt(x):
 
 
 for e in range(1, 26):
-  print 'sqrt(%d) =' % e, sqrt(e)
+  print('sqrt(%d) =' % e, sqrt(e))
 

@@ -13,5 +13,5 @@ def summation(low, high, f, next):
 def sumsquares(low, high):
   return summation(low, high, lambda x: x**2, lambda x: x+1)
 
-print sumsquares(1, 10)
+print(sumsquares(1, 10))
 

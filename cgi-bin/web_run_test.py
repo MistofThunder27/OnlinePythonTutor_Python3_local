@@ -59,9 +59,9 @@ def expect_script_finalizer(output_lst):
 
     # Crucial first line to make sure that Apache serves this data
     # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
-    print "Content-type: text/plain; charset=iso-8859-1\n\n"
+    print("Content-type: text/plain; charset=iso-8859-1\n\n")
     output_json = demjson.encode(ret, compactly=True)
-    print output_json
+    print(output_json)
 
   else:
     # dunno which order these events come in ...
@@ -75,7 +75,7 @@ def really_finalize():
   #   '<module>' that contains only ONE global variable.  THAT'S
   #   the variable that we're gonna compare against testResults.
 
-  vars_to_compare = expect_trace_final_entry['globals'].keys()
+  vars_to_compare = list(expect_trace_final_entry['globals'].keys())
   if len(vars_to_compare) != 1:
     ret['status'] = 'error'
     ret['error_msg'] = "Fatal error: expected output has more than one global var!"
@@ -121,9 +121,9 @@ def really_finalize():
 
   # Crucial first line to make sure that Apache serves this data
   # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
-  print "Content-type: text/plain; charset=iso-8859-1\n\n"
+  print("Content-type: text/plain; charset=iso-8859-1\n\n")
   output_json = demjson.encode(ret, compactly=True)
-  print output_json
+  print(output_json)
 
 
 form = cgi.FieldStorage()

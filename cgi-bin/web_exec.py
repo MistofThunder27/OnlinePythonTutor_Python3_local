@@ -84,8 +84,8 @@ def web_finalizer(output_lst):
 
   # Crucial first line to make sure that Apache serves this data
   # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
-  print "Content-type: text/plain; charset=iso-8859-1\n\n"
-  print output_json
+  print("Content-type: text/plain; charset=iso-8859-1\n\n")
+  print(output_json)
 
 
 form = cgi.FieldStorage()
