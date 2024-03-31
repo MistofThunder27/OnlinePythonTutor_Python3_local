@@ -38,59 +38,60 @@
 
 
 # set to true if you want to log queries in DB_FILE 
-LOG_QUERIES = False # don't do logging for now
+LOG_QUERIES = False  # don't do logging for now
 
 import cgi
-import pg_logger
 
 # Python 2.5 doesn't have a built-in json module, so I'm using a
 # 3rd-party module.  I think you can do 'import json' in Python >= 2.6
 import demjson
+import pg_logger
 
 if LOG_QUERIES:
-  import os, time, db_common
+    import os, time, db_common
+
 
 def web_finalizer(output_lst):
-  # use compactly=False to produce human-readable JSON,
-  # except at the expense of being a LARGER download
-  output_json = demjson.encode(output_lst, compactly=True)
+    # use compactly=False to produce human-readable JSON,
+    # except at the expense of being a LARGER download
+    output_json = demjson.encode(output_lst, compactly=True)
 
-  # query logging is optional
-  if LOG_QUERIES:
-    # just to be paranoid, don't croak the whole program just
-    # because there's some error in logging it to the database
-    try:
-      # log queries into sqlite database:
-      had_error = False
-      # (note that the CSAIL 'www' user needs to have write permissions in
-      #  this directory for logging to work properly)
-      if len(output_lst):
-        evt = output_lst[-1]['event']
-        if evt == 'exception' or evt == 'uncaught_exception':
-          had_error = True
+    # query logging is optional
+    if LOG_QUERIES:
+        # just to be paranoid, don't croak the whole program just
+        # because there's some error in logging it to the database
+        try:
+            # log queries into sqlite database:
+            had_error = False
+            # (note that the CSAIL 'www' user needs to have write permissions in
+            #  this directory for logging to work properly)
+            if len(output_lst):
+                evt = output_lst[-1]['event']
+                if evt == 'exception' or evt == 'uncaught_exception':
+                    had_error = True
 
-      (con, cur) = db_common.db_connect()
-      cur.execute("INSERT INTO query_log VALUES (NULL, ?, ?, ?, ?, ?)",
-                  (int(time.time()),
-                   os.environ.get("REMOTE_ADDR", "N/A"),
-                   os.environ.get("HTTP_USER_AGENT", "N/A"),
-                   user_script,
-                   had_error))
-      con.commit()
-      cur.close()
-    except:
-      # haha this is bad form, but silently fail on error :)
-      pass
+            (con, cur) = db_common.db_connect()
+            cur.execute("INSERT INTO query_log VALUES (NULL, ?, ?, ?, ?, ?)",
+                        (int(time.time()),
+                         os.environ.get("REMOTE_ADDR", "N/A"),
+                         os.environ.get("HTTP_USER_AGENT", "N/A"),
+                         user_script,
+                         had_error))
+            con.commit()
+            cur.close()
+        except:
+            # haha this is bad form, but silently fail on error :)
+            pass
 
-  # Crucial first line to make sure that Apache serves this data
-  # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
-  print("Content-type: text/plain; charset=iso-8859-1\n\n")
-  print(output_json)
+    # Crucial first line to make sure that Apache serves this data
+    # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
+    print("Content-type: text/plain; charset=iso-8859-1\n\n")
+    print(output_json)
 
 
 form = cgi.FieldStorage()
 user_script = form['user_script'].value
 if 'max_instructions' in form:
-  pg_logger.set_max_executed_lines(int(form['max_instructions'].value))
+    pg_logger.set_max_executed_lines(int(form['max_instructions'].value))
 
 pg_logger.exec_script_str(user_script, web_finalizer)

@@ -30,12 +30,14 @@
 # infinite loops
 MAX_EXECUTED_LINES = 200
 
+
 def set_max_executed_lines(m):
-  global MAX_EXECUTED_LINES
-  MAX_EXECUTED_LINES = m
+    global MAX_EXECUTED_LINES
+    MAX_EXECUTED_LINES = m
+
 
 import sys
-import bdb # the KEY import here!
+import bdb  # the KEY import here!
 import os
 import re
 import traceback
@@ -43,28 +45,31 @@ import traceback
 import io
 import pg_encoder
 
-
 IGNORE_VARS = set(('__stdout__', '__builtins__', '__name__', '__exception__'))
 
+
 def get_user_stdout(frame):
-  return frame.f_globals['__stdout__'].getvalue()
+    return frame.f_globals['__stdout__'].getvalue()
+
 
 def get_user_globals(frame):
-  d = filter_var_dict(frame.f_globals)
-  # also filter out __return__ for globals only, but NOT for locals
-  if '__return__' in d:
-    del d['__return__']
-  return d
+    d = filter_var_dict(frame.f_globals)
+    # also filter out __return__ for globals only, but NOT for locals
+    if '__return__' in d:
+        del d['__return__']
+    return d
+
 
 def get_user_locals(frame):
-  return filter_var_dict(frame.f_locals)
+    return filter_var_dict(frame.f_locals)
+
 
 def filter_var_dict(d):
-  ret = {}
-  for (k,v) in d.items():
-    if k not in IGNORE_VARS:
-      ret[k] = v
-  return ret
+    ret = {}
+    for (k, v) in d.items():
+        if k not in IGNORE_VARS:
+            ret[k] = v
+    return ret
 
 
 class PGLogger(bdb.Bdb):
@@ -86,7 +91,6 @@ class PGLogger(bdb.Bdb):
         # (for regression testing)
         self.ignore_id = ignore_id
 
-
     def reset(self):
         bdb.Bdb.reset(self)
         self.forget()
@@ -102,7 +106,6 @@ class PGLogger(bdb.Bdb):
         self.stack, self.curindex = self.get_stack(f, t)
         self.curframe = self.stack[self.curindex][0]
 
-
     # Override Bdb methods
 
     def user_call(self, frame, argument_list):
@@ -116,8 +119,8 @@ class PGLogger(bdb.Bdb):
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
         if self._wait_for_mainpyfile:
-            if (self.canonic(frame.f_code.co_filename) != "<string>" or 
-                frame.f_lineno <= 0):
+            if (self.canonic(frame.f_code.co_filename) != "<string>" or
+                    frame.f_lineno <= 0):
                 return
             self._wait_for_mainpyfile = 0
         self.interaction(frame, None, 'step_line')
@@ -134,9 +137,9 @@ class PGLogger(bdb.Bdb):
         frame.f_locals['__exception__'] = exc_type, exc_value
         if type(exc_type) == type(''):
             exc_type_name = exc_type
-        else: exc_type_name = exc_type.__name__
+        else:
+            exc_type_name = exc_type.__name__
         self.interaction(frame, exc_traceback, 'exception')
-
 
     # General interaction function
 
@@ -151,33 +154,33 @@ class PGLogger(bdb.Bdb):
         # climb up until you find '<module>', which is (hopefully) the global scope
         i = self.curindex
         while True:
-          cur_frame = self.stack[i][0]
-          cur_name = cur_frame.f_code.co_name
-          if cur_name == '<module>':
-            break
+            cur_frame = self.stack[i][0]
+            cur_name = cur_frame.f_code.co_name
+            if cur_name == '<module>':
+                break
 
-          # special case for lambdas - grab their line numbers too
-          if cur_name == '<lambda>':
-            cur_name = 'lambda on line ' + str(cur_frame.f_code.co_firstlineno)
-          elif cur_name == '':
-            cur_name = 'unnamed function'
+            # special case for lambdas - grab their line numbers too
+            if cur_name == '<lambda>':
+                cur_name = 'lambda on line ' + str(cur_frame.f_code.co_firstlineno)
+            elif cur_name == '':
+                cur_name = 'unnamed function'
 
-          # encode in a JSON-friendly format now, in order to prevent ill
-          # effects of aliasing later down the line ...
-          encoded_locals = {}
-          for (k, v) in get_user_locals(cur_frame).items():
-            # don't display some built-in locals ...
-            if k != '__module__':
-              encoded_locals[k] = pg_encoder.encode(v, self.ignore_id)
+            # encode in a JSON-friendly format now, in order to prevent ill
+            # effects of aliasing later down the line ...
+            encoded_locals = {}
+            for (k, v) in get_user_locals(cur_frame).items():
+                # don't display some built-in locals ...
+                if k != '__module__':
+                    encoded_locals[k] = pg_encoder.encode(v, self.ignore_id)
 
-          encoded_stack_locals.append((cur_name, encoded_locals))
-          i -= 1
+            encoded_stack_locals.append((cur_name, encoded_locals))
+            i -= 1
 
         # encode in a JSON-friendly format now, in order to prevent ill
         # effects of aliasing later down the line ...
         encoded_globals = {}
         for (k, v) in get_user_globals(tos[0]).items():
-          encoded_globals[k] = pg_encoder.encode(v, self.ignore_id)
+            encoded_globals[k] = pg_encoder.encode(v, self.ignore_id)
 
         trace_entry = dict(line=lineno,
                            event=event_type,
@@ -188,18 +191,18 @@ class PGLogger(bdb.Bdb):
 
         # if there's an exception, then record its info:
         if event_type == 'exception':
-          # always check in f_locals
-          exc = frame.f_locals['__exception__']
-          trace_entry['exception_msg'] = exc[0].__name__ + ': ' + str(exc[1])
+            # always check in f_locals
+            exc = frame.f_locals['__exception__']
+            trace_entry['exception_msg'] = exc[0].__name__ + ': ' + str(exc[1])
 
         self.trace.append(trace_entry)
 
         if len(self.trace) >= MAX_EXECUTED_LINES:
-          self.trace.append(dict(event='instruction_limit_reached', exception_msg='(stopped after ' + str(MAX_EXECUTED_LINES) + ' steps to prevent possible infinite loop)'))
-          self.force_terminate()
+            self.trace.append(dict(event='instruction_limit_reached', exception_msg='(stopped after ' + str(
+                MAX_EXECUTED_LINES) + ' steps to prevent possible infinite loop)'))
+            self.force_terminate()
 
         self.forget()
-
 
     def _runscript(self, script_str):
         # When bdb sets tracing, a number of call and line events happens
@@ -212,103 +215,102 @@ class PGLogger(bdb.Bdb):
         # ok, let's try to sorta 'sandbox' the user script by not
         # allowing certain potentially dangerous operations:
         user_builtins = {}
-        for (k,v) in __builtins__.items():
-          if k in ('reload', 'input', 'apply', 'open', 'compile', 
-                   '__import__', 'file', 'eval', 'execfile',
-                   'exit', 'quit', 'raw_input', 
-                   'dir', 'globals', 'locals', 'vars',
-                   'compile'):
-            continue
-          user_builtins[k] = v
+        for (k, v) in __builtins__.items():
+            if k in ('reload', 'input', 'apply', 'open', 'compile',
+                     '__import__', 'file', 'eval', 'execfile',
+                     'exit', 'quit', 'raw_input',
+                     'dir', 'globals', 'locals', 'vars',
+                     'compile'):
+                continue
+            user_builtins[k] = v
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
         sys.stdout = user_stdout
- 
-        user_globals = {"__name__"    : "__main__",
-                        "__builtins__" : user_builtins,
-                        "__stdout__" : user_stdout}
+
+        user_globals = {"__name__": "__main__",
+                        "__builtins__": user_builtins,
+                        "__stdout__": user_stdout}
 
         try:
-          self.run(script_str, user_globals, user_globals)
+            self.run(script_str, user_globals, user_globals)
         # sys.exit ...
         except SystemExit:
-          sys.exit(0)
+            sys.exit(0)
         except:
-          #traceback.print_exc() # uncomment this to see the REAL exception msg
+            # traceback.print_exc() # uncomment this to see the REAL exception msg
 
-          trace_entry = dict(event='uncaught_exception')
+            trace_entry = dict(event='uncaught_exception')
 
-          exc = sys.exc_info()[1]
-          if hasattr(exc, 'lineno'):
-            trace_entry['line'] = exc.lineno
-          if hasattr(exc, 'offset'):
-            trace_entry['offset'] = exc.offset
+            exc = sys.exc_info()[1]
+            if hasattr(exc, 'lineno'):
+                trace_entry['line'] = exc.lineno
+            if hasattr(exc, 'offset'):
+                trace_entry['offset'] = exc.offset
 
-          if hasattr(exc, 'msg'):
-            trace_entry['exception_msg'] = "Error: " + exc.msg
-          else:
-            trace_entry['exception_msg'] = "Unknown error"
+            if hasattr(exc, 'msg'):
+                trace_entry['exception_msg'] = "Error: " + exc.msg
+            else:
+                trace_entry['exception_msg'] = "Unknown error"
 
-          self.trace.append(trace_entry)
-          self.finalize()
-          sys.exit(0) # need to forceably STOP execution
+            self.trace.append(trace_entry)
+            self.finalize()
+            sys.exit(0)  # need to forceably STOP execution
 
     def force_terminate(self):
-      self.finalize()
-      sys.exit(0) # need to forceably STOP execution
-
+        self.finalize()
+        sys.exit(0)  # need to forceably STOP execution
 
     def finalize(self):
-      sys.stdout = sys.__stdout__
-      assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
+        sys.stdout = sys.__stdout__
+        assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
 
-      # filter all entries after 'return' from '<module>', since they
-      # seem extraneous:
-      res = []
-      for e in self.trace:
-        res.append(e)
-        if e['event'] == 'return' and e['func_name'] == '<module>':
-          break
+        # filter all entries after 'return' from '<module>', since they
+        # seem extraneous:
+        res = []
+        for e in self.trace:
+            res.append(e)
+            if e['event'] == 'return' and e['func_name'] == '<module>':
+                break
 
-      # another hack: if the SECOND to last entry is an 'exception'
-      # and the last entry is return from <module>, then axe the last
-      # entry, for aesthetic reasons :)
-      if len(res) >= 2 and \
-         res[-2]['event'] == 'exception' and \
-         res[-1]['event'] == 'return' and res[-1]['func_name'] == '<module>':
-        res.pop()
+        # another hack: if the SECOND to last entry is an 'exception'
+        # and the last entry is return from <module>, then axe the last
+        # entry, for aesthetic reasons :)
+        if len(res) >= 2 and \
+                res[-2]['event'] == 'exception' and \
+                res[-1]['event'] == 'return' and res[-1]['func_name'] == '<module>':
+            res.pop()
 
-      self.trace = res
+        self.trace = res
 
-      #for e in self.trace: print e
+        # for e in self.trace: print e
 
-      self.finalizer_func(self.trace)
+        self.finalizer_func(self.trace)
 
 
 # the MAIN meaty function!!!
 def exec_script_str(script_str, finalizer_func, ignore_id=False):
-  logger = PGLogger(finalizer_func, ignore_id)
-  logger._runscript(script_str)
-  logger.finalize()
+    logger = PGLogger(finalizer_func, ignore_id)
+    logger._runscript(script_str)
+    logger.finalize()
 
 
 def exec_file_and_pretty_print(mainpyfile):
-  import pprint
+    import pprint
 
-  if not os.path.exists(mainpyfile):
-    print('Error:', mainpyfile, 'does not exist')
-    sys.exit(1)
+    if not os.path.exists(mainpyfile):
+        print('Error:', mainpyfile, 'does not exist')
+        sys.exit(1)
 
-  def pretty_print(output_lst):
-    for e in output_lst:
-      pprint.pprint(e)
+    def pretty_print(output_lst):
+        for e in output_lst:
+            pprint.pprint(e)
 
-  output_lst = exec_script_str(open(mainpyfile).read(), pretty_print)
+    output_lst = exec_script_str(open(mainpyfile).read(), pretty_print)
 
 
 if __name__ == '__main__':
-  # need this round-about import to get __builtins__ to work :0
-  import pg_logger
-  pg_logger.exec_file_and_pretty_print(sys.argv[1])
+    # need this round-about import to get __builtins__ to work :0
+    import pg_logger
 
+    pg_logger.exec_file_and_pretty_print(sys.argv[1])

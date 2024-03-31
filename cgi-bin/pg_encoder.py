@@ -43,75 +43,78 @@
 real_to_small_IDs = {}
 cur_small_id = 1
 
-import re, types
+import re
+import types
+
 typeRE = re.compile("<type '(.*)'>")
 classRE = re.compile("<class '(.*)'>")
 
+
 def encode(dat, ignore_id=False):
-  def encode_helper(dat, compound_obj_ids):
-    # primitive type
-    if dat is None or \
-       type(dat) in (int, int, float, str, bool):
-      return dat
-    # compound type
-    else:
-      my_id = id(dat)
-
-      global cur_small_id
-      if my_id not in real_to_small_IDs:
-        if ignore_id:
-          real_to_small_IDs[my_id] = 99999
+    def encode_helper(dat, compound_obj_ids):
+        # primitive type
+        if dat is None or \
+                type(dat) in (int, int, float, str, bool):
+            return dat
+        # compound type
         else:
-          real_to_small_IDs[my_id] = cur_small_id
-        cur_small_id += 1
+            my_id = id(dat)
 
-      if my_id in compound_obj_ids:
-        return ['CIRCULAR_REF', real_to_small_IDs[my_id]]
+            global cur_small_id
+            if my_id not in real_to_small_IDs:
+                if ignore_id:
+                    real_to_small_IDs[my_id] = 99999
+                else:
+                    real_to_small_IDs[my_id] = cur_small_id
+                cur_small_id += 1
 
-      new_compound_obj_ids = compound_obj_ids.union([my_id])
+            if my_id in compound_obj_ids:
+                return ['CIRCULAR_REF', real_to_small_IDs[my_id]]
 
-      typ = type(dat)
+            new_compound_obj_ids = compound_obj_ids.union([my_id])
 
-      my_small_id = real_to_small_IDs[my_id]
+            typ = type(dat)
 
-      if typ == list:
-        ret = ['LIST', my_small_id]
-        for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
-      elif typ == tuple:
-        ret = ['TUPLE', my_small_id]
-        for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
-      elif typ == set:
-        ret = ['SET', my_small_id]
-        for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
-      elif typ == dict:
-        ret = ['DICT', my_small_id]
-        for (k,v) in dat.items():
-          # don't display some built-in locals ...
-          if k not in ('__module__', '__return__'):
-            ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
-      elif typ in (types.InstanceType, type, type) or \
-           classRE.match(str(typ)):
-        # ugh, classRE match is a bit of a hack :(
-        if typ == types.InstanceType or classRE.match(str(typ)):
-          ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
-        else:
-          superclass_names = [e.__name__ for e in dat.__bases__]
-          ret = ['CLASS', dat.__name__, my_small_id, superclass_names]
+            my_small_id = real_to_small_IDs[my_id]
 
-        # traverse inside of its __dict__ to grab attributes
-        # (filter out useless-seeming ones):
-        user_attrs = sorted([e for e in list(dat.__dict__.keys()) 
-                             if e not in ('__doc__', '__module__', '__return__')])
+            if typ == list:
+                ret = ['LIST', my_small_id]
+                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == tuple:
+                ret = ['TUPLE', my_small_id]
+                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == set:
+                ret = ['SET', my_small_id]
+                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == dict:
+                ret = ['DICT', my_small_id]
+                for (k, v) in dat.items():
+                    # don't display some built-in locals ...
+                    if k not in ('__module__', '__return__'):
+                        ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
+            elif typ in (types.InstanceType, type, type) or \
+                    classRE.match(str(typ)):
+                # ugh, classRE match is a bit of a hack :(
+                if typ == types.InstanceType or classRE.match(str(typ)):
+                    ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
+                else:
+                    superclass_names = [e.__name__ for e in dat.__bases__]
+                    ret = ['CLASS', dat.__name__, my_small_id, superclass_names]
 
-        for attr in user_attrs:
-          ret.append([encode_helper(attr, new_compound_obj_ids), encode_helper(dat.__dict__[attr], new_compound_obj_ids)])
-      else:
-        typeStr = str(typ)
-        m = typeRE.match(typeStr)
-        assert m, typ
-        ret = [m.group(1), my_small_id, str(dat)]
+                # traverse inside of its __dict__ to grab attributes
+                # (filter out useless-seeming ones):
+                user_attrs = sorted([e for e in list(dat.__dict__.keys())
+                                     if e not in ('__doc__', '__module__', '__return__')])
 
-      return ret
+                for attr in user_attrs:
+                    ret.append([encode_helper(attr, new_compound_obj_ids),
+                                encode_helper(dat.__dict__[attr], new_compound_obj_ids)])
+            else:
+                typeStr = str(typ)
+                m = typeRE.match(typeStr)
+                assert m, typ
+                ret = [m.group(1), my_small_id, str(dat)]
 
-  return encode_helper(dat, set())
+            return ret
 
+    return encode_helper(dat, set())
