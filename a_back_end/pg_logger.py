@@ -15,8 +15,114 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+import sys
+import bdb  # the KEY import here!
+import os
+import io
+import traceback
 
-# This is the meat of the Online Python Tutor back-end.  It implements a
+# Given an arbitrary piece of Python data, encode it in such a manner
+# that it can be later encoded into JSON.
+#   http://json.org/
+#
+# We use this function to encode run-time traces of data structures
+# to send to the front-end.
+#
+# Format:
+#   * None, int, long, float, str, bool - unchanged
+#     (json.dumps encodes these fine verbatim)
+#   * list     - ['LIST', unique_id, elt1, elt2, elt3, ..., eltN]
+#   * tuple    - ['TUPLE', unique_id, elt1, elt2, elt3, ..., eltN]
+#   * set      - ['SET', unique_id, elt1, elt2, elt3, ..., eltN]
+#   * dict     - ['DICT', unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
+#   * instance - ['INSTANCE', class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+#   * class    - ['CLASS', class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+#   * circular reference - ['CIRCULAR_REF', unique_id]
+#   * other    - [<type name>, unique_id, string representation of object]
+#
+# the unique_id is derived from id(), which allows us to explicitly
+# capture aliasing of compound values
+
+# Key: real ID from id()
+# Value: a small integer for greater readability, set by cur_small_id
+real_to_small_IDs = {}
+cur_small_id = 1
+
+typeRE = re.compile("<type '(.*)'>")
+classRE = re.compile("<class '(.*)'>")
+
+
+def encode(dat, ignore_id=False):
+    def encode_helper(dat, compound_obj_ids):
+        # primitive type
+        if dat is None or type(dat) in (int, int, float, str, bool):
+            return dat
+        # compound type
+        else:
+            my_id = id(dat)
+
+            global cur_small_id
+            if my_id not in real_to_small_IDs:
+                if ignore_id:
+                    real_to_small_IDs[my_id] = 99999
+                else:
+                    real_to_small_IDs[my_id] = cur_small_id
+                cur_small_id += 1
+
+            if my_id in compound_obj_ids:
+                return ['CIRCULAR_REF', real_to_small_IDs[my_id]]
+
+            new_compound_obj_ids = compound_obj_ids.union([my_id])
+
+            typ = type(dat)
+
+            my_small_id = real_to_small_IDs[my_id]
+
+            if typ == list:
+                ret = ['LIST', my_small_id]
+                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == tuple:
+                ret = ['TUPLE', my_small_id]
+                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == set:
+                ret = ['SET', my_small_id]
+                for e in dat:
+                    ret.append(encode_helper(e, new_compound_obj_ids))
+            elif typ == dict:
+                ret = ['DICT', my_small_id]
+                for (k, v) in dat.items():
+                    # don't display some built-in locals ...
+                    if k not in ('__module__', '__return__'):
+                        ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
+            elif not isinstance(dat, type) or "__class__" in dir(dat):
+                if not isinstance(dat, type):
+                    ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
+                else:
+                    superclass_names = [e.__name__ for e in dat.__bases__]
+                    ret = ['CLASS', dat.__name__, my_small_id, superclass_names]
+
+                # traverse inside its __dict__ to grab attributes
+                # (filter out useless-seeming ones):
+                user_attrs = sorted([e for e in list(dat.__dict__.keys())
+                                     if e not in ('__doc__', '__module__', '__return__', "__dict__",
+                                                  "__weakref__")])
+                for attr in user_attrs:
+                    ret.append([encode_helper(attr, new_compound_obj_ids),
+                                encode_helper(dat.__dict__[attr], new_compound_obj_ids)])
+
+            else:
+                typeStr = str(typ)
+                m = typeRE.match(typeStr)
+                assert m, typ
+                ret = [m.group(1), my_small_id, str(dat)]
+
+            return ret
+
+    return encode_helper(dat, set())
+
+
+# This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
@@ -36,28 +142,7 @@ def set_max_executed_lines(m):
     MAX_EXECUTED_LINES = m
 
 
-import sys
-import bdb  # the KEY import here!
-import os
-import re
-import traceback
-
-import io
-import pg_encoder
-
-IGNORE_VARS = set(('__stdout__', '__builtins__', '__name__', '__exception__'))
-
-
-def get_user_stdout(frame):
-    return frame.f_globals['__stdout__'].getvalue()
-
-
-def get_user_globals(frame):
-    d = filter_var_dict(frame.f_globals)
-    # also filter out __return__ for globals only, but NOT for locals
-    if '__return__' in d:
-        del d['__return__']
-    return d
+IGNORE_VARS = {'__stdout__', '__builtins__', '__name__', '__exception__'}
 
 
 def get_user_locals(frame):
@@ -171,7 +256,7 @@ class PGLogger(bdb.Bdb):
             for (k, v) in get_user_locals(cur_frame).items():
                 # don't display some built-in locals ...
                 if k != '__module__':
-                    encoded_locals[k] = pg_encoder.encode(v, self.ignore_id)
+                    encoded_locals[k] = encode(v, self.ignore_id)
 
             encoded_stack_locals.append((cur_name, encoded_locals))
             i -= 1
@@ -179,15 +264,20 @@ class PGLogger(bdb.Bdb):
         # encode in a JSON-friendly format now, in order to prevent ill
         # effects of aliasing later down the line ...
         encoded_globals = {}
-        for (k, v) in get_user_globals(tos[0]).items():
-            encoded_globals[k] = pg_encoder.encode(v, self.ignore_id)
+
+        temp_dict = filter_var_dict(tos[0].f_globals)
+        # also filter out __return__ for globals only, but NOT for locals
+        if '__return__' in temp_dict:
+            del temp_dict['__return__']
+        for (k, v) in temp_dict.items():
+            encoded_globals[k] = encode(v, self.ignore_id)
 
         trace_entry = dict(line=lineno,
                            event=event_type,
                            func_name=tos[0].f_code.co_name,
                            globals=encoded_globals,
                            stack_locals=encoded_stack_locals,
-                           stdout=get_user_stdout(tos[0]))
+                           stdout=tos[0].f_globals['__stdout__'].getvalue())
 
         # if there's an exception, then record its info:
         if event_type == 'exception':

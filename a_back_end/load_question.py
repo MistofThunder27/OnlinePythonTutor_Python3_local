@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Online Python Tutor
 # Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 # https://github.com/pgbovine/OnlinePythonTutor/
@@ -15,19 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
+# Load a question file in the 'questions/' sub-directory, parse it,
+# and return it to the caller in JSON format
+
+delimiters = {'Name:', 'Question:', 'Hint:', 'Solution:', 'Skeleton:', 'Test:', 'Expect:'}
+
+
 # Defines a function that parses an Online Python Tutor 'questions file'
 # into a dict, which can easily be converted into JSON
 
-import sys
-
-delimiters = set(['Name:', 'Question:', 'Hint:', 'Solution:',
-                  'Skeleton:', 'Test:', 'Expect:'])
-
-
 def parseQuestionsFile(filename):
-    ret = {}
-    ret['tests'] = []
-    ret['expects'] = []
+    ret = {'tests': [], 'expects': []}
 
     curParts = []
     curDelimiter = None

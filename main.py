@@ -1,67 +1,52 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
+import json
 import os
 import sys
 
-file_path = os.path.join(os.path.dirname(__file__), "1_back_end")
-print(file_path)
-sys.path.append(file_path)
+sys.path.append(os.path.join(os.path.dirname(__file__), "a_back_end"))
 
 import pg_logger
 
 PORT = 8000
+content_type_mapping = {
+    ".html": "text/html",
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png"
+}
 
 
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        print(self.path)
         if self.path == "/":
-            self.path = "/2_front_end/index.html"
+            self.path = "/a_front_end/index.html"
 
         try:
-            # Get the current working directory
-            root_dir = os.getcwd()
-
-            # Get the full path of the requested file
-            file_path = os.path.join(root_dir, self.path[1:])
-
-            # Check if the requested file exists
+            file_path = os.path.join(os.getcwd(), self.path[1:])
             if os.path.exists(file_path):
-                # Open the file in binary mode
                 with open(file_path, "rb") as file:
-                    # Read the file contents
                     file_data = file.read()
 
-                # Set the response status code
+                file_extension = os.path.splitext(self.path)[1]
+
                 self.send_response(200)
-
-                # Set the Content-Type header based on file extension
-                if self.path.endswith(".html"):
-                    self.send_header("Content-type", "text/html")
-                elif self.path.endswith(".css"):
-                    self.send_header("Content-type", "text/css")
-                elif self.path.endswith(".js"):
-                    self.send_header("Content-type", "application/javascript")
-                elif self.path.endswith((".jpg", ".jpeg")):
-                    self.send_header("Content-type", "image/jpeg")
-                elif self.path.endswith(".png"):
-                    self.send_header("Content-type", "image/png")
-
-                # End headers
+                if file_extension in content_type_mapping:
+                    self.send_header("Content-type", content_type_mapping[file_extension])
                 self.end_headers()
 
-                # Send the file data as the response
                 self.wfile.write(file_data)
             else:
-                # If the file doesn"t exist, return a 404 response
                 self.send_error(404, "File not found")
         except Exception as e:
-            # If an error occurs, return a 500 response
             self.send_error(500, f"Server error: {str(e)}")
 
     def do_POST(self):
         parsed_post_dict = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
 
+        print(self.path)
         requested_file = self.path.split("/")[-1]
         requested_file = requested_file[:requested_file.index(".")]
         print(requested_file)
@@ -76,6 +61,19 @@ class MyServer(BaseHTTPRequestHandler):
             output_json = pg_logger.exec_script_str(user_script, web_exec.web_finalizer)
             print("a", output_json)
 
+        elif requested_file == "load_question":
+            import load_question
+
+            question_file = parsed_post_dict.get("question_file", [""])[0]
+            question_file_path = f"../questions/{question_file}.txt"
+            assert os.path.isfile(question_file_path)
+            output_json = json.dumps(load_question.parseQuestionsFile(question_file_path))
+
+            # Crucial first line to make sure that Apache serves this data
+            # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
+            print("Content-type: text/plain; charset=iso-8859-1\n\n")
+            print(output_json)
+
         self.send_response(200)
         self.end_headers()
         self.wfile.write(output_json.encode())
@@ -84,4 +82,3 @@ class MyServer(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     print(f"Serving at port http://localhost:{PORT}/")
     HTTPServer(("", PORT), MyServer).serve_forever()
-

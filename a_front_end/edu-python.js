@@ -857,7 +857,7 @@ function getObjectID(obj) {
 
 // render the JS data object obj inside of jDomElt,
 // which is a jQuery wrapped DOM object
-// (obj is in a format encoded by 1_back_end/pg_encoder.py)
+// (obj is in a format encoded by a_back_end/pg_encoder.py)
 function renderData(obj, jDomElt, ignoreIDs) {
   // dispatch on types:
   var typ = typeof obj;

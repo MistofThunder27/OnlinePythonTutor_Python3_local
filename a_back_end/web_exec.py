@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 
 # Online Python Tutor
 # Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
@@ -37,21 +36,15 @@ import json
 #   Options +ExecCGI
 #   AddHandler cgi-script .py
 
-print("here")
+import json
 
 # set to true if you want to log queries in DB_FILE 
 LOG_QUERIES = False  # don't do logging for now
 
-import cgi
-
-# Python 2.5 doesn't have a built-in json module, so I'm using a
-# 3rd-party module.  I think you can do 'import json' in Python >= 2.6
-import demjson
-import pg_logger
-import json
-
 if LOG_QUERIES:
-    import os, time, db_common
+    import os
+    import time
+    import db_common
 
 
 def web_finalizer(output_lst):

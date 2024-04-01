@@ -138,7 +138,7 @@ $(document).ready(function() {
   // load the questions file specified by the query string
   var questionsFilename = location.search.substring(1);
 
-  $.get("1_back_end/load_question.py",
+  $.get("../a_back_end/load_question.py",
         {question_file : questionsFilename},
         function(questionsDat) {
           finishQuestionsInit(questionsDat);
@@ -282,7 +282,7 @@ function finishQuestionsInit(questionsDat) {
       postParams.max_instructions = questionsDat.max_instructions;
     }
 
-    $.post("1_back_end/web_exec.py",
+    $.post("../a_back_end/web_exec.py",
            postParams,
            function(traceData) {
              renderPyCodeOutput(submittedCode);
@@ -313,7 +313,7 @@ function finishQuestionsInit(questionsDat) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
-      $.post("1_back_end/web_run_test.py",
+      $.post("../a_back_end/web_run_test.py",
              postParams,
              genTestResultHandler(i),
              "json");
