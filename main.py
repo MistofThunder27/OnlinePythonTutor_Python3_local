@@ -1,5 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import unquote_plus, parse_qs
+from urllib.parse import parse_qs
 import os
 import sys
 
@@ -59,8 +59,7 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_error(500, f"Server error: {str(e)}")
 
     def do_POST(self):
-        post_data = self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8")
-        parsed_post_dict = parse_qs(unquote_plus(post_data))
+        parsed_post_dict = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
 
         requested_file = self.path.split("/")[-1]
         requested_file = requested_file[:requested_file.index(".")]
@@ -73,20 +72,15 @@ class MyServer(BaseHTTPRequestHandler):
             if max_instructions:
                 pg_logger.set_max_executed_lines(int(max_instructions))
 
-            a = pg_logger.exec_script_str(user_script, web_exec.web_finalizer)
-            print("a", a)
+            output_json = pg_logger.exec_script_str(user_script, web_exec.web_finalizer)
+            print("a", output_json)
 
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(a.encode())
-
-
-def run_server(server_class=HTTPServer, handler_class=MyServer, port=PORT):
-    server_address = ("", port)
-    httpd = server_class(server_address, handler_class)
-    print(f"Serving at port http://localhost:{PORT}/")
-    httpd.serve_forever()
+        self.wfile.write(output_json.encode())
 
 
 if __name__ == "__main__":
-    run_server()
+    print(f"Serving at port http://localhost:{PORT}/")
+    HTTPServer(("", PORT), MyServer).serve_forever()
+

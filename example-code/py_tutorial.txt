@@ -54,7 +54,7 @@ netWorth['Tom Cruise'] = 40000000
 netWorth['Joe Postdoc'] = 20000
 
 # iterating over key-value pairs:
-for (person, worth) in netWorth.iteritems():
+for (person, worth) in netWorth.items():
     if worth < 1000000:
         print('haha', person, 'is not a millionaire')
 
