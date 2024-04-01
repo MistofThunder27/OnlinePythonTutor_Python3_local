@@ -84,16 +84,16 @@ def encode(dat, ignore_id=False):
                 for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
             elif typ == set:
                 ret = ['SET', my_small_id]
-                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
+                for e in dat:
+                    ret.append(encode_helper(e, new_compound_obj_ids))
             elif typ == dict:
                 ret = ['DICT', my_small_id]
                 for (k, v) in dat.items():
                     # don't display some built-in locals ...
                     if k not in ('__module__', '__return__'):
                         ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
-            elif isinstance(typ, type) or classRE.match(str(typ)):
-                # ugh, classRE match is a bit of a hack :(
-                if isinstance(typ, object) or classRE.match(str(typ)):
+            elif not isinstance(dat, type) or "__class__" in dir(dat):
+                if not isinstance(dat, type):
                     ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
                 else:
                     superclass_names = [e.__name__ for e in dat.__bases__]
@@ -102,11 +102,12 @@ def encode(dat, ignore_id=False):
                 # traverse inside of its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
                 user_attrs = sorted([e for e in list(dat.__dict__.keys())
-                                     if e not in ('__doc__', '__module__', '__return__')])
-
+                                     if e not in ('__doc__', '__module__', '__return__', "__dict__",
+                                                  "__weakref__")])
                 for attr in user_attrs:
                     ret.append([encode_helper(attr, new_compound_obj_ids),
                                 encode_helper(dat.__dict__[attr], new_compound_obj_ids)])
+
             else:
                 typeStr = str(typ)
                 m = typeRE.match(typeStr)
