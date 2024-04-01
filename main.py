@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 import os
 import sys
 
-file_path = os.path.join(os.path.dirname(__file__), "cgi-bin")
+file_path = os.path.join(os.path.dirname(__file__), "1_back_end")
 print(file_path)
 sys.path.append(file_path)
 
@@ -14,8 +14,9 @@ PORT = 8000
 
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
+        print(self.path)
         if self.path == "/":
-            self.path = "/index.html"
+            self.path = "/2_front_end/index.html"
 
         try:
             # Get the current working directory
