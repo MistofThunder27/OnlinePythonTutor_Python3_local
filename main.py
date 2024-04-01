@@ -2,11 +2,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
 import json
 import os
-import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "a_back_end"))
-
-import pg_logger
+from a_back_end import pg_logger
 
 PORT = 8000
 content_type_mapping = {
@@ -52,7 +49,7 @@ class MyServer(BaseHTTPRequestHandler):
         print(requested_file)
 
         if requested_file == "web_exec":
-            import web_exec
+            from a_back_end import web_exec
             user_script = parsed_post_dict.get("user_script", [""])[0]
             max_instructions = parsed_post_dict.get("max_instructions", [""])[0]
             if max_instructions:
@@ -62,7 +59,7 @@ class MyServer(BaseHTTPRequestHandler):
             print("a", output_json)
 
         elif requested_file == "load_question":
-            import load_question
+            from a_back_end import load_question
 
             question_file = parsed_post_dict.get("question_file", [""])[0]
             question_file_path = f"../questions/{question_file}.txt"
