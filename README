@@ -82,18 +82,18 @@ specially-encoded JSON format.  The front-end then parses and visualizes
 that trace and allows the user to single-step forwards AND backwards
 through execution.
 
-The back-end resides in the cgi-bin/ sub-directory in this repository:
+The back-end resides in the a_back_end/ sub-directory in this repository:
 
-  cgi-bin/web_exec.py     - the CGI entrance point to the back-end
-  cgi-bin/web_run_test.py - the CGI entrance point to the question
+  a_back_end/web_exec.py     - the CGI entrance point to the back-end
+  a_back_end/web_run_test.py - the CGI entrance point to the question
                             grading back-end
-  cgi-bin/pg_logger.py    - the 'meat' of the back-end
-  cgi-bin/pg_encoder.py   - encodes Python data into JSON
-  cgi-bin/demjson.py      - 3rd-party JSON module, since Python 2.5
+  a_back_end/pg_logger.py    - the 'meat' of the back-end
+  a_back_end/pg_encoder.py   - encodes Python data into JSON
+  a_back_end/demjson.py      - 3rd-party JSON module, since Python 2.5
                             doesn't have the built-in 'import json'
-  cgi-bin/create_db.py    - for optional sqlite query logging
-  cgi-bin/db_common.py    - for optional sqlite query logging
-  cgi-bin/.htaccess       - for Apache CGI execute permissions
+  a_back_end/create_db.py    - for optional sqlite query logging
+  a_back_end/db_common.py    - for optional sqlite query logging
+  a_back_end/.htaccess       - for Apache CGI execute permissions
 
 
 Due to the AJAX same-origin policy, the front-end and back-end must be

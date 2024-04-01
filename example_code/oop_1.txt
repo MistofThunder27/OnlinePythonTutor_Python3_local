@@ -23,4 +23,3 @@ print(pat.building)
 
 print(pat.salutation())
 print(Staff601.salutation(pat))
-
