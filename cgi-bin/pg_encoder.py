@@ -53,8 +53,7 @@ classRE = re.compile("<class '(.*)'>")
 def encode(dat, ignore_id=False):
     def encode_helper(dat, compound_obj_ids):
         # primitive type
-        if dat is None or \
-                type(dat) in (int, int, float, str, bool):
+        if dat is None or type(dat) in (int, int, float, str, bool):
             return dat
         # compound type
         else:
@@ -92,10 +91,9 @@ def encode(dat, ignore_id=False):
                     # don't display some built-in locals ...
                     if k not in ('__module__', '__return__'):
                         ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
-            elif typ in (types.InstanceType, type, type) or \
-                    classRE.match(str(typ)):
+            elif isinstance(typ, type) or classRE.match(str(typ)):
                 # ugh, classRE match is a bit of a hack :(
-                if typ == types.InstanceType or classRE.match(str(typ)):
+                if isinstance(typ, object) or classRE.match(str(typ)):
                     ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
                 else:
                     superclass_names = [e.__name__ for e in dat.__bases__]

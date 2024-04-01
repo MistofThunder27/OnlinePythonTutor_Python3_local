@@ -1,4 +1,5 @@
-#!/usr/bin/python2.5
+#!/usr/bin/env python3
+import json
 
 # Online Python Tutor
 # Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
@@ -36,6 +37,7 @@
 #   Options +ExecCGI
 #   AddHandler cgi-script .py
 
+print("here")
 
 # set to true if you want to log queries in DB_FILE 
 LOG_QUERIES = False  # don't do logging for now
@@ -46,6 +48,7 @@ import cgi
 # 3rd-party module.  I think you can do 'import json' in Python >= 2.6
 import demjson
 import pg_logger
+import json
 
 if LOG_QUERIES:
     import os, time, db_common
@@ -54,7 +57,7 @@ if LOG_QUERIES:
 def web_finalizer(output_lst):
     # use compactly=False to produce human-readable JSON,
     # except at the expense of being a LARGER download
-    output_json = demjson.encode(output_lst, compactly=True)
+    output_json = json.dumps(output_lst)
 
     # query logging is optional
     if LOG_QUERIES:
@@ -87,11 +90,4 @@ def web_finalizer(output_lst):
     # correctly - DON'T FORGET THE EXTRA NEWLINES!!!:
     print("Content-type: text/plain; charset=iso-8859-1\n\n")
     print(output_json)
-
-
-form = cgi.FieldStorage()
-user_script = form['user_script'].value
-if 'max_instructions' in form:
-    pg_logger.set_max_executed_lines(int(form['max_instructions'].value))
-
-pg_logger.exec_script_str(user_script, web_finalizer)
+    return output_json

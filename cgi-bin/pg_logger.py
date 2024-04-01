@@ -285,14 +285,14 @@ class PGLogger(bdb.Bdb):
 
         # for e in self.trace: print e
 
-        self.finalizer_func(self.trace)
+        return self.finalizer_func(self.trace)
 
 
 # the MAIN meaty function!!!
 def exec_script_str(script_str, finalizer_func, ignore_id=False):
     logger = PGLogger(finalizer_func, ignore_id)
     logger._runscript(script_str)
-    logger.finalize()
+    return logger.finalize()
 
 
 def exec_file_and_pretty_print(mainpyfile):

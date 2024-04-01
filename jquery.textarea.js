@@ -82,7 +82,7 @@
 	
 	// plugin defaults
 	//$.fn.tabby.defaults = {tabString : String.fromCharCode(9)};
-  // modified by pgbovine:
+    // modified by pgbovine:
 	$.fn.tabby.defaults = {tabString : '    '};
 	
 	function gecko_tab (o, shft, options) {
