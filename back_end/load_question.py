@@ -17,40 +17,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import json
+import os
 
 # Load a question file in the 'questions/' sub-directory, parse it,
 # and return it to the caller in JSON format
 
-delimiters = {'Name:', 'Question:', 'Hint:', 'Solution:', 'Skeleton:', 'Test:', 'Expect:'}
+def processRecord():
+    if curDelimiter == 'Name:':
+        ret['name'] = '\n'.join(curParts).strip()
+    elif curDelimiter == 'Question:':
+        ret['question'] = ' '.join(curParts).strip()
+    elif curDelimiter == 'Hint:':
+        ret['hint'] = ' '.join(curParts).strip()
+    elif curDelimiter == 'Solution:':
+        ret['solution'] = ' '.join(curParts).strip()
+    elif curDelimiter == 'Skeleton:':
+        ret['skeleton'] = '\n'.join(curParts).strip()
+    elif curDelimiter == 'Test:':
+        ret['tests'].append('\n'.join(curParts).strip())
+    elif curDelimiter == 'Expect:':
+        ret['expects'].append('\n'.join(curParts).strip())
 
 
-# Defines a function that parses an Online Python Tutor 'questions file'
-# into a dict, which can easily be converted into JSON
+if request == "load_question":  # TODO: this is a get situation
+    from back_end import load_question
 
-def parseQuestionsFile(filename):
+    question_file = parsed_post_dict.get("question_file", [""])[0]
+    question_file_path = f"../questions/{question_file}.txt"
+    assert os.path.isfile(question_file_path)
+
     ret = {'tests': [], 'expects': []}
-
     curParts = []
     curDelimiter = None
 
-    def processRecord():
-        if curDelimiter == 'Name:':
-            ret['name'] = '\n'.join(curParts).strip()
-        elif curDelimiter == 'Question:':
-            ret['question'] = ' '.join(curParts).strip()
-        elif curDelimiter == 'Hint:':
-            ret['hint'] = ' '.join(curParts).strip()
-        elif curDelimiter == 'Solution:':
-            ret['solution'] = ' '.join(curParts).strip()
-        elif curDelimiter == 'Skeleton:':
-            ret['skeleton'] = '\n'.join(curParts).strip()
-        elif curDelimiter == 'Test:':
-            ret['tests'].append('\n'.join(curParts).strip())
-        elif curDelimiter == 'Expect:':
-            ret['expects'].append('\n'.join(curParts).strip())
-
-    for line in open(filename):
+    for line in open(question_file_path):
         # only strip TRAILING spaces and not leading spaces
         line = line.rstrip()
 
@@ -69,7 +70,7 @@ def parseQuestionsFile(filename):
             ret['max_instructions'] = int(line.split(':')[1])
             continue  # move to next line
 
-        if line in delimiters:
+        if line in {'Name:', 'Question:', 'Hint:', 'Solution:', 'Skeleton:', 'Test:', 'Expect:'}:
             processRecord()
             curDelimiter = line
             curParts = []
@@ -81,11 +82,4 @@ def parseQuestionsFile(filename):
 
     assert len(ret['tests']) == len(ret['expects'])
 
-    return ret
-
-
-if __name__ == '__main__':
-    import pprint
-
-    pp = pprint.PrettyPrinter(indent=2)
-    pp.pprint(parseQuestionsFile(sys.argv[1]))
+    output_json = json.dumps(ret)

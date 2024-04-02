@@ -15,112 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
-import sys
 import bdb  # the KEY import here!
-import os
+import sys
 import io
 import traceback
-
-# Given an arbitrary piece of Python data, encode it in such a manner
-# that it can be later encoded into JSON.
-#   http://json.org/
-#
-# We use this function to encode run-time traces of data structures
-# to send to the front-end.
-#
-# Format:
-#   * None, int, long, float, str, bool - unchanged
-#     (json.dumps encodes these fine verbatim)
-#   * list     - ['LIST', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * tuple    - ['TUPLE', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * set      - ['SET', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * dict     - ['DICT', unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
-#   * instance - ['INSTANCE', class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-#   * class    - ['CLASS', class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-#   * circular reference - ['CIRCULAR_REF', unique_id]
-#   * other    - [<type name>, unique_id, string representation of object]
-#
-# the unique_id is derived from id(), which allows us to explicitly
-# capture aliasing of compound values
-
-# Key: real ID from id()
-# Value: a small integer for greater readability, set by cur_small_id
-real_to_small_IDs = {}
-cur_small_id = 1
-
-typeRE = re.compile("<type '(.*)'>")
-classRE = re.compile("<class '(.*)'>")
-
-
-def encode(dat, ignore_id=False):
-    def encode_helper(dat, compound_obj_ids):
-        # primitive type
-        if dat is None or type(dat) in (int, int, float, str, bool):
-            return dat
-        # compound type
-        else:
-            my_id = id(dat)
-
-            global cur_small_id
-            if my_id not in real_to_small_IDs:
-                if ignore_id:
-                    real_to_small_IDs[my_id] = 99999
-                else:
-                    real_to_small_IDs[my_id] = cur_small_id
-                cur_small_id += 1
-
-            if my_id in compound_obj_ids:
-                return ['CIRCULAR_REF', real_to_small_IDs[my_id]]
-
-            new_compound_obj_ids = compound_obj_ids.union([my_id])
-
-            typ = type(dat)
-
-            my_small_id = real_to_small_IDs[my_id]
-
-            if typ == list:
-                ret = ['LIST', my_small_id]
-                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
-            elif typ == tuple:
-                ret = ['TUPLE', my_small_id]
-                for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
-            elif typ == set:
-                ret = ['SET', my_small_id]
-                for e in dat:
-                    ret.append(encode_helper(e, new_compound_obj_ids))
-            elif typ == dict:
-                ret = ['DICT', my_small_id]
-                for (k, v) in dat.items():
-                    # don't display some built-in locals ...
-                    if k not in ('__module__', '__return__'):
-                        ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
-            elif not isinstance(dat, type) or "__class__" in dir(dat):
-                if not isinstance(dat, type):
-                    ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
-                else:
-                    superclass_names = [e.__name__ for e in dat.__bases__]
-                    ret = ['CLASS', dat.__name__, my_small_id, superclass_names]
-
-                # traverse inside its __dict__ to grab attributes
-                # (filter out useless-seeming ones):
-                user_attrs = sorted([e for e in list(dat.__dict__.keys())
-                                     if e not in ('__doc__', '__module__', '__return__', "__dict__",
-                                                  "__weakref__")])
-                for attr in user_attrs:
-                    ret.append([encode_helper(attr, new_compound_obj_ids),
-                                encode_helper(dat.__dict__[attr], new_compound_obj_ids)])
-
-            else:
-                typeStr = str(typ)
-                m = typeRE.match(typeStr)
-                assert m, typ
-                ret = [m.group(1), my_small_id, str(dat)]
-
-            return ret
-
-    return encode_helper(dat, set())
-
+from back_end.pg_encode import encode
 
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
@@ -349,8 +248,7 @@ class PGLogger(bdb.Bdb):
         # another hack: if the SECOND to last entry is an 'exception'
         # and the last entry is return from <module>, then axe the last
         # entry, for aesthetic reasons :)
-        if len(res) >= 2 and \
-                res[-2]['event'] == 'exception' and \
+        if len(res) >= 2 and res[-2]['event'] == 'exception' and \
                 res[-1]['event'] == 'return' and res[-1]['func_name'] == '<module>':
             res.pop()
 
@@ -366,24 +264,3 @@ def exec_script_str(script_str, ignore_id=False):
     logger = PGLogger(ignore_id)
     logger._runscript(script_str)
     return logger.finalize()
-
-
-def exec_file_and_pretty_print(mainpyfile):
-    import pprint
-
-    if not os.path.exists(mainpyfile):
-        print('Error:', mainpyfile, 'does not exist')
-        sys.exit(1)
-
-    def pretty_print(output_lst):
-        for e in output_lst:
-            pprint.pprint(e)
-
-    output_lst = pretty_print(exec_script_str(open(mainpyfile).read()))
-
-
-if __name__ == '__main__':
-    # need this round-about import to get __builtins__ to work :0
-    import pg_logger
-
-    pg_logger.exec_file_and_pretty_print(sys.argv[1])

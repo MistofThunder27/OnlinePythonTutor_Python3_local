@@ -4,7 +4,7 @@ import os
 LOG_QUERIES = False
 
 
-def process_request(parsed_post_dict):
+def process_post(parsed_post_dict):
     request = parsed_post_dict["request"][0]
     if request == "execute":
         user_script = parsed_post_dict["user_script"][0]
@@ -39,7 +39,7 @@ def process_request(parsed_post_dict):
                 con.commit()
                 cur.close()
             except:
-                # haha this is bad form, but silently fail on error :)
+                # haha. this is bad form, but silently fail on error :)
                 pass
 
         return output_list
@@ -76,7 +76,7 @@ def process_request(parsed_post_dict):
         # Procedure for grading testResults vs. expectResults:
         # - The final line in expectResults should be a 'return' from
         #   '<module>' that contains only ONE global variable.  THAT'S
-        #   the variable that we're gonna compare against testResults.
+        #   the variable that we're going to compare against testResults.
 
         vars_to_compare = list(expect_trace_final_entry['globals'].keys())
         if len(vars_to_compare) != 1:
@@ -111,3 +111,5 @@ def process_request(parsed_post_dict):
             ret.update({'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
 
         return ret
+
+    raise Exception(f"Unexpected request: {request}")

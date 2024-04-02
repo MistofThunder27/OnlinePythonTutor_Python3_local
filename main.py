@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 import json
 import os
 
-from back_end.process_post_request import process_request
+from back_end.process_requests import process_post
 
 PORT = 8000
 
@@ -43,7 +43,7 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         output_json = json.dumps(
-            process_request(parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))))
+            process_post(parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))))
         print(output_json)
 
         self.send_response(200)

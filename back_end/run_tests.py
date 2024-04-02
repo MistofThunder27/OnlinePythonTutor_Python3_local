@@ -22,29 +22,23 @@
 #   python run_tests.py --all
 
 import difflib
+import json
 import optparse
 import os
 import re
 import shutil
-
-import demjson
 import pg_logger
 
 # all tests are found in this directory:
-REGTEST_DIR = '../test-programs/'
+REGTEST_DIR = '../test_programs/'
 
 ALL_TESTS = [e for e in os.listdir(REGTEST_DIR) if e.endswith('.py')]
 
 
 # return True if there seemed to be an error in execution
 def execute(test_script):
-    def my_finalizer(output_lst):
-        outfile = open(test_script[:-3] + '.out', 'w')
-        output_json = demjson.encode(output_lst, compactly=False)
-        print(output_json, file=outfile)
-
-    my_finalizer(pg_logger.exec_script_str(open(test_script).read(), True))
-
+    output_json = json.dumps(pg_logger.exec_script_str(open(test_script).read(), True))
+    print(output_json, file=open(test_script[:-3] + '.out', 'w'))
 
 
 def clobber_golden_file(golden_file):
@@ -82,8 +76,7 @@ def diff_test_output(test_name):
     golden_s_filtered = [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in golden_s]
     out_s_filtered = [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in out_s]
 
-    for line in difflib.unified_diff(golden_s_filtered, out_s_filtered, \
-                                     fromfile=golden_file, tofile=outfile):
+    for line in difflib.unified_diff(golden_s_filtered, out_s_filtered, fromfile=golden_file, tofile=outfile):
         print(line, end=' ')
 
 
@@ -109,17 +102,6 @@ def run_test(test_name, clobber_golden=False):
         clobber_golden_file(golden_file)
 
 
-def run_all_tests(clobber=False):
-    for t in ALL_TESTS:
-        run_test(t, clobber)
-
-
-def diff_all_test_outputs():
-    for t in ALL_TESTS:
-        print('=== diffing', t, '===')
-        diff_test_output(t)
-
-
 if __name__ == "__main__":
     os.chdir(REGTEST_DIR)  # change to this dir to make everything easier
 
@@ -142,10 +124,15 @@ if __name__ == "__main__":
             print('Running all tests and clobbering results ...')
         else:
             print('Running all tests ...')
-        run_all_tests(options.clobber)
+
+        for t in ALL_TESTS:
+            run_test(t, options.clobber)
 
     elif options.diff_all:
-        diff_all_test_outputs()
+        for t in ALL_TESTS:
+            print('=== diffing', t, '===')
+            diff_test_output(t)
+
     elif options.diff_test_name:
         diff_test_output(options.diff_test_name)
     elif options.test_name:
