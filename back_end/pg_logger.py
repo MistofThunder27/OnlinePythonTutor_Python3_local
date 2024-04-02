@@ -142,31 +142,19 @@ def set_max_executed_lines(m):
     MAX_EXECUTED_LINES = m
 
 
-IGNORE_VARS = {'__stdout__', '__builtins__', '__name__', '__exception__'}
-
-
-def get_user_locals(frame):
-    return filter_var_dict(frame.f_locals)
-
-
 def filter_var_dict(d):
     ret = {}
     for (k, v) in d.items():
-        if k not in IGNORE_VARS:
+        if k not in {'__stdout__', '__builtins__', '__name__', '__exception__'}:
             ret[k] = v
     return ret
 
 
 class PGLogger(bdb.Bdb):
-
-    def __init__(self, finalizer_func, ignore_id=False):
+    def __init__(self, ignore_id=False):
         bdb.Bdb.__init__(self)
         self.mainpyfile = ''
         self._wait_for_mainpyfile = 0
-
-        # a function that takes the output trace as a parameter and
-        # processes it
-        self.finalizer_func = finalizer_func
 
         # each entry contains a dict with the information for a single
         # executed line
@@ -186,13 +174,7 @@ class PGLogger(bdb.Bdb):
         self.curindex = 0
         self.curframe = None
 
-    def setup(self, f, t):
-        self.forget()
-        self.stack, self.curindex = self.get_stack(f, t)
-        self.curframe = self.stack[self.curindex][0]
-
     # Override Bdb methods
-
     def user_call(self, frame, argument_list):
         """This method is called when there is the remote possibility
         that we ever need to stop in this function."""
@@ -229,7 +211,9 @@ class PGLogger(bdb.Bdb):
     # General interaction function
 
     def interaction(self, frame, traceback, event_type):
-        self.setup(frame, traceback)
+        self.forget()
+        self.stack, self.curindex = self.get_stack(frame, traceback)
+        self.curframe = self.stack[self.curindex][0]
         tos = self.stack[self.curindex]
         lineno = tos[1]
 
@@ -253,7 +237,7 @@ class PGLogger(bdb.Bdb):
             # encode in a JSON-friendly format now, in order to prevent ill
             # effects of aliasing later down the line ...
             encoded_locals = {}
-            for (k, v) in get_user_locals(cur_frame).items():
+            for (k, v) in filter_var_dict(cur_frame.f_locals).items():
                 # don't display some built-in locals ...
                 if k != '__module__':
                     encoded_locals[k] = encode(v, self.ignore_id)
@@ -269,6 +253,7 @@ class PGLogger(bdb.Bdb):
         # also filter out __return__ for globals only, but NOT for locals
         if '__return__' in temp_dict:
             del temp_dict['__return__']
+
         for (k, v) in temp_dict.items():
             encoded_globals[k] = encode(v, self.ignore_id)
 
@@ -288,9 +273,11 @@ class PGLogger(bdb.Bdb):
         self.trace.append(trace_entry)
 
         if len(self.trace) >= MAX_EXECUTED_LINES:
-            self.trace.append(dict(event='instruction_limit_reached', exception_msg='(stopped after ' + str(
-                MAX_EXECUTED_LINES) + ' steps to prevent possible infinite loop)'))
-            self.force_terminate()
+            self.trace.append(dict(event='instruction_limit_reached',
+                                   exception_msg=f'(stopped after {MAX_EXECUTED_LINES} steps to prevent possible '
+                                                 f'infinite loop)'))
+            self.finalize()
+            sys.exit(0)  # need to forceably STOP execution
 
         self.forget()
 
@@ -347,10 +334,6 @@ class PGLogger(bdb.Bdb):
             self.finalize()
             sys.exit(0)  # need to forceably STOP execution
 
-    def force_terminate(self):
-        self.finalize()
-        sys.exit(0)  # need to forceably STOP execution
-
     def finalize(self):
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
@@ -375,12 +358,12 @@ class PGLogger(bdb.Bdb):
 
         # for e in self.trace: print e
 
-        return self.finalizer_func(self.trace)
+        return self.trace
 
 
 # the MAIN meaty function!!!
-def exec_script_str(script_str, finalizer_func, ignore_id=False):
-    logger = PGLogger(finalizer_func, ignore_id)
+def exec_script_str(script_str, ignore_id=False):
+    logger = PGLogger(ignore_id)
     logger._runscript(script_str)
     return logger.finalize()
 
@@ -396,7 +379,7 @@ def exec_file_and_pretty_print(mainpyfile):
         for e in output_lst:
             pprint.pprint(e)
 
-    output_lst = exec_script_str(open(mainpyfile).read(), pretty_print)
+    output_lst = pretty_print(exec_script_str(open(mainpyfile).read()))
 
 
 if __name__ == '__main__':

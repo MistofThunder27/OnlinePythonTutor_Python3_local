@@ -21,9 +21,14 @@
 # Run using:
 #   python run_tests.py --all
 
-import os, sys, re, shutil, filecmp, optparse, difflib
-import pg_logger
+import difflib
+import optparse
+import os
+import re
+import shutil
+
 import demjson
+import pg_logger
 
 # all tests are found in this directory:
 REGTEST_DIR = '../test-programs/'
@@ -38,7 +43,8 @@ def execute(test_script):
         output_json = demjson.encode(output_lst, compactly=False)
         print(output_json, file=outfile)
 
-    pg_logger.exec_script_str(open(test_script).read(), my_finalizer, True)
+    my_finalizer(pg_logger.exec_script_str(open(test_script).read(), True))
+
 
 
 def clobber_golden_file(golden_file):

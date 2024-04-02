@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-// The Online Python Tutor front-end, which calls the a_back_end/web_exec.py
+// The Online Python Tutor front-end, which calls the back_end/web_exec.py
 // back-end with a string representing the user's script POST['user_script']
 // and receives a complete execution trace, which it parses and displays to HTML.
 
@@ -95,8 +95,8 @@ $(document).ready(function() {
     $('#executeBtn').attr('disabled', true);
     $("#pyOutputPane").hide();
 
-    $.post("../a_back_end/web_exec.py",
-           {user_script : $("#pyInput").val()},
+    $.post("../main.py",
+           {user_script : $("#pyInput").val(), request : "execute"},
            function(traceData) {
              renderPyCodeOutput($("#pyInput").val());
              enterVisualizeMode(traceData);
