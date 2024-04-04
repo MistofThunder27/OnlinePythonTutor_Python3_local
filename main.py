@@ -2,7 +2,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
 import json
 import os
-print(os.getcwd())
 
 from back_end.process_requests import process_post, process_questions
 
@@ -21,9 +20,8 @@ content_type_mapping = {
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
         print(self.path)
-        self.path = f"/front_end{self.path}"
-        if self.path.endswith("/"):
-            self.path = f"{self.path}index.html"
+        if self.path == "/":
+            self.path = f"/front_end/index.html"
 
         if "?" in self.path:  # this can only be a question request
             self.path, question_file = self.path.split("?")
