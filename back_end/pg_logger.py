@@ -26,7 +26,7 @@ from back_end.pg_encode import encode
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
 
-# Note that I've only tested this logger on Python 2.5, so it will
+# Note that I"ve only tested this logger on Python 2.5, so it will
 # probably fail in subtle ways on other Python 2.X (and will DEFINITELY
 # fail on Python 3.X).
 
@@ -44,7 +44,7 @@ def set_max_executed_lines(m):
 def filter_var_dict(d):
     ret = {}
     for (k, v) in d.items():
-        if k not in {'__stdout__', '__builtins__', '__name__', '__exception__'}:
+        if k not in {"__stdout__", "__builtins__", "__name__", "__exception__"}:
             ret[k] = v
     return ret
 
@@ -52,14 +52,14 @@ def filter_var_dict(d):
 class PGLogger(bdb.Bdb):
     def __init__(self, ignore_id=False):
         bdb.Bdb.__init__(self)
-        self.mainpyfile = ''
+        self.mainpyfile = ""
         self._wait_for_mainpyfile = 0
 
         # each entry contains a dict with the information for a single
         # executed line
         self.trace = []
 
-        # don't print out a custom ID for each object
+        # don"t print out a custom ID for each object
         # (for regression testing)
         self.ignore_id = ignore_id
 
@@ -80,7 +80,7 @@ class PGLogger(bdb.Bdb):
         if self._wait_for_mainpyfile:
             return
         if self.stop_here(frame):
-            self.interaction(frame, None, 'call')
+            self.interaction(frame, None, "call")
 
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
@@ -89,23 +89,23 @@ class PGLogger(bdb.Bdb):
                     frame.f_lineno <= 0):
                 return
             self._wait_for_mainpyfile = 0
-        self.interaction(frame, None, 'step_line')
+        self.interaction(frame, None, "step_line")
 
     def user_return(self, frame, return_value):
         """This function is called when a return trap is set here."""
-        frame.f_locals['__return__'] = return_value
-        self.interaction(frame, None, 'return')
+        frame.f_locals["__return__"] = return_value
+        self.interaction(frame, None, "return")
 
     def user_exception(self, frame, exc_info):
         exc_type, exc_value, exc_traceback = exc_info
         """This function is called if an exception occurs,
         but only if we are to stop at or just below this level."""
-        frame.f_locals['__exception__'] = exc_type, exc_value
-        if type(exc_type) == type(''):
+        frame.f_locals["__exception__"] = exc_type, exc_value
+        if type(exc_type) == type(""):
             exc_type_name = exc_type
         else:
             exc_type_name = exc_type.__name__
-        self.interaction(frame, exc_traceback, 'exception')
+        self.interaction(frame, exc_traceback, "exception")
 
     # General interaction function
 
@@ -119,26 +119,26 @@ class PGLogger(bdb.Bdb):
         # each element is a pair of (function name, ENCODED locals dict)
         encoded_stack_locals = []
 
-        # climb up until you find '<module>', which is (hopefully) the global scope
+        # climb up until you find "<module>", which is (hopefully) the global scope
         i = self.curindex
         while True:
             cur_frame = self.stack[i][0]
             cur_name = cur_frame.f_code.co_name
-            if cur_name == '<module>':
+            if cur_name == "<module>":
                 break
 
             # special case for lambdas - grab their line numbers too
-            if cur_name == '<lambda>':
-                cur_name = 'lambda on line ' + str(cur_frame.f_code.co_firstlineno)
-            elif cur_name == '':
-                cur_name = 'unnamed function'
+            if cur_name == "<lambda>":
+                cur_name = "lambda on line " + str(cur_frame.f_code.co_firstlineno)
+            elif cur_name == "":
+                cur_name = "unnamed function"
 
             # encode in a JSON-friendly format now, in order to prevent ill
             # effects of aliasing later down the line ...
             encoded_locals = {}
             for (k, v) in filter_var_dict(cur_frame.f_locals).items():
-                # don't display some built-in locals ...
-                if k != '__module__':
+                # don"t display some built-in locals ...
+                if k != "__module__":
                     encoded_locals[k] = encode(v, self.ignore_id)
 
             encoded_stack_locals.append((cur_name, encoded_locals))
@@ -150,8 +150,8 @@ class PGLogger(bdb.Bdb):
 
         temp_dict = filter_var_dict(tos[0].f_globals)
         # also filter out __return__ for globals only, but NOT for locals
-        if '__return__' in temp_dict:
-            del temp_dict['__return__']
+        if "__return__" in temp_dict:
+            del temp_dict["__return__"]
 
         for (k, v) in temp_dict.items():
             encoded_globals[k] = encode(v, self.ignore_id)
@@ -161,20 +161,20 @@ class PGLogger(bdb.Bdb):
                            func_name=tos[0].f_code.co_name,
                            globals=encoded_globals,
                            stack_locals=encoded_stack_locals,
-                           stdout=tos[0].f_globals['__stdout__'].getvalue())
+                           stdout=tos[0].f_globals["__stdout__"].getvalue())
 
         # if there's an exception, then record its info:
-        if event_type == 'exception':
+        if event_type == "exception":
             # always check in f_locals
-            exc = frame.f_locals['__exception__']
-            trace_entry['exception_msg'] = exc[0].__name__ + ': ' + str(exc[1])
+            exc = frame.f_locals["__exception__"]
+            trace_entry["exception_msg"] = exc[0].__name__ + ": " + str(exc[1])
 
         self.trace.append(trace_entry)
 
         if len(self.trace) >= MAX_EXECUTED_LINES:
-            self.trace.append(dict(event='instruction_limit_reached',
-                                   exception_msg=f'(stopped after {MAX_EXECUTED_LINES} steps to prevent possible '
-                                                 f'infinite loop)'))
+            self.trace.append(dict(event="instruction_limit_reached",
+                                   exception_msg=f"(stopped after {MAX_EXECUTED_LINES} steps to prevent possible "
+                                                 f"infinite loop)"))
             self.finalize()
             sys.exit(0)  # need to forceably STOP execution
 
@@ -188,15 +188,15 @@ class PGLogger(bdb.Bdb):
         # user_call for details).
         self._wait_for_mainpyfile = 1
 
-        # ok, let's try to sorta 'sandbox' the user script by not
+        # ok, let's try to sorta "sandbox" the user script by not
         # allowing certain potentially dangerous operations:
         user_builtins = {}
         for (k, v) in __builtins__.items():
-            if k in ('reload', 'input', 'apply', 'open', 'compile',
-                     '__import__', 'file', 'eval', 'execfile',
-                     'exit', 'quit', 'raw_input',
-                     'dir', 'globals', 'locals', 'vars',
-                     'compile'):
+            if k in ("reload", "input", "apply", "open", "compile",
+                     "__import__", "file", "eval", "execfile",
+                     "exit", "quit", "raw_input",
+                     "dir", "globals", "locals", "vars",
+                     "compile"):
                 continue
             user_builtins[k] = v
 
@@ -216,18 +216,18 @@ class PGLogger(bdb.Bdb):
         except:
             # traceback.print_exc() # uncomment this to see the REAL exception msg
 
-            trace_entry = dict(event='uncaught_exception')
+            trace_entry = dict(event="uncaught_exception")
 
             exc = sys.exc_info()[1]
-            if hasattr(exc, 'lineno'):
-                trace_entry['line'] = exc.lineno
-            if hasattr(exc, 'offset'):
-                trace_entry['offset'] = exc.offset
+            if hasattr(exc, "lineno"):
+                trace_entry["line"] = exc.lineno
+            if hasattr(exc, "offset"):
+                trace_entry["offset"] = exc.offset
 
-            if hasattr(exc, 'msg'):
-                trace_entry['exception_msg'] = "Error: " + exc.msg
+            if hasattr(exc, "msg"):
+                trace_entry["exception_msg"] = "Error: " + exc.msg
             else:
-                trace_entry['exception_msg'] = "Unknown error"
+                trace_entry["exception_msg"] = "Unknown error"
 
             self.trace.append(trace_entry)
             self.finalize()
@@ -237,19 +237,19 @@ class PGLogger(bdb.Bdb):
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
 
-        # filter all entries after 'return' from '<module>', since they
+        # filter all entries after "return" from "<module>", since they
         # seem extraneous:
         res = []
         for e in self.trace:
             res.append(e)
-            if e['event'] == 'return' and e['func_name'] == '<module>':
+            if e["event"] == "return" and e["func_name"] == "<module>":
                 break
 
-        # another hack: if the SECOND to last entry is an 'exception'
+        # another hack: if the SECOND to last entry is an "exception"
         # and the last entry is return from <module>, then axe the last
         # entry, for aesthetic reasons :)
-        if len(res) >= 2 and res[-2]['event'] == 'exception' and \
-                res[-1]['event'] == 'return' and res[-1]['func_name'] == '<module>':
+        if len(res) >= 2 and res[-2]["event"] == "exception" and \
+                res[-1]["event"] == "return" and res[-1]["func_name"] == "<module>":
             res.pop()
 
         self.trace = res

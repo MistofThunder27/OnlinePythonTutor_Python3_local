@@ -30,60 +30,60 @@ import shutil
 import pg_logger
 
 # all tests are found in this directory:
-REGTEST_DIR = '../test_programs/'
+REGTEST_DIR = "../test_programs/"
 
-ALL_TESTS = [e for e in os.listdir(REGTEST_DIR) if e.endswith('.py')]
+ALL_TESTS = [e for e in os.listdir(REGTEST_DIR) if e.endswith(".py")]
 
 
 # return True if there seemed to be an error in execution
 def execute(test_script):
     output_json = json.dumps(pg_logger.exec_script_str(open(test_script).read(), True))
-    print(output_json, file=open(test_script[:-3] + '.out', 'w'))
+    print(output_json, file=open(test_script[:-3] + ".out", "w"))
 
 
 def clobber_golden_file(golden_file):
-    print('  Overriding golden file')
-    outfile = golden_file.replace('.golden', '.out')
+    print("  Overriding golden file")
+    outfile = golden_file.replace(".golden", ".out")
     assert os.path.isfile(outfile)
     shutil.copy(outfile, golden_file)
 
 
 # returns True if there is a diff, False otherwise
 def diff_test_golden_data(golden_file):
-    outfile = golden_file.replace('.golden', '.out')
+    outfile = golden_file.replace(".golden", ".out")
     assert os.path.isfile(outfile)
     assert os.path.isfile(golden_file)
 
     # filter out machine-specific memory addresses:
     outfile_filtered = \
-        [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in open(outfile).readlines()]
+        [re.sub(" 0x.+?>", " 0xADDR>", e) for e in open(outfile).readlines()]
     golden_file_filtered = \
-        [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in open(golden_file).readlines()]
+        [re.sub(" 0x.+?>", " 0xADDR>", e) for e in open(golden_file).readlines()]
 
     return outfile_filtered != golden_file_filtered
 
 
 def diff_test_output(test_name):
-    golden_file = test_name[:-3] + '.golden'
+    golden_file = test_name[:-3] + ".golden"
     assert os.path.isfile(golden_file)
 
-    outfile = golden_file.replace('.golden', '.out')
+    outfile = golden_file.replace(".golden", ".out")
     assert os.path.isfile(outfile)
 
     golden_s = open(golden_file).readlines()
     out_s = open(outfile).readlines()
 
-    golden_s_filtered = [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in golden_s]
-    out_s_filtered = [re.sub(' 0x.+?>', ' 0xADDR>', e) for e in out_s]
+    golden_s_filtered = [re.sub(" 0x.+?>", " 0xADDR>", e) for e in golden_s]
+    out_s_filtered = [re.sub(" 0x.+?>", " 0xADDR>", e) for e in out_s]
 
     for line in difflib.unified_diff(golden_s_filtered, out_s_filtered, fromfile=golden_file, tofile=outfile):
-        print(line, end=' ')
+        print(line, end=" ")
 
 
 def run_test(test_name, clobber_golden=False):
-    print('Testing', test_name)
-    assert test_name.endswith('.py')
-    outfile = test_name[:-3] + '.out'
+    print("Testing", test_name)
+    assert test_name.endswith(".py")
+    outfile = test_name[:-3] + ".out"
     if os.path.isfile(outfile):
         os.remove(outfile)
 
@@ -92,7 +92,7 @@ def run_test(test_name, clobber_golden=False):
     except:
         pass
 
-    golden_file = test_name[:-3] + '.golden'
+    golden_file = test_name[:-3] + ".golden"
     if os.path.isfile(golden_file):
         if diff_test_golden_data(golden_file):
             print("  FAILED")
@@ -121,16 +121,16 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
     if options.run_all:
         if options.clobber:
-            print('Running all tests and clobbering results ...')
+            print("Running all tests and clobbering results ...")
         else:
-            print('Running all tests ...')
+            print("Running all tests ...")
 
         for t in ALL_TESTS:
             run_test(t, options.clobber)
 
     elif options.diff_all:
         for t in ALL_TESTS:
-            print('=== diffing', t, '===')
+            print("=== diffing", t, "===")
             diff_test_output(t)
 
     elif options.diff_test_name:
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         run_test(options.test_name, options.clobber)
     elif options.only_clobber:
         for t in ALL_TESTS:
-            golden_file = t[:-3] + '.golden'
+            golden_file = t[:-3] + ".golden"
             clobber_golden_file(golden_file)
     else:
         parser.print_help()

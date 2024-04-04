@@ -26,13 +26,13 @@
 # Format:
 #   * None, int, long, float, str, bool - unchanged
 #     (json.dumps encodes these fine verbatim)
-#   * list     - ['LIST', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * tuple    - ['TUPLE', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * set      - ['SET', unique_id, elt1, elt2, elt3, ..., eltN]
-#   * dict     - ['DICT', unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
-#   * instance - ['INSTANCE', class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-#   * class    - ['CLASS', class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-#   * circular reference - ['CIRCULAR_REF', unique_id]
+#   * list     - ["LIST", unique_id, elt1, elt2, elt3, ..., eltN]
+#   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
+#   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
+#   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
+#   * instance - ["INSTANCE", class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+#   * class    - ["CLASS", class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+#   * circular reference - ["CIRCULAR_REF", unique_id]
 #   * other    - [<type name>, unique_id, string representation of object]
 #
 # the unique_id is derived from id(), which allows us to explicitly
@@ -67,7 +67,7 @@ def encode(dat, ignore_id=False):
                 cur_small_id += 1
 
             if my_id in compound_obj_ids:
-                return ['CIRCULAR_REF', real_to_small_IDs[my_id]]
+                return ["CIRCULAR_REF", real_to_small_IDs[my_id]]
 
             new_compound_obj_ids = compound_obj_ids.union([my_id])
 
@@ -76,32 +76,32 @@ def encode(dat, ignore_id=False):
             my_small_id = real_to_small_IDs[my_id]
 
             if typ == list:
-                ret = ['LIST', my_small_id]
+                ret = ["LIST", my_small_id]
                 for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
             elif typ == tuple:
-                ret = ['TUPLE', my_small_id]
+                ret = ["TUPLE", my_small_id]
                 for e in dat: ret.append(encode_helper(e, new_compound_obj_ids))
             elif typ == set:
-                ret = ['SET', my_small_id]
+                ret = ["SET", my_small_id]
                 for e in dat:
                     ret.append(encode_helper(e, new_compound_obj_ids))
             elif typ == dict:
-                ret = ['DICT', my_small_id]
+                ret = ["DICT", my_small_id]
                 for (k, v) in dat.items():
-                    # don't display some built-in locals ...
-                    if k not in ('__module__', '__return__'):
+                    # don"t display some built-in locals ...
+                    if k not in ("__module__", "__return__"):
                         ret.append([encode_helper(k, new_compound_obj_ids), encode_helper(v, new_compound_obj_ids)])
             elif not isinstance(dat, type) or "__class__" in dir(dat):
                 if not isinstance(dat, type):
-                    ret = ['INSTANCE', dat.__class__.__name__, my_small_id]
+                    ret = ["INSTANCE", dat.__class__.__name__, my_small_id]
                 else:
                     superclass_names = [e.__name__ for e in dat.__bases__]
-                    ret = ['CLASS', dat.__name__, my_small_id, superclass_names]
+                    ret = ["CLASS", dat.__name__, my_small_id, superclass_names]
 
                 # traverse inside its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
                 user_attrs = sorted([e for e in list(dat.__dict__.keys())
-                                     if e not in ('__doc__', '__module__', '__return__', "__dict__",
+                                     if e not in ("__doc__", "__module__", "__return__", "__dict__",
                                                   "__weakref__")])
                 for attr in user_attrs:
                     ret.append([encode_helper(attr, new_compound_obj_ids),
