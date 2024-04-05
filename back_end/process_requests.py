@@ -1,38 +1,35 @@
-from back_end import pg_logger
+from back_end.pg_logger import PGLogger
+
+MAX_EXECUTED_LINES = 200
 
 
 def process_post(parsed_post_dict):
     user_script = parsed_post_dict["user_script"][0]
-    max_instructions = parsed_post_dict.get("max_instructions", [""])[0]
+    changed_max_executed_lines = parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0]
 
     if parsed_post_dict["request"][0] == "execute":
-        if max_instructions:
-            pg_logger.set_max_executed_lines(int(max_instructions))
-
-        return pg_logger.exec_script_str(user_script)
+        return PGLogger(changed_max_executed_lines, False).runscript(user_script)
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_script = parsed_post_dict["expect_script"][0]
-    expect_trace_final_entry = pg_logger.exec_script_str(expect_script, ignore_id=True)[-1]
+    expect_trace_final_entry = PGLogger(MAX_EXECUTED_LINES,
+                                        True).runscript(parsed_post_dict["expect_script"][0])[-1]
+
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['func_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
-
-    if max_instructions:
-        pg_logger.set_max_executed_lines(int(max_instructions))
-    user_trace = pg_logger.exec_script_str(user_script, ignore_id=True)
 
     # Procedure for grading testResults vs. expectResults:
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-
-    vars_to_compare = list(expect_trace_final_entry['globals'].keys())
+    vars_to_compare = list(expect_trace_final_entry['globals'])
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
     single_var_to_compare = vars_to_compare[0]
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
            'expect_val': expect_trace_final_entry['globals'][single_var_to_compare]}
+
+    user_trace = PGLogger(changed_max_executed_lines, True).runscript(user_script)
 
     # Grab the 'inputs' by finding all global vars that are in scope
     # prior to making the first function call.

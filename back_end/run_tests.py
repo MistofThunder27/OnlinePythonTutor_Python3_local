@@ -27,17 +27,18 @@ import optparse
 import os
 import re
 import shutil
-import pg_logger
+
+from pg_logger import PGLogger
 
 # all tests are found in this directory:
 REGTEST_DIR = "../test_programs/"
-
 ALL_TESTS = [e for e in os.listdir(REGTEST_DIR) if e.endswith(".py")]
+MAX_EXECUTED_LINES = 200
 
 
 # return True if there seemed to be an error in execution
 def execute(test_script):
-    output_json = json.dumps(pg_logger.exec_script_str(open(test_script).read(), True))
+    output_json = json.dumps(PGLogger(MAX_EXECUTED_LINES, True).runscript(open(test_script).read()))
     print(output_json, file=open(test_script[:-3] + ".out", "w"))
 
 

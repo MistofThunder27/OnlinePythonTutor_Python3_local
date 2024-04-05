@@ -26,52 +26,23 @@ from back_end.pg_encode import encode
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
 
-# Note that I"ve only tested this logger on Python 2.5, so it will
-# probably fail in subtle ways on other Python 2.X (and will DEFINITELY
-# fail on Python 3.X).
-
-
-# upper-bound on the number of executed lines, in order to guard against
-# infinite loops
-MAX_EXECUTED_LINES = 200
-
-
-def set_max_executed_lines(m):
-    global MAX_EXECUTED_LINES
-    MAX_EXECUTED_LINES = m
-
-
-def filter_var_dict(d):
-    ret = {}
-    for (k, v) in d.items():
-        if k not in {"__stdout__", "__builtins__", "__name__", "__exception__"}:
-            ret[k] = v
-    return ret
-
 
 class PGLogger(bdb.Bdb):
-    def __init__(self, ignore_id=False):
+    def __init__(self, max_executed_lines, ignore_id=False):
         bdb.Bdb.__init__(self)
-        self.mainpyfile = ""
         self._wait_for_mainpyfile = 0
 
-        # each entry contains a dict with the information for a single
-        # executed line
+        # each entry contains a dict with the information for a single executed line
         self.trace = []
 
-        # don"t print out a custom ID for each object
-        # (for regression testing)
+        # don"t print out a custom ID for each object (for regression testing)
         self.ignore_id = ignore_id
+
+        # upper-bound on the number of executed lines, in order to guard against infinite loops
+        self.max_executed_lines = max_executed_lines
 
     def reset(self):
         bdb.Bdb.reset(self)
-        self.forget()
-
-    def forget(self):
-        self.lineno = None
-        self.stack = []
-        self.curindex = 0
-        self.curframe = None
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -110,7 +81,6 @@ class PGLogger(bdb.Bdb):
     # General interaction function
 
     def interaction(self, frame, traceback, event_type):
-        self.forget()
         self.stack, self.curindex = self.get_stack(frame, traceback)
         self.curframe = self.stack[self.curindex][0]
         tos = self.stack[self.curindex]
@@ -135,26 +105,17 @@ class PGLogger(bdb.Bdb):
 
             # encode in a JSON-friendly format now, in order to prevent ill
             # effects of aliasing later down the line ...
-            encoded_locals = {}
-            for (k, v) in filter_var_dict(cur_frame.f_locals).items():
-                # don"t display some built-in locals ...
-                if k != "__module__":
-                    encoded_locals[k] = encode(v, self.ignore_id)
+            encoded_locals = {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
+                              k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}}
 
             encoded_stack_locals.append((cur_name, encoded_locals))
             i -= 1
 
         # encode in a JSON-friendly format now, in order to prevent ill
         # effects of aliasing later down the line ...
-        encoded_globals = {}
-
-        temp_dict = filter_var_dict(tos[0].f_globals)
         # also filter out __return__ for globals only, but NOT for locals
-        if "__return__" in temp_dict:
-            del temp_dict["__return__"]
-
-        for (k, v) in temp_dict.items():
-            encoded_globals[k] = encode(v, self.ignore_id)
+        encoded_globals = {k: encode(v, set(), self.ignore_id) for k, v in tos[0].f_globals.items() if
+                           k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}}
 
         trace_entry = dict(line=lineno,
                            event=event_type,
@@ -171,16 +132,13 @@ class PGLogger(bdb.Bdb):
 
         self.trace.append(trace_entry)
 
-        if len(self.trace) >= MAX_EXECUTED_LINES:
+        if len(self.trace) >= self.max_executed_lines:
             self.trace.append(dict(event="instruction_limit_reached",
-                                   exception_msg=f"(stopped after {MAX_EXECUTED_LINES} steps to prevent possible "
+                                   exception_msg=f"(stopped after {self.max_executed_lines} steps to prevent possible "
                                                  f"infinite loop)"))
-            self.finalize()
-            sys.exit(0)  # need to forceably STOP execution
+            self.set_quit()
 
-        self.forget()
-
-    def _runscript(self, script_str):
+    def runscript(self, script_str):
         # When bdb sets tracing, a number of call and line events happens
         # BEFORE debugger even reaches user's code (and the exact sequence of
         # events depends on python version). So we take special measures to
@@ -188,17 +146,10 @@ class PGLogger(bdb.Bdb):
         # user_call for details).
         self._wait_for_mainpyfile = 1
 
-        # ok, let's try to sorta "sandbox" the user script by not
-        # allowing certain potentially dangerous operations:
-        user_builtins = {}
-        for (k, v) in __builtins__.items():
-            if k in ("reload", "input", "apply", "open", "compile",
-                     "__import__", "file", "eval", "execfile",
-                     "exit", "quit", "raw_input",
-                     "dir", "globals", "locals", "vars",
-                     "compile"):
-                continue
-            user_builtins[k] = v
+        # ok, let's try to sorta "sandbox" the user script by not allowing certain potentially dangerous operations:
+        user_builtins = {k: v for k, v in __builtins__.items() if k not in
+                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval", "execfile",
+                          "exit", "quit", "raw_input", "dir", "globals", "locals", "vars", "compile"}}
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
@@ -210,11 +161,10 @@ class PGLogger(bdb.Bdb):
 
         try:
             self.run(script_str, user_globals, user_globals)
-        # sys.exit ...
         except SystemExit:
             sys.exit(0)
         except:
-            # traceback.print_exc() # uncomment this to see the REAL exception msg
+            traceback.print_exc() # uncomment this to see the REAL exception msg
 
             trace_entry = dict(event="uncaught_exception")
 
@@ -230,12 +180,10 @@ class PGLogger(bdb.Bdb):
                 trace_entry["exception_msg"] = "Unknown error"
 
             self.trace.append(trace_entry)
-            self.finalize()
-            sys.exit(0)  # need to forceably STOP execution
 
-    def finalize(self):
+        # finalise results
         sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
+        assert len(self.trace) <= (self.max_executed_lines + 1)
 
         # filter all entries after "return" from "<module>", since they
         # seem extraneous:
@@ -252,15 +200,4 @@ class PGLogger(bdb.Bdb):
                 res[-1]["event"] == "return" and res[-1]["func_name"] == "<module>":
             res.pop()
 
-        self.trace = res
-
-        # for e in self.trace: print e
-
-        return self.trace
-
-
-# the MAIN meaty function!!!
-def exec_script_str(script_str, ignore_id=False):
-    logger = PGLogger(ignore_id)
-    logger._runscript(script_str)
-    return logger.finalize()
+        return res
