@@ -63,37 +63,35 @@ class PGLogger(bdb.Bdb):
         """This method is called when there is the remote possibility
         that we ever need to stop in this function."""
         if self.stop_here(frame):
-            self.interaction(frame, None, "call")
+            self.interaction(frame, "call")
 
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
-        self.interaction(frame, None, "step_line")
+        self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
         if self.function_caller:
             self.function_caller.pop()
         """This function is called when a return trap is set here."""
         frame.f_locals["__return__"] = return_value
-        self.interaction(frame, None, "return")
+        self.interaction(frame, "return")
 
     def user_exception(self, frame, exc_info):
         exc_type, exc_value, exc_traceback = exc_info
         """This function is called if an exception occurs,
         but only if we are to stop at or just below this level."""
         frame.f_locals["__exception__"] = exc_type, exc_value
-        self.interaction(frame, exc_traceback, "exception")
+        self.interaction(frame, "exception")
 
     # General interaction function
 
-    def interaction(self, frame, traceback, event_type):
-        stack, cur_index = self.get_stack(frame, traceback)
-
+    def interaction(self, frame, event_type):
         # each element is a pair of (function name, ENCODED locals dict)
         encoded_stack_locals = []
 
         # climb up until you find "<module>", which is (hopefully) the global scope
+        cur_frame = final_frame = frame
         while True:
-            cur_frame = stack[cur_index][0]
             cur_name = cur_frame.f_code.co_name
             if cur_name == "<module>":
                 break
@@ -108,10 +106,9 @@ class PGLogger(bdb.Bdb):
                 (cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}}
                  ))
-            cur_index -= 1
+            cur_frame = cur_frame.f_back
 
-        final_frame, lineno = stack[-1]
-        trace_entry = {"line": lineno, "event": event_type, "func_name": final_frame.f_code.co_name,
+        trace_entry = {"line": final_frame.f_lineno, "event": event_type, "func_name": final_frame.f_code.co_name,
                        "caller_location": self.function_caller[-1] if self.function_caller else [[1, 0], [1, 0]],
                        "globals": {k: encode(v, set(), self.ignore_id) for k, v in final_frame.f_globals.items() if
                                    k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}},

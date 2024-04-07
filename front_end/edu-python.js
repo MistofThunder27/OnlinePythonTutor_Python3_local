@@ -36,6 +36,7 @@ var stackGrowsDown = true;
 var lightYellow = '#F5F798';
 var lightLineColor = '#FFFFCC';
 var errorColor = '#F87D76';
+var lastLineColor = "#6DAD70";
 var visitedLineColor = '#3D58A2';
 
 var lightGray = "#cccccc";
@@ -125,7 +126,7 @@ function processTrace(traceData, jumpToEnd) {
   updateOutput();
 }
 
-function highlightCodeLine(curLine, visitedLinesSet, hasError, isTerminated) {
+function highlightCodeLine(curLine, lastLine, visitedLinesSet, hasError, isTerminated) {
   var tbl = $("table#pyCodeOutput");
 
   // reset then set:
@@ -150,6 +151,7 @@ function highlightCodeLine(curLine, visitedLinesSet, hasError, isTerminated) {
   }
 
   tbl.find('td.cod').css('background-color', '');
+  tbl.find('td.cod:eq(' + (lastLine - 1) + ')').css('background-color', lastLineColor);
   if (!isTerminated || hasError) {
     tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lineBgCol);
   }
@@ -226,6 +228,12 @@ function updateOutput() {
 
   // render code output:
   if (curEntry.line) {
+    // find last line executed
+    if (curInstr == 0) {
+        var lastLineNo = 0
+    } else {
+        var lastLineNo = curTrace[curInstr - 1].line
+    }
     // calculate all lines that have been 'visited' 
     // by execution up to (but NOT INCLUDING) curInstr:
     var visitedLinesSet = {}
@@ -234,7 +242,7 @@ function updateOutput() {
         visitedLinesSet[curTrace[i].line] = true;
       }
     }
-    highlightCodeLine(curEntry.line, visitedLinesSet, hasError,
+    highlightCodeLine(curEntry.line, lastLineNo, visitedLinesSet, hasError,
                       /* if instrLimitReached, then treat like a normal non-terminating line */
                       (!instrLimitReached && (curInstr == (totalInstrs-1))));
   }
