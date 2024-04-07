@@ -52,8 +52,7 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         output_json = json.dumps(
-            process_post(parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))))
-        print(output_json)
+            process_post(parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))), indent=4)
 
         with open("output.json", "w") as f:
             f.write(output_json)

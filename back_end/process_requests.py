@@ -1,6 +1,4 @@
-from back_end.pg_logger import PGLogger
-
-MAX_EXECUTED_LINES = 200
+from back_end.pg_logger import PGLogger, MAX_EXECUTED_LINES
 
 
 def process_post(parsed_post_dict):
@@ -8,11 +6,10 @@ def process_post(parsed_post_dict):
     changed_max_executed_lines = parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0]
 
     if parsed_post_dict["request"][0] == "execute":
-        return PGLogger(changed_max_executed_lines, False).runscript(user_script)
+        return PGLogger(changed_max_executed_lines).runscript(user_script)
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_trace_final_entry = PGLogger(MAX_EXECUTED_LINES,
-                                        True).runscript(parsed_post_dict["expect_script"][0])[-1]
+    expect_trace_final_entry = PGLogger(ignore_id=True).runscript(parsed_post_dict["expect_script"][0])[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['func_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
