@@ -81,9 +81,7 @@ function htmlspecialchars(str) {
 function processTrace(traceData, jumpToEnd) {
   curTrace = traceData;
   curInstr = 0;
-
-  // delete all stale output
-  $("#pyStdout").val('');
+  $("#pyStdout").val(''); // delete any old output
 
   if (curTrace.length > 0) {
     var lastEntry = curTrace[curTrace.length - 1];
@@ -92,9 +90,8 @@ function processTrace(traceData, jumpToEnd) {
     instrLimitReached = (lastEntry.event == 'instruction_limit_reached');
 
     if (instrLimitReached) {
-      curTrace.pop() // kill last entry
-      var warningMsg = lastEntry.exception_msg;
-      $("#errorOutput").html(htmlspecialchars(warningMsg));
+      curTrace.pop() // kill last entry which only has the error message
+      $("#errorOutput").html(htmlspecialchars(lastEntry.exception_msg));
       $("#errorOutput").show();
     }
     // as imran suggests, for a (non-error) one-liner, SNIP off the
@@ -112,8 +109,7 @@ function processTrace(traceData, jumpToEnd) {
 
       for (var i = 0; i < curTrace.length; i++) {
         var curEntry = curTrace[i];
-        if (curEntry.event == 'exception' ||
-            curEntry.event == 'uncaught_exception') {
+        if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
           curInstr = i;
           break;
         }
@@ -169,8 +165,7 @@ function updateOutput() {
 
 
   // render error (if applicable):
-  if (curEntry.event == 'exception' ||
-      curEntry.event == 'uncaught_exception') {
+  if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
     assert(curEntry.exception_msg);
 
     if (curEntry.exception_msg == "Unknown error") {
@@ -193,40 +188,26 @@ function updateOutput() {
 
   // render code output:
   var curLine = curEntry.line
-  if (curLine) {
+    if (curLine) {
     // Highlight code line:
     // if instrLimitReached, then treat like a normal non-terminating line
-    var isTerminated = (!instrLimitReached && (curInstr == (totalInstrs-1)))
-
+    var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
     var tbl = $("table#pyCodeOutput");
-    // reset then set:
-    tbl.find('td.lineNo').css('color', '');
-    tbl.find('td.lineNo').css('font-weight', '');
 
-    // embolden label of visited lines
+    // reset then set:
+    tbl.find('td.lineNo').css({'color': '', 'font-weight': ''});
     curEntry.visited_lines.forEach(function(line) {
-        tbl.find('td.lineNo:eq(' + (line - 1) + ')')
-            .css({
-                'color': visitedLineColor,
-                'font-weight': 'bold'
-            });
+        tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({'color': visitedLineColor, 'font-weight': 'bold'});
     });
 
-    var lineBgCol = lightLineColor;
-    if (hasError) {
-      lineBgCol = errorColor;
-    }
-
     // put a default white top border to keep space usage consistent
-    tbl.find('td.cod').css('border-top', '1px solid #ffffff');
+    tbl.find('td.cod').css({'border-top': '1px solid #ffffff', 'background-color': ''});
 
     if (!hasError && !isTerminated) {
       tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('border-top', '1px solid #F87D76');
     }
-
-    tbl.find('td.cod').css('background-color', '');
     if (!isTerminated || hasError) {
-      tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lineBgCol);
+      tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', hasError ? errorColor : lightLineColor);
     }
     else if (isTerminated) {
       tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lightBlue);

@@ -270,14 +270,16 @@ button.medBtn {
 table.listTbl {
   border: 0px solid black;
   background-color: #F5F798;
-  border-spacing: 0px;
 }
 
 table.tupleTbl {
   background-color: #dddddd; /* must match .frameDataViz background-color */
-  border-spacing: 0px;
   color: black;
+}
 
+table.listTbl,
+table.tupleTbl {
+  border-spacing: 0px;
   border-bottom: 1px solid #555555; /* must match td.tupleHeader border */
   border-top: 1px solid #555555; /* must match td.tupleHeader border */
   border-right: 1px solid #555555; /* must match td.tupleHeader border */
@@ -293,15 +295,6 @@ table.tupleTbl td.tupleHeader {
   border-left: 1px solid #555555;
 }
 
-table.listTbl td.listElt {
-  border-bottom: 1px solid #555555; /* must match td.listHeader border */
-  border-left: 1px solid #555555; /* must match td.listHeader border */
-}
-
-table.tupleTbl td.tupleElt {
-  border-left: 1px solid #555555; /* must match td.tupleHeader border */
-}
-
 table.listTbl td.listElt,
 table.tupleTbl td.tupleElt {
   padding-top: 0px;
@@ -309,6 +302,7 @@ table.tupleTbl td.tupleElt {
   padding-left: 10px;
   padding-right: 10px;
   vertical-align: bottom;
+  border-left: 1px solid #555555; /* must match td.tupleHeader border */
 }
 
 table.setTbl {

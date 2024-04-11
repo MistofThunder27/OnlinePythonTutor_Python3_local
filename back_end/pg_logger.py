@@ -73,7 +73,7 @@ class PGLogger(bdb.Bdb):
         self.function_caller.append({
             "code": full_calling_code,
             "true positions": [[start_line, start_offset], [end_line, end_offset]],
-            "relative postions": [relative_start_position, relative_start_position + len(calling_code_snippet)]
+            "relative positions": [relative_start_position, relative_start_position + len(calling_code_snippet)]
         })
 
     def user_line(self, frame):
