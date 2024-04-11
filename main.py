@@ -19,7 +19,6 @@ content_type_mapping = {
 
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        print(self.path)
         if self.path == "/":
             self.path = f"/front_end/index.html"
 
