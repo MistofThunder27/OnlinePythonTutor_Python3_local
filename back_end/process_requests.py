@@ -3,7 +3,7 @@ from back_end.pg_logger import PGLogger, MAX_EXECUTED_LINES
 
 def process_post(parsed_post_dict):
     user_script = parsed_post_dict["user_script"][0]
-    changed_max_executed_lines = parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0]
+    changed_max_executed_lines = int(parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0])
 
     if parsed_post_dict["request"][0] == "execute":
         return PGLogger(changed_max_executed_lines).runscript(user_script)

@@ -19,7 +19,6 @@ import bdb  # the KEY import here!
 import sys
 import io
 import inspect
-import traceback
 from back_end.pg_encode import encode
 
 # This is the meat of the Online Python Tutor back-end. It implements a
@@ -43,6 +42,8 @@ class PGLogger(bdb.Bdb):
         # upper-bound on the number of executed lines, in order to guard against infinite loops
         self.max_executed_lines = max_executed_lines
 
+        # TODO: self.visited_lines = set()
+
         self.script_lines = []
         self.function_caller = []
 
@@ -51,40 +52,47 @@ class PGLogger(bdb.Bdb):
         bdb.Bdb.reset(self)
 
     def user_call(self, frame, argument_list):
+        """This method is called when there is the remote possibility
+        that we ever need to stop in this function."""
         positions = inspect.getframeinfo(frame.f_back).positions
         start_line = positions.lineno
         start_offset = positions.col_offset
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
+        print([[start_line, start_offset], [end_line, end_offset]])
+
+        full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
+        end_point = end_offset - len(self.script_lines[end_line - 1])
+        if end_point:
+            calling_code_snippet = full_calling_code[start_offset: end_point]
+        else:
+            calling_code_snippet = full_calling_code[start_offset:]
+        relative_start_position = full_calling_code.find(calling_code_snippet)
+        print(full_calling_code, calling_code_snippet, relative_start_position)
         self.function_caller.append({
-            "code": "\n".join(self.script_lines[start_line - 1: end_line]),
+            "code": full_calling_code,
             "true positions": [[start_line, start_offset], [end_line, end_offset]],
+            "relative postions": [relative_start_position, relative_start_position + len(calling_code_snippet)]
         })
-        """This method is called when there is the remote possibility
-        that we ever need to stop in this function."""
-        if self.stop_here(frame):
-            self.interaction(frame, "call")
 
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
         self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
+        """This function is called when a return trap is set here."""
         if self.function_caller:
             self.function_caller.pop()
-        """This function is called when a return trap is set here."""
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
 
     def user_exception(self, frame, exc_info):
-        exc_type, exc_value, exc_traceback = exc_info
         """This function is called if an exception occurs,
         but only if we are to stop at or just below this level."""
-        frame.f_locals["__exception__"] = exc_type, exc_value
+        frame.f_locals["__exception__"] = exc_info[:2]
         self.interaction(frame, "exception")
 
     # General interaction function
-
     def interaction(self, frame, event_type):
         # each element is a pair of (function name, ENCODED locals dict)
         encoded_stack_locals = []
@@ -102,14 +110,16 @@ class PGLogger(bdb.Bdb):
             elif cur_name == "":
                 cur_name = "unnamed function"
 
-            encoded_stack_locals.append(
-                (cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
-                            k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}}
-                 ))
+            encoded_stack_locals.append((
+                cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
+                           k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}}
+            ))
             cur_frame = cur_frame.f_back
 
+        # TODO: self.visited_lines.add(final_frame.f_lineno)
         trace_entry = {"line": final_frame.f_lineno, "event": event_type, "func_name": final_frame.f_code.co_name,
                        "caller_location": self.function_caller[-1] if self.function_caller else [[1, 0], [1, 0]],
+                       # TODO: "visited_lines": self.visited_lines,
                        "globals": {k: encode(v, set(), self.ignore_id) for k, v in final_frame.f_globals.items() if
                                    k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}},
                        "stack_locals": encoded_stack_locals, "stdout": final_frame.f_globals["__stdout__"].getvalue()}
@@ -144,7 +154,7 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
-            traceback.print_exc()  # uncomment this to see the REAL exception msg
+            from traceback import print_exc; print_exc()  # uncomment this to see the REAL exception msg
 
             trace_entry = {"event": "uncaught_exception"}
 

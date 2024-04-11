@@ -36,7 +36,6 @@ var stackGrowsDown = true;
 var lightYellow = '#F5F798';
 var lightLineColor = '#FFFFCC';
 var errorColor = '#F87D76';
-var lastLineColor = "#6DAD70";
 var visitedLineColor = '#3D58A2';
 
 var lightGray = "#cccccc";
@@ -126,40 +125,6 @@ function processTrace(traceData, jumpToEnd) {
   updateOutput();
 }
 
-function highlightCodeLine(curLine, lastLine, visitedLinesSet, hasError, isTerminated) {
-  var tbl = $("table#pyCodeOutput");
-
-  // reset then set:
-  tbl.find('td.lineNo').css('color', '');
-  tbl.find('td.lineNo').css('font-weight', '');
-
-  $.each(visitedLinesSet, function(k, v) {
-    tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('color', visitedLineColor);
-    tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('font-weight', 'bold');
-  });
-
-  var lineBgCol = lightLineColor;
-  if (hasError) {
-    lineBgCol = errorColor;
-  }
-
-	// put a default white top border to keep space usage consistent
-  tbl.find('td.cod').css('border-top', '1px solid #ffffff');
-
-  if (!hasError && !isTerminated) {
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('border-top', '1px solid #F87D76');
-  }
-
-  tbl.find('td.cod').css('background-color', '');
-  tbl.find('td.cod:eq(' + (lastLine - 1) + ')').css('background-color', lastLineColor);
-  if (!isTerminated || hasError) {
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lineBgCol);
-  }
-  else if (isTerminated) {
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lightBlue);
-  }
-}
-
 // relies on curTrace and curInstr globals
 function updateOutput() {
   if (!curTrace) {
@@ -227,13 +192,8 @@ function updateOutput() {
 
 
   // render code output:
-  if (curEntry.line) {
-    // find last line executed
-    if (curInstr == 0) {
-        var lastLineNo = 0
-    } else {
-        var lastLineNo = curTrace[curInstr - 1].line
-    }
+  var curLine = curEntry.line
+  if (curLine) {
     // calculate all lines that have been 'visited' 
     // by execution up to (but NOT INCLUDING) curInstr:
     var visitedLinesSet = {}
@@ -242,9 +202,40 @@ function updateOutput() {
         visitedLinesSet[curTrace[i].line] = true;
       }
     }
-    highlightCodeLine(curEntry.line, lastLineNo, visitedLinesSet, hasError,
-                      /* if instrLimitReached, then treat like a normal non-terminating line */
-                      (!instrLimitReached && (curInstr == (totalInstrs-1))));
+
+    // Highlight code line:
+    // if instrLimitReached, then treat like a normal non-terminating line
+    var isTerminated = (!instrLimitReached && (curInstr == (totalInstrs-1)))
+
+    var tbl = $("table#pyCodeOutput");
+    // reset then set:
+    tbl.find('td.lineNo').css('color', '');
+    tbl.find('td.lineNo').css('font-weight', '');
+
+    $.each(visitedLinesSet, function(k, v) {
+      tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('color', visitedLineColor);
+      tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('font-weight', 'bold');
+    });
+
+    var lineBgCol = lightLineColor;
+    if (hasError) {
+      lineBgCol = errorColor;
+    }
+
+    // put a default white top border to keep space usage consistent
+    tbl.find('td.cod').css('border-top', '1px solid #ffffff');
+
+    if (!hasError && !isTerminated) {
+      tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('border-top', '1px solid #F87D76');
+    }
+
+    tbl.find('td.cod').css('background-color', '');
+    if (!isTerminated || hasError) {
+      tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lineBgCol);
+    }
+    else if (isTerminated) {
+      tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lightBlue);
+    }
   }
 
 
