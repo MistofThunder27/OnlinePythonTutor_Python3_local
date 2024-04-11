@@ -138,7 +138,7 @@ $(document).ready(function() {
   // load the questions file specified by the query string
   var questionsFilename = location.search.substring(1);
 
-  $.get("../a_back_end/load_question.py",
+  $.get("../back_end/load_question.py",
         {question_file : questionsFilename},
         function(questionsDat) {
           finishQuestionsInit(questionsDat);
@@ -277,12 +277,12 @@ function finishQuestionsInit(questionsDat) {
 
     var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), $("#testCodeInput").val());
 
-    var postParams = {user_script : submittedCode};
+    var postParams = {user_script : submittedCode, request : "execute"};
     if (questionsDat.max_instructions) {
       postParams.max_instructions = questionsDat.max_instructions;
     }
 
-    $.post("../a_back_end/web_exec.py",
+    $.post("../main.py",
            postParams,
            function(traceData) {
              renderPyCodeOutput(submittedCode);
@@ -308,12 +308,12 @@ function finishQuestionsInit(questionsDat) {
     for (var i = 0; i < tests.length; i++) {
       var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), tests[i]);
 
-      var postParams = {user_script : submittedCode, expect_script : expects[i]};
+      var postParams = {user_script : submittedCode, expect_script : expects[i], request : "run test"};
       if (questionsDat.max_instructions) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
-      $.post("../a_back_end/web_run_test.py",
+      $.post("../main.py",
              postParams,
              genTestResultHandler(i),
              "json");
