@@ -10,9 +10,10 @@ def f(n):
     try:
         x = 10 / n
         print("x is", x)
-        f(n-1)
+        f(n - 1)
         print("survived!")
     finally:
         print("Bye from f where n =", n)
+
 
 f(4)

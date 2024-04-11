@@ -2,10 +2,10 @@
 # Rhodes University, South Africa (http://www.ru.ac.za/)
 
 def sumList(xs):
-    '''
+    """
     Sum a list that can contain nested lists.
     Precondition: All leaf elements are numbers.
-    '''
+    """
     sum = 0
     for e in xs:
         if type(e) is list:

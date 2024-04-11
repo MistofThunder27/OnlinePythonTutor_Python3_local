@@ -13,7 +13,7 @@ lastName = tokens[2]
 s2 = firstName + ' ' + middleName + ' ' + lastName
 
 # 'if' statement - indentation matters!
-if (s == s2):
+if s == s2:
     print('yes!!!')
 else:
     print('nooooooo')
@@ -31,7 +31,7 @@ ages = (18, 21, 28, 21, 22, 18, 19, 34, 9)
 
 # set (no order, no duplicates)
 uniqueAges = set(ages)
-uniqueAges.add(18) # already in set, no effect
+uniqueAges.add(18)  # already in set, no effect
 uniqueAges.remove(21)
 
 # no guaranteed order when iterating over a set
@@ -43,8 +43,8 @@ if 18 in uniqueAges:
     print('There is an 18-year-old present!')
 
 # sorting
-beatles.sort() # in-place
-orderedUniqueAges = sorted(uniqueAges) # new list
+beatles.sort()  # in-place
+orderedUniqueAges = sorted(uniqueAges)  # new list
 
 # dict - mapping unique keys to values
 netWorth = {}

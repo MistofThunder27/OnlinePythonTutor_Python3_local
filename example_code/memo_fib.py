@@ -3,6 +3,7 @@
 
 MemoTable = {}
 
+
 def MemoizedFib(n):
     if n <= 2:
         return 1
@@ -10,7 +11,7 @@ def MemoizedFib(n):
     if n in MemoTable:
         return MemoTable[n]
 
-    MemoTable[n] = MemoizedFib(n-1) + MemoizedFib(n-2)
+    MemoTable[n] = MemoizedFib(n - 1) + MemoizedFib(n - 2)
     return MemoTable[n]
 
 

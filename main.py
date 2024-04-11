@@ -6,7 +6,6 @@ import os
 from back_end.process_requests import process_post, process_questions
 
 PORT = 8000
-
 content_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",

@@ -10,6 +10,7 @@ class Staff601:
     def giveRaise(self, percentage):
         self.salary = self.salary + self.salary * percentage
 
+
 class Prof601(Staff601):
     salary = 100000
 
@@ -20,5 +21,5 @@ class Prof601(Staff601):
     def salutation(self):
         return self.role + ' ' + self.name
 
-pat = Prof601('Pat', 60)
 
+pat = Prof601('Pat', 60)

@@ -6,7 +6,7 @@ def sqrt(x):
         return (a + b) / 2.0
 
     def is_good_enough(guess):
-        return (abs((guess * guess) - x) < 0.001)
+        return abs((guess * guess) - x) < 0.001
 
     def improve(guess):
         return average(guess, x / guess)

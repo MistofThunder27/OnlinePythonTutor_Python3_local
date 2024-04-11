@@ -94,13 +94,6 @@ function processTrace(traceData, jumpToEnd) {
       $("#errorOutput").html(htmlspecialchars(lastEntry.exception_msg));
       $("#errorOutput").show();
     }
-    // as imran suggests, for a (non-error) one-liner, SNIP off the
-    // first instruction so that we start after the FIRST instruction
-    // has been executed ...
-    else if (curTrace.length == 2) {
-      curTrace.shift();
-    }
-
 
     if (jumpToEnd) {
       // if there's an exception, then jump to the FIRST occurrence of

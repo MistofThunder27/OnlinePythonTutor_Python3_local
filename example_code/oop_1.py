@@ -10,6 +10,7 @@ class Staff601:
     def salutation(self):
         return self.role + ' ' + self.name
 
+
 pat = Staff601()
 print(pat.course)
 

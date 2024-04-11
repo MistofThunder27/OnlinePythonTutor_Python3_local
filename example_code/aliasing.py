@@ -8,12 +8,15 @@ x.append(6)
 y.append(7)
 y = "hello"
 
+
 def foo(lst):
     lst.append("hello")
     bar(lst)
 
+
 def bar(myLst):
     print(myLst)
+
 
 foo(x)
 foo(z)
