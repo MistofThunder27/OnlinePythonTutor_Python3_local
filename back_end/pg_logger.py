@@ -42,7 +42,8 @@ class PGLogger(bdb.Bdb):
         # upper-bound on the number of executed lines, in order to guard against infinite loops
         self.max_executed_lines = max_executed_lines
 
-        # TODO: self.visited_lines = set()
+        # keep track of visited lines
+        self.visited_lines = set()
 
         self.script_lines = []
         self.function_caller = []
@@ -116,13 +117,15 @@ class PGLogger(bdb.Bdb):
             ))
             cur_frame = cur_frame.f_back
 
-        # TODO: self.visited_lines.add(final_frame.f_lineno)
         trace_entry = {"line": final_frame.f_lineno, "event": event_type, "func_name": final_frame.f_code.co_name,
                        "caller_location": self.function_caller[-1] if self.function_caller else [[1, 0], [1, 0]],
-                       # TODO: "visited_lines": self.visited_lines,
+                       "visited_lines": list(self.visited_lines),
                        "globals": {k: encode(v, set(), self.ignore_id) for k, v in final_frame.f_globals.items() if
                                    k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}},
                        "stack_locals": encoded_stack_locals, "stdout": final_frame.f_globals["__stdout__"].getvalue()}
+
+        # Added after as currently highlighted line has not been executed yet
+        self.visited_lines.add(final_frame.f_lineno)
 
         # if there's an exception, then record its info:
         if event_type == "exception":

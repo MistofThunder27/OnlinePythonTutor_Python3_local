@@ -194,15 +194,6 @@ function updateOutput() {
   // render code output:
   var curLine = curEntry.line
   if (curLine) {
-    // calculate all lines that have been 'visited' 
-    // by execution up to (but NOT INCLUDING) curInstr:
-    var visitedLinesSet = {}
-    for (var i = 0; i < curInstr; i++) {
-      if (curTrace[i].line) {
-        visitedLinesSet[curTrace[i].line] = true;
-      }
-    }
-
     // Highlight code line:
     // if instrLimitReached, then treat like a normal non-terminating line
     var isTerminated = (!instrLimitReached && (curInstr == (totalInstrs-1)))
@@ -212,9 +203,13 @@ function updateOutput() {
     tbl.find('td.lineNo').css('color', '');
     tbl.find('td.lineNo').css('font-weight', '');
 
-    $.each(visitedLinesSet, function(k, v) {
-      tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('color', visitedLineColor);
-      tbl.find('td.lineNo:eq(' + (k - 1) + ')').css('font-weight', 'bold');
+    // embolden label of visited lines
+    curEntry.visited_lines.forEach(function(line) {
+        tbl.find('td.lineNo:eq(' + (line - 1) + ')')
+            .css({
+                'color': visitedLineColor,
+                'font-weight': 'bold'
+            });
     });
 
     var lineBgCol = lightLineColor;
