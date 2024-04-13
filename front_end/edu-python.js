@@ -33,9 +33,9 @@ var stackGrowsDown = true;
 
 
 /* colors - see edu-python.css */
-var lightYellow = '#F5F798';
 var lightLineColor = '#FFFFCC';
 var errorColor = '#F87D76';
+var callingLineColor = '#add8e6'
 var visitedLineColor = '#3D58A2';
 
 var lightGray = "#cccccc";
@@ -187,14 +187,63 @@ function updateOutput() {
     var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
     var tbl = $("table#pyCodeOutput");
 
+    // put a default white top border to keep space usage consistent
+    tbl.find('td.cod').css({'border-top': '1px solid #ffffff', 'background-color': ''});
+
     // reset then set:
     tbl.find('td.lineNo').css({'color': '', 'font-weight': ''});
     curEntry.visited_lines.forEach(function(line) {
         tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({'color': visitedLineColor, 'font-weight': 'bold'});
     });
 
-    // put a default white top border to keep space usage consistent
-    tbl.find('td.cod').css({'border-top': '1px solid #ffffff', 'background-color': ''});
+    // clean out any previous highlighting
+    for (var i = 0; i < curInstr; i++) {
+        var cell = tbl.find('td.cod:eq(' + (curTrace[i].line - 1) + ')')
+        cell.html(cell.html()
+                  .replace(/<br\/?>.*$/g, '')
+                  .replace(/<span.*?>(.*?)<\/span>/g, '$1')
+                  .replace(/<span.*?>(.*?)<\/span>/g, '$1'));
+    }
+
+    // Highlight calling function
+    var caller_info = curEntry.caller_info
+    if (caller_info) {
+        /*
+        tbl.find('td.cod:eq(' + (true_positions[0][0] - 1) + ')').html(
+            content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+            content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex)
+        );
+
+
+        for (var line = true_positions[0][0] + 1; line <= true_positions[1][0] - 1; line++) {
+            ...;
+        }
+        */
+
+        var evaluated_code = caller_info.code;
+        var true_positions = caller_info.true_positions;
+        var startIndex = true_positions[0][1];
+        var endIndex = true_positions[1][1];
+
+        var relativeStart = caller_info.relative_positions[0]
+        var relativeEnd = caller_info.relative_positions[1]
+
+        var cell = tbl.find('td.cod:eq(' + (true_positions[0][0] - 1) + ')');
+        cell.css('background-color', callingLineColor);
+        var content = cell.text();
+        console.log("eval" + evaluated_code)
+        console.log(cell.text())
+        console.log(cell.html())
+        cell.html(content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+                  content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex) +
+                  '<br/><span style="font-style: italic; color: green;">' +
+                  evaluated_code.substring(0, relativeStart).replaceAll(" ", "&nbsp;") +
+                  '<span style="background-color: orange;">' +
+                  evaluated_code.substring(relativeStart, relativeEnd).replaceAll(" ", "&nbsp;") + '</span>' +
+                  evaluated_code.substring(relativeEnd).replaceAll(" ", "&nbsp;") + '</span>'
+        );
+        console.log(cell.html())
+    }
 
     if (!hasError && !isTerminated) {
       tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('border-top', '1px solid #F87D76');
@@ -206,7 +255,6 @@ function updateOutput() {
       tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', lightBlue);
     }
   }
-
 
   // render stdout:
 

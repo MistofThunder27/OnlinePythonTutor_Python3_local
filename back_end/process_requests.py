@@ -6,24 +6,24 @@ def process_post(parsed_post_dict):
 
     if request == "question":
         def process_record():
-            if curDelimiter == "Name:":
-                ret["name"] = "\n".join(curParts).strip()
-            elif curDelimiter == "Question:":
-                ret["question"] = " ".join(curParts).strip()
-            elif curDelimiter == "Hint:":
-                ret["hint"] = " ".join(curParts).strip()
-            elif curDelimiter == "Solution:":
-                ret["solution"] = " ".join(curParts).strip()
-            elif curDelimiter == "Skeleton:":
-                ret["skeleton"] = "\n".join(curParts).strip()
-            elif curDelimiter == "Test:":
-                ret["tests"].append("\n".join(curParts).strip())
-            elif curDelimiter == "Expect:":
-                ret["expects"].append("\n".join(curParts).strip())
+            if cur_delimiter == "Name:":
+                ret["name"] = "\n".join(cur_parts).strip()
+            elif cur_delimiter == "Question:":
+                ret["question"] = " ".join(cur_parts).strip()
+            elif cur_delimiter == "Hint:":
+                ret["hint"] = " ".join(cur_parts).strip()
+            elif cur_delimiter == "Solution:":
+                ret["solution"] = " ".join(cur_parts).strip()
+            elif cur_delimiter == "Skeleton:":
+                ret["skeleton"] = "\n".join(cur_parts).strip()
+            elif cur_delimiter == "Test:":
+                ret["tests"].append("\n".join(cur_parts).strip())
+            elif cur_delimiter == "Expect:":
+                ret["expects"].append("\n".join(cur_parts).strip())
 
         ret = {"tests": [], "expects": []}
-        curParts = []
-        curDelimiter = None
+        cur_parts = []
+        cur_delimiter = None
 
         for line in open(f"questions/{parsed_post_dict["question_file"][0]}.txt"):
             # only strip TRAILING spaces and not leading spaces
@@ -46,10 +46,10 @@ def process_post(parsed_post_dict):
 
             if line in {"Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "Test:", "Expect:"}:
                 process_record()
-                curDelimiter = line
-                curParts = []
+                cur_delimiter = line
+                cur_parts = []
             else:
-                curParts.append(line)
+                cur_parts.append(line)
 
         # don"t forget to process the FINAL record
         process_record()

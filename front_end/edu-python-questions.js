@@ -276,6 +276,7 @@ function finishQuestionsInit(questionsDat) {
       console.log(testResults)
       $.post("../main.py",
              postParams,
+             // create a closure
              (function(idx) {
                 return function(res) {
                   assert(testResults[idx] === null);
