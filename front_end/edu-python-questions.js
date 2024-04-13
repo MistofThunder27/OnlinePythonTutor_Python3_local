@@ -1,5 +1,4 @@
 /*
-
 Online Python Tutor
 Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -16,17 +15,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 */
 
 // UI for online problem sets
-
 // Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
-
 
 // parsed form of a questions file from questions/
 var curQuestion = null;
-
 
 // matching arrays of test code and 'expected outputs' from those tests
 var tests = null;
@@ -51,10 +46,8 @@ function resetTestResults() {
 
 $(document).ready(function() {
   eduPythonCommonInit(); // must call this first!
-
   $("#actualCodeInput").tabby(); // recognize TAB and SHIFT-TAB
   $("#testCodeInput").tabby();   // recognize TAB and SHIFT-TAB
-
 
   // be friendly to the browser's forward and back buttons
   // thanks to http://benalman.com/projects/jquery-bbq-plugin/
@@ -70,9 +63,8 @@ $(document).ready(function() {
     // nothing to visualize or grade:
     if (!curTrace) {
       appMode = 'edit';
-      $.bbq.pushState({ mode: 'edit' });
+      $.bbq.pushState({mode: 'edit'});
     }
-
 
     if (appMode == 'edit') {
       $("#pyInputPane").show();
@@ -96,7 +88,6 @@ $(document).ready(function() {
       $('#executeBtn').html("Visualize execution");
       $('#executeBtn').attr('disabled', false);
 
-
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
       processTrace(curTrace /* kinda dumb and redundant */, true);
@@ -105,8 +96,7 @@ $(document).ready(function() {
       var hasError = false;
       for (var i = 0; i < curTrace.length; i++) {
          var curEntry = curTrace[i];
-         if (curEntry.event == 'exception' ||
-             curEntry.event == 'uncaught_exception') {
+         if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
            hasError = true;
            break;
          }
@@ -136,11 +126,10 @@ $(document).ready(function() {
 
 
   // load the questions file specified by the query string
-  var questionsFilename = location.search.substring(1);
-
-  $.get("../back_end/load_question.py",
-        {question_file : questionsFilename},
+  $.post("../main.py",
+        {request: "question", question_file : location.search.substring(1)},
         function(questionsDat) {
+        console.log(questionsDat)
           finishQuestionsInit(questionsDat);
         },
         "json");
@@ -159,37 +148,8 @@ function enterEditMode() {
   $.bbq.pushState({ mode: 'edit' });
 }
 
-function enterVisualizeMode(traceData) {
-  curTrace = traceData; // first assign it to the global curTrace, then
-                        // let jQuery BBQ take care of the rest
-  $.bbq.pushState({ mode: 'visualize' });
-}
-
 function enterGradingMode() {
   $.bbq.pushState({ mode: 'grade' });
-}
-
-
-// returns a closure!
-function genTestResultHandler(idx) {
-  function ret(res) {
-    assert(testResults[idx] === null);
-    testResults[idx] = res;
-
-    // if ALL results have been successfully delivered, then call
-    // enterGradingMode() (remember that each result comes in
-    // asynchronously and probably out-of-order)
-
-    for (var i = 0; i < testResults.length; i++) {
-      if (testResults[i] === null) {
-        return;
-      }
-    }
-
-    enterGradingMode();
-  }
-
-  return ret;
 }
 
 function genDebugLinkHandler(failingTestIndex) {
@@ -238,9 +198,7 @@ function finishQuestionsInit(questionsDat) {
 
   resetTestResults();
 
-
   $("#testCodeInput").val(tests[curTestIndex]);
-
 
   $("#executeBtn").attr('disabled', false);
   $("#executeBtn").click(function() {
@@ -286,7 +244,8 @@ function finishQuestionsInit(questionsDat) {
            postParams,
            function(traceData) {
              renderPyCodeOutput(submittedCode);
-             enterVisualizeMode(traceData);
+             curTrace = traceData; // first assign it to the global curTrace, then let jQuery BBQ take care of the rest
+             $.bbq.pushState({mode: 'visualize'});
            },
            "json");
   });
@@ -308,14 +267,33 @@ function finishQuestionsInit(questionsDat) {
     for (var i = 0; i < tests.length; i++) {
       var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), tests[i]);
 
-      var postParams = {user_script : submittedCode, expect_script : expects[i], request : "run test"};
+      var postParams = {request : "run test", user_script : submittedCode, expect_script : expects[i]};
       if (questionsDat.max_instructions) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
+      console.log(postParams.expect_script)
+      console.log(testResults)
       $.post("../main.py",
              postParams,
-             genTestResultHandler(i),
+             (function(idx) {
+                return function(res) {
+                  assert(testResults[idx] === null);
+                  testResults[idx] = res;
+
+                  // if ALL results have been successfully delivered, then call
+                  // enterGradingMode() (remember that each result comes in
+                  // asynchronously and probably out-of-order)
+
+                  for (var i = 0; i < testResults.length; i++) {
+                    if (testResults[i] === null) {
+                      return;
+                    }
+                  }
+
+                  enterGradingMode();
+                };
+             })(i),
              "json");
     }
   });

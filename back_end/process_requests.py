@@ -2,10 +2,64 @@ from back_end.pg_logger import PGLogger, MAX_EXECUTED_LINES
 
 
 def process_post(parsed_post_dict):
+    request = parsed_post_dict["request"][0]
+
+    if request == "question":
+        def process_record():
+            if curDelimiter == "Name:":
+                ret["name"] = "\n".join(curParts).strip()
+            elif curDelimiter == "Question:":
+                ret["question"] = " ".join(curParts).strip()
+            elif curDelimiter == "Hint:":
+                ret["hint"] = " ".join(curParts).strip()
+            elif curDelimiter == "Solution:":
+                ret["solution"] = " ".join(curParts).strip()
+            elif curDelimiter == "Skeleton:":
+                ret["skeleton"] = "\n".join(curParts).strip()
+            elif curDelimiter == "Test:":
+                ret["tests"].append("\n".join(curParts).strip())
+            elif curDelimiter == "Expect:":
+                ret["expects"].append("\n".join(curParts).strip())
+
+        ret = {"tests": [], "expects": []}
+        curParts = []
+        curDelimiter = None
+
+        for line in open(f"questions/{parsed_post_dict["question_file"][0]}.txt"):
+            # only strip TRAILING spaces and not leading spaces
+            line = line.rstrip()
+
+            # comments are denoted by a leading "//", so ignore those lines.
+            # Note that I don"t use "#" as the comment token since sometimes I
+            # want to include Python comments in the skeleton code.
+            if line.startswith("//"):
+                continue
+
+            # special-case one-liners:
+            if line.startswith("MaxLineDelta:"):
+                ret["max_line_delta"] = int(line.split(":")[1])
+                continue
+
+            if line.startswith("MaxInstructions:"):
+                ret["max_instructions"] = int(line.split(":")[1])
+                continue
+
+            if line in {"Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "Test:", "Expect:"}:
+                process_record()
+                curDelimiter = line
+                curParts = []
+            else:
+                curParts.append(line)
+
+        # don"t forget to process the FINAL record
+        process_record()
+        assert len(ret["tests"]) == len(ret["expects"])
+        return ret
+
     user_script = parsed_post_dict["user_script"][0]
     changed_max_executed_lines = int(parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0])
 
-    if parsed_post_dict["request"][0] == "execute":
+    if request == "execute":
         return PGLogger(changed_max_executed_lines).runscript(user_script)
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
@@ -52,57 +106,4 @@ def process_post(parsed_post_dict):
     else:
         ret.update({'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
 
-    return ret
-
-
-def process_questions(question_file_path):
-    def processRecord():
-        if curDelimiter == "Name:":
-            ret["name"] = "\n".join(curParts).strip()
-        elif curDelimiter == "Question:":
-            ret["question"] = " ".join(curParts).strip()
-        elif curDelimiter == "Hint:":
-            ret["hint"] = " ".join(curParts).strip()
-        elif curDelimiter == "Solution:":
-            ret["solution"] = " ".join(curParts).strip()
-        elif curDelimiter == "Skeleton:":
-            ret["skeleton"] = "\n".join(curParts).strip()
-        elif curDelimiter == "Test:":
-            ret["tests"].append("\n".join(curParts).strip())
-        elif curDelimiter == "Expect:":
-            ret["expects"].append("\n".join(curParts).strip())
-
-    ret = {"tests": [], "expects": []}
-    curParts = []
-    curDelimiter = None
-
-    for line in open(question_file_path):
-        # only strip TRAILING spaces and not leading spaces
-        line = line.rstrip()
-
-        # comments are denoted by a leading "//", so ignore those lines.
-        # Note that I don"t use "#" as the comment token since sometimes I
-        # want to include Python comments in the skeleton code.
-        if line.startswith("//"):
-            continue
-
-        # special-case one-liners:
-        if line.startswith("MaxLineDelta:"):
-            ret["max_line_delta"] = int(line.split(":")[1])
-            continue
-
-        if line.startswith("MaxInstructions:"):
-            ret["max_instructions"] = int(line.split(":")[1])
-            continue
-
-        if line in {"Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "Test:", "Expect:"}:
-            processRecord()
-            curDelimiter = line
-            curParts = []
-        else:
-            curParts.append(line)
-
-    # don"t forget to process the FINAL record
-    processRecord()
-    assert len(ret["tests"]) == len(ret["expects"])
     return ret
