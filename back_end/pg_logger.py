@@ -60,7 +60,7 @@ class PGLogger(bdb.Bdb):
         start_offset = positions.col_offset
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
-        print([[start_line, start_offset], [end_line, end_offset]])
+        # print([[start_line, start_offset], [end_line, end_offset]])
 
         full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
         end_point = end_offset - len(self.script_lines[end_line - 1])
@@ -69,7 +69,7 @@ class PGLogger(bdb.Bdb):
         else:
             calling_code_snippet = full_calling_code[start_offset:]
         relative_start_position = full_calling_code.find(calling_code_snippet)
-        print(full_calling_code, calling_code_snippet, relative_start_position)
+        # print(full_calling_code, calling_code_snippet, relative_start_position)
         self.function_caller.append({
             "code": full_calling_code,
             "true positions": [[start_line, start_offset], [end_line, end_offset]],

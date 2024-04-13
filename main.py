@@ -16,7 +16,7 @@ content_type_mapping = {
 }
 
 
-class MyServer(BaseHTTPRequestHandler):
+class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
             self.path = f"/front_end/index.html"
@@ -62,4 +62,4 @@ class MyServer(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Serving at port http://localhost:{PORT}/")
-    HTTPServer(("", PORT), MyServer).serve_forever()
+    HTTPServer(("", PORT), LocalServer).serve_forever()
