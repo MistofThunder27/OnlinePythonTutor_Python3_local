@@ -47,60 +47,58 @@ class PGLogger(bdb.Bdb):
 
         self.script_lines = []
         self.function_caller = []
-        self.code_holder = ""  # TODO
+        self.end_shift_holder = []  # TODO
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
         """This method is called when there is the remote possibility
         that we ever need to stop in this function."""
         calling_frame = frame.f_back
-        if not self.function_caller or id(calling_frame) != self.function_caller[-1]["calling_frame_id"]:
-            # true positions
-            positions = inspect.getframeinfo(calling_frame).positions
-            start_line = positions.lineno
-            start_offset = positions.col_offset
-            end_line = positions.end_lineno
-            end_offset = positions.end_col_offset
 
-            # relative positions
+        # true positions
+        positions = inspect.getframeinfo(calling_frame).positions
+        start_line = positions.lineno
+        start_offset = positions.col_offset
+        end_line = positions.end_lineno
+        end_offset = positions.end_col_offset
+
+        # relative positions
+        end_point = end_offset - len(self.script_lines[end_line - 1])
+
+        if not self.function_caller or id(calling_frame) != self.function_caller[-1]["calling_frame_id"]:
             full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
-            end_point = end_offset - len(self.script_lines[end_line - 1])
             calling_code_snippet = full_calling_code[start_offset: end_point] if end_point \
                 else full_calling_code[start_offset:]
-            relative_start_position = full_calling_code.find(calling_code_snippet)
 
             self.function_caller.append({
                 "calling_frame_id": id(calling_frame), "code": full_calling_code,
                 "true_positions": [[start_line, start_offset], [end_line, end_offset]],
-                "relative_positions": [relative_start_position, relative_start_position + len(calling_code_snippet)]
+                "relative_positions": [start_offset, start_offset + len(calling_code_snippet)]
             })
         else:
-            # true positions
-            positions = inspect.getframeinfo(calling_frame).positions
-            start_line = positions.lineno
-            start_offset = positions.col_offset
-            end_line = positions.end_lineno
-            end_offset = positions.end_col_offset
+            relative_start_position = start_offset
+            relative_end_position = end_offset
+            for pos, diff in self.end_shift_holder:
+                if relative_start_position > pos:
+                    relative_start_position -= diff
+                if relative_end_position > pos:
+                    relative_end_position -= diff
 
-            # relative positions
-            full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
-            end_point = end_offset - len(self.script_lines[end_line - 1])
-            calling_code_snippet = full_calling_code[start_offset: end_point] if end_point \
-                else full_calling_code[start_offset:]
-            relative_start_position = self.function_caller[-1]["code"].find(calling_code_snippet)
             # print(full_calling_code, end_point, calling_code_snippet, relative_start_position)
             self.function_caller[-1].update({
                 "true_positions": [[start_line, start_offset], [end_line, end_offset]],
-                "relative_positions": [relative_start_position, relative_start_position + len(calling_code_snippet)]
+                "relative_positions": [relative_start_position, relative_end_position]
             })
 
-        # print("usercall", self.function_caller)
+        print("usercall", self.function_caller)
+        print(self.end_shift_holder)
 
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
         # print(id(frame))
         if self.function_caller and id(frame) == self.function_caller[-1]["calling_frame_id"]:
             self.function_caller.pop()
+            self.end_shift_holder = []
 
         self.interaction(frame, "step_line")
         # print("userline", self.function_caller)
@@ -109,20 +107,23 @@ class PGLogger(bdb.Bdb):
         """This function is called when a return trap is set here."""
         while self.function_caller and id(frame.f_back) != self.function_caller[-1]["calling_frame_id"]:
             self.function_caller.pop()
+            self.end_shift_holder = []
 
         if self.function_caller:
-            a = self.function_caller[-1].copy()
-            b = a["code"][a["relative_positions"][0]: a["relative_positions"][1]]
-            # print("b", b)
-            self.function_caller[-1]["code"] = a["code"].replace(b, str(return_value))
-            # print(self.function_caller)
-            self.function_caller[-1]["relative_positions"] = [self.function_caller[-1]["relative_positions"][0],
-                                                              self.function_caller[-1]["relative_positions"][0] + len(str(return_value))]
-            # print(self.function_caller)
+            last_caller = self.function_caller[-1]
+            code = last_caller["code"]
+            [pos_start, pos_end] = last_caller["relative_positions"]
+            ret = str(return_value)
+
+            last_caller["code"] = code.replace(code[pos_start: pos_end], ret)
+            last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
+
+            self.end_shift_holder.append([pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
-        # print("userreturn", self.function_caller)
+        print("userreturn", self.function_caller)
+        print(self.end_shift_holder)
 
     def user_exception(self, frame, exc_info):
         """This function is called if an exception occurs,

@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
+import webbrowser
 import json
 import os
 
@@ -53,4 +54,5 @@ class LocalServer(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Serving at port http://localhost:{PORT}/")
+    webbrowser.open(f"http://localhost:{PORT}/")
     HTTPServer(("", PORT), LocalServer).serve_forever()
