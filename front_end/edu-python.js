@@ -208,41 +208,53 @@ function updateOutput() {
     // Highlight calling function
     var caller_info = curEntry.caller_info
     if (caller_info) {
-        /*
-        tbl.find('td.cod:eq(' + (true_positions[0][0] - 1) + ')').html(
-            content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-            content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex)
-        );
-
-
-        for (var line = true_positions[0][0] + 1; line <= true_positions[1][0] - 1; line++) {
-            ...;
-        }
-        */
-
-        var evaluated_code = caller_info.code;
         var true_positions = caller_info.true_positions;
+        var startLine = true_positions[0][0];
         var startIndex = true_positions[0][1];
+        var endLine = true_positions[1][0]
         var endIndex = true_positions[1][1];
 
+        var evaluated_code = caller_info.code;
         var relativeStart = caller_info.relative_positions[0]
         var relativeEnd = caller_info.relative_positions[1]
 
-        var cell = tbl.find('td.cod:eq(' + (true_positions[0][0] - 1) + ')');
-        cell.css('background-color', callingLineColor);
-        var content = cell.text();
-        console.log("eval" + evaluated_code)
-        console.log(cell.text())
-        console.log(cell.html())
-        cell.html(content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-                  content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex) +
-                  '<br/><span style="font-style: italic; color: green;">' +
-                  evaluated_code.substring(0, relativeStart).replaceAll(" ", "&nbsp;") +
-                  '<span style="background-color: orange;">' +
-                  evaluated_code.substring(relativeStart, relativeEnd).replaceAll(" ", "&nbsp;") + '</span>' +
-                  evaluated_code.substring(relativeEnd).replaceAll(" ", "&nbsp;") + '</span>'
-        );
-        console.log(cell.html())
+        var cell, content, highlightContent;
+        
+        function highlightCellContent(content, start, end) {
+            return content.substring(0, start) + '<span style="background-color: orange;">' +
+                   content.substring(start, end) + '</span>' + content.substring(end);
+        }
+        
+        function addEvaluatedCode(code, start, end) {
+            const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
+
+            return '<br/><span style="font-style: italic; color: green;">' + escapeHtml(code.substring(0, start)) +
+                   '<span style="background-color: orange;">' + escapeHtml(code.substring(start, end)) + '</span>' +
+                   escapeHtml(code.substring(end)) + '</span>';
+        }
+
+        if (startLine === endLine) {
+            cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+            cell.css('background-color', callingLineColor)
+                .html(highlightCellContent(cell.text(), startIndex, endIndex) + 
+                      addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
+        } else {
+            cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+            content = cell.text();
+            cell.css('background-color', callingLineColor)
+                .html(highlightCellContent(content, startIndex, content.length));
+            
+            for (var line = startLine + 1; line <= endLine - 1; line++) {
+                cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
+                cell.css({'background-color': callingLineColor, 'border-top': '1px solid ' + callingLineColor})
+                    .html('<span style="background-color: orange;">' + cell.text() + '</span>');
+            }
+            
+            cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
+            cell.css({'background-color': callingLineColor, 'border-top': '1px solid ' + callingLineColor})
+                .html(highlightCellContent(cell.text(), 0, endIndex) +
+                      addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
+        }
     }
 
     if (!hasError && !isTerminated) {
