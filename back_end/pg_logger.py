@@ -115,6 +115,10 @@ class PGLogger(bdb.Bdb):
             b = a["code"][a["relative_positions"][0]: a["relative_positions"][1]]
             # print("b", b)
             self.function_caller[-1]["code"] = a["code"].replace(b, str(return_value))
+            # print(self.function_caller)
+            self.function_caller[-1]["relative_positions"] = [self.function_caller[-1]["relative_positions"][0],
+                                                              self.function_caller[-1]["relative_positions"][0] + len(str(return_value))]
+            # print(self.function_caller)
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
@@ -192,6 +196,8 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
+            import traceback; traceback.print_exc()
+
             trace_entry = {"event": "uncaught_exception"}
 
             if hasattr(exc, "lineno"):
