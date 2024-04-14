@@ -90,7 +90,7 @@ $(document).ready(function() {
 
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
-      processTrace(curTrace /* kinda dumb and redundant */, true);
+      processTrace(curTrace);
 
       // don't let the user submit answer when there's an error
       var hasError = false;

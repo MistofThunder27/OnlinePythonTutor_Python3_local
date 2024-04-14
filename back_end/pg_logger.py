@@ -47,7 +47,7 @@ class PGLogger(bdb.Bdb):
 
         self.script_lines = []
         self.function_caller = []
-        self.end_shift_holder = []  # TODO
+        self.end_shift_holder = []
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -84,24 +84,18 @@ class PGLogger(bdb.Bdb):
                 if relative_end_position > pos:
                     relative_end_position -= diff
 
-            # print(full_calling_code, end_point, calling_code_snippet, relative_start_position)
             self.function_caller[-1].update({
                 "true_positions": [[start_line, start_offset], [end_line, end_offset]],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
 
-        print("usercall", self.function_caller)
-        print(self.end_shift_holder)
-
     def user_line(self, frame):
         """This function is called when we stop or break at this line."""
-        # print(id(frame))
         if self.function_caller and id(frame) == self.function_caller[-1]["calling_frame_id"]:
             self.function_caller.pop()
             self.end_shift_holder = []
 
         self.interaction(frame, "step_line")
-        # print("userline", self.function_caller)
 
     def user_return(self, frame, return_value):
         """This function is called when a return trap is set here."""
@@ -115,22 +109,19 @@ class PGLogger(bdb.Bdb):
             [pos_start, pos_end] = last_caller["relative_positions"]
             ret = str(return_value)
 
-            last_caller["code"] = code.replace(code[pos_start: pos_end], ret)
+            last_caller["code"] = code.replace(code[pos_start: pos_end], ret, 1)
             last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
 
             self.end_shift_holder.append([pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
-        print("userreturn", self.function_caller)
-        print(self.end_shift_holder)
 
     def user_exception(self, frame, exc_info):
         """This function is called if an exception occurs,
         but only if we are to stop at or just below this level."""
         frame.f_locals["__exception__"] = exc_info[:2]
         self.interaction(frame, "exception")
-        # print("userexception", self.function_caller)
 
     # General interaction function
     def interaction(self, frame, event_type):

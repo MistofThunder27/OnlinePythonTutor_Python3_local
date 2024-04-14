@@ -35,7 +35,7 @@ var stackGrowsDown = true;
 /* colors - see edu-python.css */
 var lightLineColor = '#FFFFCC';
 var errorColor = '#F87D76';
-var callingLineColor = '#add8e6'
+var callingLineColor; var callingLineColor1 = '#add8e6'; var callingLineColor2 = '#90ee90';
 var visitedLineColor = '#3D58A2';
 
 var lightGray = "#cccccc";
@@ -78,7 +78,7 @@ function htmlspecialchars(str) {
   return str;
 }
 
-function processTrace(traceData, jumpToEnd) {
+function processTrace(traceData) {
   curTrace = traceData;
   curInstr = 0;
   $("#pyStdout").val(''); // delete any old output
@@ -94,23 +94,7 @@ function processTrace(traceData, jumpToEnd) {
       $("#errorOutput").html(htmlspecialchars(lastEntry.exception_msg));
       $("#errorOutput").show();
     }
-
-    if (jumpToEnd) {
-      // if there's an exception, then jump to the FIRST occurrence of
-      // that exception.  otherwise, jump to the very end of execution.
-      curInstr = curTrace.length - 1;
-
-      for (var i = 0; i < curTrace.length; i++) {
-        var curEntry = curTrace[i];
-        if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
-          curInstr = i;
-          break;
-        }
-      }
-    }
-
   }
-
   updateOutput();
 }
 
@@ -205,6 +189,8 @@ function updateOutput() {
                    '<span style="background-color: orange;">' + escapeHtml(code.substring(start, end)) + '</span>' +
                    escapeHtml(code.substring(end)) + '</span>';
         }
+
+        callingLineColor = curEntry.stack_locals.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
 
         var cell;
         if (startLine === endLine) {
