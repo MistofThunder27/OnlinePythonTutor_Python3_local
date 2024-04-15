@@ -62,7 +62,7 @@ function assert(cond) {
 
 // taken from http://www.toao.net/32-my-htmlspecialchars-function-for-javascript
 function htmlspecialchars(str) {
-  if (typeof(str) == "string") {
+  if (typeof (str) == "string") {
     str = str.replace(/&/g, "&amp;"); /* must do &amp; first */
 
     // ignore these for now ...
@@ -114,16 +114,15 @@ function updateOutput() {
 
   // to be user-friendly, if we're on the LAST instruction, print "Program has terminated"
   // and DON'T highlight any lines of code in the code display
-  if (curInstr == (totalInstrs-1)) {
+  if (curInstr == (totalInstrs - 1)) {
     if (instrLimitReached) {
       $("#vcrControls #curInstr").html("Instruction limit reached");
     }
     else {
       $("#vcrControls #curInstr").html("Program has terminated");
     }
-  }
-  else {
-    $("#vcrControls #curInstr").html("About to do step " + (curInstr + 1) + " of " + (totalInstrs-1));
+  } else {
+    $("#vcrControls #curInstr").html("About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1));
   }
 
   $("#vcrControls #jmpFirstInstr").attr("disabled", false);
@@ -135,7 +134,7 @@ function updateOutput() {
     $("#vcrControls #jmpFirstInstr").attr("disabled", true);
     $("#vcrControls #jmpStepBack").attr("disabled", true);
   }
-  if (curInstr == (totalInstrs-1)) {
+  if (curInstr == (totalInstrs - 1)) {
     $("#vcrControls #jmpLastInstr").attr("disabled", true);
     $("#vcrControls #jmpStepFwd").attr("disabled", true);
   }
@@ -150,81 +149,79 @@ function updateOutput() {
     $("#errorOutput").hide();
   }
 
-  // render code output:
-  var curLine = curEntry.line
-  if (curLine) {
-    var tbl = $("table#pyCodeOutput");
-    tbl.find('td.cod').css('background-color', '');
+  // render code output: --
+  var tbl = $("table#pyCodeOutput");
+  tbl.find('td.cod').css('background-color', '');
 
-    // reset then set visited lines:
-    tbl.find('td.lineNo').css({'color': '', 'font-weight': ''});
-    curEntry.visited_lines.forEach(function(line) {
-        tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({'color': visitedLineColor, 'font-weight': 'bold'});
-    });
+  // reset then set visited lines:
+  tbl.find('td.lineNo').css({ 'color': '', 'font-weight': '' });
+  curEntry.visited_lines.forEach(function (line) {
+    tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({ 'color': visitedLineColor, 'font-weight': 'bold' });
+  });
 
-    // clean out any previous highlighting/duplication:
-    for (var i = 0; i < curTrace.length - 1; i++) {
-        var cell = tbl.find('td.cod:eq(' + (curTrace[i].line - 1) + ')')
-        cell.html(cell.html()
-                  .replace(/<br\/?>.*$/g, '')
-                  .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-                  .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-        );
+  // clean out any previous highlighting/duplication:
+  for (var i = 0; i < curTrace.length - 1; i++) {
+    var cell = tbl.find('td.cod:eq(' + (curTrace[i].line - 1) + ')')
+    cell.html(cell.html()
+      .replace(/<br\/?>.*$/g, '')
+      .replace(/<span.*?>(.*?)<\/span>/g, '$1')
+      .replace(/<span.*?>(.*?)<\/span>/g, '$1')
+    );
+  }
+
+  // Highlight and duplicate calling function:
+  var caller_info = curEntry.caller_info
+  if (caller_info) {
+    var { true_positions: [[startLine, startIndex], [endLine, endIndex]],
+      code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
+
+    function highlightCellContent(content, start, end) {
+      return content.substring(0, start) + '<span style="background-color: orange;">' +
+        content.substring(start, end) + '</span>' + content.substring(end);
     }
 
-    // Highlight and duplicate calling function:
-    var caller_info = curEntry.caller_info
-    if (caller_info) {
-        var {true_positions: [[startLine, startIndex], [endLine, endIndex]],
-             code: evaluated_code, relative_positions: [relativeStart, relativeEnd]} = caller_info;
-
-        function highlightCellContent(content, start, end) {
-            return content.substring(0, start) + '<span style="background-color: orange;">' +
-                   content.substring(start, end) + '</span>' + content.substring(end);
-        }
-
-        function addEvaluatedCode(code, start, end) {
-            const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
-            return '<br/><span style="font-style: italic; color: green;">' + escapeHtml(code.substring(0, start)) +
-                   '<span style="background-color: orange;">' + escapeHtml(code.substring(start, end)) + '</span>' +
-                   escapeHtml(code.substring(end)) + '</span>';
-        }
-
-        callingLineColor = curEntry.stack_locals.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-
-        var cell;
-        if (startLine === endLine) {
-            cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-            cell.css('background-color', callingLineColor)
-                .html(highlightCellContent(cell.text(), startIndex, endIndex) +
-                      addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
-        } else {
-            cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-            var content = cell.text();
-            cell.css('background-color', callingLineColor)
-                .html(highlightCellContent(content, startIndex, content.length));
-
-            for (var line = startLine + 1; line <= endLine - 1; line++) {
-                cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
-                cell.css('background-color', callingLineColor)
-                    .html('<span style="background-color: orange;">' + cell.text() + '</span>');
-            }
-
-            cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
-            cell.css('background-color', callingLineColor)
-                .html(highlightCellContent(cell.text(), 0, endIndex) +
-                      addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
-        }
+    function addEvaluatedCode(code, start, end) {
+      const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
+      return '<br/><span style="font-style: italic; color: green;">' + escapeHtml(code.substring(0, start)) +
+        '<span style="background-color: orange;">' + escapeHtml(code.substring(start, end)) + '</span>' +
+        escapeHtml(code.substring(end)) + '</span>';
     }
 
-    // Highlight curLine:
-    if (hasError) {
-        tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', errorColor);
+    callingLineColor = curEntry.stack_locals.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+
+    var cell;
+    if (startLine === endLine) {
+      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+      cell.css('background-color', callingLineColor)
+        .html(highlightCellContent(cell.text(), startIndex, endIndex) +
+          addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
     } else {
-        // if instrLimitReached, then treat like a normal non-terminating line
-        var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
-        tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', isTerminated ? lightBlue : lightLineColor);
+      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+      var content = cell.text();
+      cell.css('background-color', callingLineColor)
+        .html(highlightCellContent(content, startIndex, content.length));
+
+      for (var line = startLine + 1; line <= endLine - 1; line++) {
+        cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
+        cell.css('background-color', callingLineColor)
+          .html('<span style="background-color: orange;">' + cell.text() + '</span>');
+      }
+
+      cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
+      cell.css('background-color', callingLineColor)
+        .html(highlightCellContent(cell.text(), 0, endIndex) +
+          addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
     }
+  }
+
+  // Highlight curLine:
+  var curLine = curEntry.line
+  if (hasError) {
+    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', errorColor);
+  } else {
+    // if instrLimitReached, then treat like a normal non-terminating line
+    var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
+    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', isTerminated ? lightBlue : lightLineColor);
   }
 
   // render stdout:
@@ -236,16 +233,13 @@ function updateOutput() {
   // scroll to bottom, tho:
   $("#pyStdout").scrollTop($("#pyStdout").attr('scrollHeight'));
 
-
   // finally, render all the data structures!!!
   if (useJsPlumbRendering) {
     renderDataStructuresVersion2(curEntry, "#dataViz");
-  }
-  else {
+  } else {
     renderDataStructuresVersion1(curEntry, "#dataViz");
   }
 }
-
 
 // The ORIGINAL "1.0" version of renderDataStructures, which renders
 // variables and values INLINE within each stack frame without any
@@ -254,113 +248,50 @@ function updateOutput() {
 // This version was originally created in January 2010
 function renderDataStructuresVersion1(curEntry, vizDiv) {
   // render data structures:
-
   $(vizDiv).empty(); // jQuery empty() is better than .html('')
 
   // render locals on stack:
   if (curEntry.stack_locals != undefined) {
-    $.each(curEntry.stack_locals, function (i, frame) {
+    $.each(curEntry.stack_locals, function (_, frame) {
       var funcName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
-      var localVars = frame[1];
+      var localVars = Object.entries(frame[1]);
 
       $(vizDiv).append('<div class="vizFrame">Local variables for <span style="font-family: Andale mono, monospace;">' + funcName + '</span>:</div>');
 
-      // render locals in alphabetical order for tidiness:
-      var orderedVarnames = [];
-
-      // use plain ole' iteration rather than jQuery $.each() since
-      // the latter breaks when a variable is named "length"
-      for (varname in localVars) {
-        orderedVarnames.push(varname);
-      }
-      orderedVarnames.sort();
-
-      if (orderedVarnames.length > 0) {
+      if (localVars.length > 0) {
         $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
         var tbl = $("#pyOutputPane table:last");
-        $.each(orderedVarnames, function(i, varname) {
-          var val = localVars[varname];
+
+        for (var i in localVars) {
+          var [varname, val] = localVars[i];
           tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
           var curTr = tbl.find('tr:last');
           if (varname == '__return__') {
             curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
-          }
-          else {
+          } else {
             curTr.find("td.varname").html(varname);
           }
           renderData(val, curTr.find("td.val"), false);
-        });
+        };
 
         tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
         tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
-      }
-      else {
+      } else {
         $(vizDiv + " .vizFrame:last").append(' <i>none</i>');
       }
     });
   }
 
-
   // render globals LAST:
-
   $(vizDiv).append('<div class="vizFrame">Global variables:</div>');
 
-  var nonEmptyGlobals = false;
-  var curGlobalFields = {};
-  if (curEntry.globals != undefined) {
-    // use plain ole' iteration rather than jQuery $.each() since
-    // the latter breaks when a variable is named "length"
-    for (varname in curEntry.globals) {
-      curGlobalFields[varname] = true;
-      nonEmptyGlobals = true;
-    }
-  }
-
-  if (nonEmptyGlobals) {
+  var globalVars = Object.entries(curEntry.globals)
+  if (globalVars.length > 0) {
     $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
-
-    // render all global variables IN THE ORDER they were created by the program,
-    // in order to ensure continuity:
-    //
-    // TODO: in the future, the back-end can actually pre-compute this
-    // list so that the front-end doesn't have to do any extra work!
-
-    var orderedGlobals = []
-
-    // iterating over ALL instructions (could be SLOW if not for our optimization below)
-    for (var i = 0; i <= curInstr; i++) {
-      // some entries (like for exceptions) don't have GLOBALS
-      if (curTrace[i].globals == undefined) continue;
-
-      // use plain ole' iteration rather than jQuery $.each() since
-      // the latter breaks when a variable is named "length"
-      for (varname in curTrace[i].globals) {
-        // eliminate duplicates (act as an ordered set)
-        if ($.inArray(varname, orderedGlobals) == -1) {
-          orderedGlobals.push(varname);
-          curGlobalFields[varname] = undefined; // 'unset it'
-        }
-      }
-
-      var earlyStop = true;
-      // as an optimization, STOP as soon as you've found everything in curGlobalFields:
-      for (o in curGlobalFields) {
-        if (curGlobalFields[o] != undefined) {
-          earlyStop = false;
-          break;
-        }
-      }
-
-      if (earlyStop) {
-        break;
-      }
-    }
-
     var tbl = $("#pyOutputPane table:last");
 
-    // iterate IN ORDER (it's possible that not all vars are in curEntry.globals)
-    $.each(orderedGlobals, function(i, varname) {
-      var val = curEntry.globals[varname];
+    for (var i in globalVars) {
+      var [varname, val] = globalVars[i]
       // (use '!==' to do an EXACT match against undefined)
       if (val !== undefined) { // might not be defined at this line, which is OKAY!
         tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
@@ -368,17 +299,14 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
         curTr.find("td.varname").html(varname);
         renderData(val, curTr.find("td.val"), false);
       }
-    });
+    }
 
     tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
     tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
+  } else {
+    $(vizDiv + " .vizFrame:last").append('<i>none</i>');
   }
-  else {
-    $(vizDiv + " .vizFrame:last").append(' <i>none</i>');
-  }
-
 }
-
 
 // make sure varname doesn't contain any weird
 // characters that are illegal for CSS ID's ...
@@ -409,26 +337,22 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   // weird mis-behavior!!!
   jsPlumb.reset();
 
-
   $(vizDiv).empty(); // jQuery empty() is better than .html('')
-
 
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
   $(vizDiv).html('<table id="stackHeapTable"><tr><td id="stack_td"><div id="stack"></div></td><td id="heap_td"><div id="heap"></div></td></tr></table>');
-
   $(vizDiv + " #stack").append('<div id="stackHeader">Stack grows <select id="stack_growth_selector"><option>down</option><option>up</option></select></div>');
 
   // select a state based on stackGrowsDown global variable:
   if (stackGrowsDown) {
     $("#stack_growth_selector").val('down');
-  }
-  else {
+  } else {
     $("#stack_growth_selector").val('up');
   }
 
   // add trigger
-  $("#stack_growth_selector").change(function() {
+  $("#stack_growth_selector").change(function () {
     var v = $("#stack_growth_selector").val();
     if (v == 'down') {
       stackGrowsDown = true;
@@ -439,7 +363,6 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
     updateOutput(); // refresh display!!!
   });
-
 
   var nonEmptyGlobals = false;
   var curGlobalFields = {};
@@ -506,7 +429,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
       var tbl = $(vizDiv + " #global_table");
       // iterate IN ORDER (it's possible that not all vars are in curEntry.globals)
-      $.each(orderedGlobals, function(i, varname) {
+      $.each(orderedGlobals, function (i, varname) {
         var val = curEntry.globals[varname];
         // (use '!==' to do an EXACT match against undefined)
         if (val !== undefined) { // might not be defined at this line, which is OKAY!
@@ -541,7 +464,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     var localVars = frame[1];
 
     // the stackFrame div's id is simply its index ("stack<index>")
-    var divClass = (i==0) ? "stackFrame topStackFrame" : "stackFrame";
+    var divClass = (i == 0) ? "stackFrame topStackFrame" : "stackFrame";
     var divID = "stack" + i;
     $(vizDiv + " #stack").append('<div class="' + divClass + '" id="' + divID + '"></div>');
 
@@ -574,7 +497,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
         orderedVarnames.push('__return__');
       }
 
-      $.each(orderedVarnames, function(i, varname) {
+      $.each(orderedVarnames, function (i, varname) {
         var val = localVars[varname];
 
         // special treatment for displaying return value and indicating
@@ -674,7 +597,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     // this is straightforward: just go through globals first and then
     // each stack frame in order :)
 
-    $.each(orderedGlobals, function(i, varname) {
+    $.each(orderedGlobals, function (i, varname) {
       var val = curEntry.globals[varname];
 
       // primitive types are already rendered in the stack
@@ -684,7 +607,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     });
 
     if (curEntry.stack_locals) {
-      $.each(curEntry.stack_locals, function(i, frame) {
+      $.each(curEntry.stack_locals, function (i, frame) {
         var localVars = frame[1];
 
         var orderedVarnames = [];
@@ -696,7 +619,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
         }
         orderedVarnames.sort();
 
-        $.each(orderedVarnames, function(i2, varname) {
+        $.each(orderedVarnames, function (i2, varname) {
           var val = localVars[varname];
 
           // primitive types are already rendered in the stack
@@ -739,7 +662,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
         orderedVarnames.reverse(); // so that we can iterate backwards
 
-        $.each(orderedVarnames, function(i, varname) {
+        $.each(orderedVarnames, function (i, varname) {
           var val = localVars[varname];
 
           // primitive types are already rendered in the stack
@@ -752,7 +675,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
   }
 
-  
+
   // prepend heap header after all the dust settles:
   $(vizDiv + ' #heap').prepend('<div id="heapHeader">Heap</div>');
 
@@ -760,12 +683,12 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   // finally connect stack variables to heap objects via connectors
   for (varID in connectionEndpointIDs) {
     var valueID = connectionEndpointIDs[varID];
-    jsPlumb.connect({source: varID, target: valueID});
+    jsPlumb.connect({ source: varID, target: valueID });
   }
 
 
   // add an on-click listener to all stack frame headers
-  $(".stackFrameHeader").click(function() {
+  $(".stackFrameHeader").click(function () {
     var enclosingStackFrame = $(this).parent();
     var enclosingStackFrameID = enclosingStackFrame.attr('id');
 
@@ -781,8 +704,8 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
       // if this connector starts in the selected stack frame ...
       if (stackFrameDiv.attr('id') == enclosingStackFrameID) {
         // then HIGHLIGHT IT!
-        c.setPaintStyle({lineWidth:2, strokeStyle: darkBlue});
-        c.endpoints[0].setPaintStyle({fillStyle: darkBlue});
+        c.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
+        c.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
         c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
 
         // ... and move it to the VERY FRONT
@@ -790,8 +713,8 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
       }
       else {
         // else unhighlight it
-        c.setPaintStyle({lineWidth:1, strokeStyle: lightGray});
-        c.endpoints[0].setPaintStyle({fillStyle: lightGray});
+        c.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
+        c.endpoints[0].setPaintStyle({ fillStyle: lightGray });
         c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
         $(c.canvas).css("z-index", 0);
       }
@@ -834,7 +757,6 @@ function getObjectID(obj) {
     return obj[1];
   }
 }
-
 
 // render the JS data object obj inside of jDomElt,
 // which is a jQuery wrapped DOM object
@@ -887,7 +809,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         var tbl = jDomElt.children('table');
         var headerTr = tbl.find('tr:first');
         var contentTr = tbl.find('tr:last');
-        jQuery.each(obj, function(ind, val) {
+        jQuery.each(obj, function (ind, val) {
           if (ind < 2) return; // skip 'LIST' tag and ID entry
 
           // add a new column and then pass in that newly-added column
@@ -911,7 +833,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         var tbl = jDomElt.children('table');
         var headerTr = tbl.find('tr:first');
         var contentTr = tbl.find('tr:last');
-        jQuery.each(obj, function(ind, val) {
+        jQuery.each(obj, function (ind, val) {
           if (ind < 2) return; // skip 'TUPLE' tag and ID entry
 
           // add a new column and then pass in that newly-added column
@@ -948,7 +870,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
           numCols += 1;
         }
 
-        jQuery.each(obj, function(ind, val) {
+        jQuery.each(obj, function (ind, val) {
           if (ind < 2) return; // skip 'SET' tag and ID entry
 
           if (((ind - 2) % numCols) == 0) {
@@ -970,7 +892,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.append('<div class="typeLabel">dict' + idStr + ':</div>');
         jDomElt.append('<table class="dictTbl"></table>');
         var tbl = jDomElt.children('table');
-        $.each(obj, function(ind, kvPair) {
+        $.each(obj, function (ind, kvPair) {
           if (ind < 2) return; // skip 'DICT' tag and ID entry
 
           tbl.append('<tr class="dictEntry"><td class="dictKey"></td><td class="dictVal"></td></tr>');
@@ -989,7 +911,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       if (obj.length > 3) {
         jDomElt.append('<table class="instTbl"></table>');
         var tbl = jDomElt.children('table');
-        $.each(obj, function(ind, kvPair) {
+        $.each(obj, function (ind, kvPair) {
           if (ind < 3) return; // skip type tag, class name, and ID entry
 
           tbl.append('<tr class="instEntry"><td class="instKey"></td><td class="instVal"></td></tr>');
@@ -1019,7 +941,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       if (obj.length > 4) {
         jDomElt.append('<table class="classTbl"></table>');
         var tbl = jDomElt.children('table');
-        $.each(obj, function(ind, kvPair) {
+        $.each(obj, function (ind, kvPair) {
           if (ind < 4) return; // skip type tag, class name, ID, and superclasses entries
 
           tbl.append('<tr class="classEntry"><td class="classKey"></td><td class="classVal"></td></tr>');
@@ -1070,7 +992,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 }
 
 
-String.prototype.rtrim = function() {
+String.prototype.rtrim = function () {
   return this.replace(/\s*$/g, "");
 }
 
@@ -1079,7 +1001,7 @@ function renderPyCodeOutput(codeStr) {
   tbl.empty(); // jQuery empty() is better than .html('')
   var lines = codeStr.rtrim().split('\n');
 
-  $.each(lines, function(i, cod) {
+  $.each(lines, function (i, cod) {
     var lineNo = i + 1;
     var htmlCod = htmlspecialchars(cod);
 
@@ -1093,24 +1015,24 @@ function renderPyCodeOutput(codeStr) {
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
-  $("#jmpFirstInstr").click(function() {
+  $("#jmpFirstInstr").click(function () {
     curInstr = 0;
     updateOutput();
   });
 
-  $("#jmpLastInstr").click(function() {
+  $("#jmpLastInstr").click(function () {
     curInstr = curTrace.length - 1;
     updateOutput();
   });
 
-  $("#jmpStepBack").click(function() {
+  $("#jmpStepBack").click(function () {
     if (curInstr > 0) {
       curInstr -= 1;
       updateOutput();
     }
   });
 
-  $("#jmpStepFwd").click(function() {
+  $("#jmpStepFwd").click(function () {
     if (curInstr < curTrace.length - 1) {
       curInstr += 1;
       updateOutput();
@@ -1125,22 +1047,22 @@ function eduPythonCommonInit() {
 
 
   // set some sensible jsPlumb defaults
-  jsPlumb.Defaults.Endpoint = ["Dot", {radius:3}];
+  jsPlumb.Defaults.Endpoint = ["Dot", { radius: 3 }];
   //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
-  jsPlumb.Defaults.EndpointStyle = {fillStyle: lightGray};
+  jsPlumb.Defaults.EndpointStyle = { fillStyle: lightGray };
   jsPlumb.Defaults.Anchors = ["RightMiddle", "LeftMiddle"];
-  jsPlumb.Defaults.Connector = [ "Bezier", { curviness:15 }]; /* too much 'curviness' causes lines to run together */
-  jsPlumb.Defaults.PaintStyle = {lineWidth:1, strokeStyle: lightGray};
+  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }]; /* too much 'curviness' causes lines to run together */
+  jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
 
   // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [[ "Arrow", { length: 14, width:10, foldback:0.55, location:0.35 }]]
+  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]]
 
-  jsPlumb.Defaults.EndpointHoverStyle = {fillStyle: pinkish};
-  jsPlumb.Defaults.HoverPaintStyle = {lineWidth:2, strokeStyle: pinkish};
+  jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
+  jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
 
 
   // set keyboard event listeners ...
-  $(document).keydown(function(k) {
+  $(document).keydown(function (k) {
     // ONLY capture keys if we're in 'visualize code' mode:
     if (appMode == 'visualize') {
       if (k.keyCode == 37) { // left arrow
@@ -1161,21 +1083,20 @@ function eduPythonCommonInit() {
   // redraw everything on window resize so that connectors are in the
   // right place
   // TODO: can be SLOW on older browsers!!!
-  $(window).resize(function() {
+  $(window).resize(function () {
     if (appMode == 'visualize') {
       updateOutput();
     }
   });
 
-  $("#classicModeCheckbox").click(function() {
+  $("#classicModeCheckbox").click(function () {
     if (appMode == 'visualize') {
       updateOutput();
     }
   });
-
 
   // log a generic AJAX error handler
-  $(document).ajaxError(function() {
+  $(document).ajaxError(function () {
     alert("Uh oh, the server returned an error, boo :(  Please reload the page and try executing a different Python script.");
   });
 
