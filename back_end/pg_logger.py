@@ -117,33 +117,8 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type):
-        # each element is a pair of (function name, ENCODED locals dict)
-        encoded_stack_locals = []
-
-        # climb up until you find "<module>", which is (hopefully) the global scope
-        cur_frame = final_frame = frame
-        while True:
-            cur_name = cur_frame.f_code.co_name
-            if cur_name == "<module>":
-                break
-
-            # special case for lambdas - grab their line numbers too
-            if cur_name == "<lambda>":
-                cur_name = f"lambda on line {cur_frame.f_code.co_firstlineno}"
-            elif cur_name == "":
-                cur_name = "unnamed function"
-
-            encoded_stack_locals.append((
-                cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
-                           k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}}
-            ))
-            cur_frame = cur_frame.f_back
-
-        trace_entry = {"line": final_frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
-                       "func_name": final_frame.f_code.co_name,
-                       "globals": {k: encode(v, set(), self.ignore_id) for k, v in final_frame.f_globals.items() if
-                                   k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}},
-                       "stack_locals": encoded_stack_locals, "stdout": final_frame.f_globals["__stdout__"].getvalue()}
+        trace_entry = {"line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
+                       "func_name": frame.f_code.co_name, "stdout": frame.f_globals["__stdout__"].getvalue()}
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -155,7 +130,37 @@ class PGLogger(bdb.Bdb):
             trace_entry["exception_msg"] = f"{exc[0].__name__}: {exc[1]}"
 
         # Added after as currently highlighted line has not been executed yet
-        self.visited_lines.add(final_frame.f_lineno)
+        self.visited_lines.add(frame.f_lineno)
+
+        # each element is a pair of (function name, ENCODED locals dict)
+        encoded_variables = []
+
+        # climb up until you find "<module>", which is (hopefully) the global scope
+        cur_frame = frame
+        while True:
+            cur_name = cur_frame.f_code.co_name
+            if cur_name == "<module>":
+                break
+
+            # special case for lambdas - grab their line numbers too
+            if cur_name == "<lambda>":
+                cur_name = f"lambda on line {cur_frame.f_code.co_firstlineno}"
+            elif cur_name == "":
+                cur_name = "unnamed function"
+
+            encoded_variables.append(
+                (cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
+                            k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}})
+            )
+            cur_frame = cur_frame.f_back
+
+        encoded_variables.append(
+            ("global", {k: encode(v, set(), self.ignore_id) for k, v in frame.f_globals.items() if
+                        k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
+        )
+
+        trace_entry["encoded_variables"] = encoded_variables[::-1]
+
         self.trace.append(trace_entry)
 
         if len(self.trace) >= self.max_executed_lines:

@@ -187,7 +187,7 @@ function updateOutput() {
         escapeHtml(code.substring(end)) + '</span>';
     }
 
-    callingLineColor = curEntry.stack_locals.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    callingLineColor = curEntry.encoded_variables.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
 
     var cell;
     if (startLine === endLine) {
@@ -250,19 +250,19 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
   // render data structures:
   $(vizDiv).empty(); // jQuery empty() is better than .html('')
 
-  // render locals on stack:
-  if (curEntry.stack_locals != undefined) {
-    $.each(curEntry.stack_locals, function (_, frame) {
-      var funcName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
-      var localVars = Object.entries(frame[1]);
+  // render variables:
+  if (curEntry.encoded_variables != undefined) {
+    $.each(curEntry.encoded_variables, function (_, frame) {
+      var scopeName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
+      var encodedVars = Object.entries(frame[1]);
 
-      $(vizDiv).append('<div class="vizFrame">Local variables for <span style="font-family: Andale mono, monospace;">' + funcName + '</span>:</div>');
+      $(vizDiv).append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + scopeName + '</span> variables:</div>');
 
-      if (localVars.length > 0) {
+      if (encodedVars.length > 0) {
         $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
         var tbl = $("#pyOutputPane table:last");
 
-        $.each(localVars, function(_, entry) {
+        $.each(encodedVars, function (_, entry) {
           var [varname, val] = entry;
           tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
           var curTr = tbl.find('tr:last');
@@ -281,45 +281,6 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
       }
     });
   }
-
-  // render globals LAST:
-  $(vizDiv).append('<div class="vizFrame">Global variables:</div>');
-
-  var globalVars = Object.entries(curEntry.globals)
-  if (globalVars.length > 0) {
-    $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
-    var tbl = $("#pyOutputPane table:last");
-
-    $.each(globalVars, function(_, entry) {
-      var [varname, val] = entry
-      // (use '!==' to do an EXACT match against undefined)
-      if (val !== undefined) { // might not be defined at this line, which is OKAY!
-        tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
-        var curTr = tbl.find('tr:last');
-        curTr.find("td.varname").html(varname);
-        renderData(val, curTr.find("td.val"), false);
-      }
-    });
-
-    tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
-    tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
-  } else {
-    $(vizDiv + " .vizFrame:last").append('<i>none</i>');
-  }
-}
-
-// make sure varname doesn't contain any weird
-// characters that are illegal for CSS ID's ...
-//
-// I know for a fact that iterator tmp variables named '_[1]'
-// are NOT legal names for CSS ID's.
-// I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
-//
-// TODO: what other characters are illegal???
-var lbRE = new RegExp('\\[|{|\\(|<', 'g');
-var rbRE = new RegExp('\\]|}|\\)|>', 'g');
-function varnameToCssID(varname) {
-  return varname.replace(lbRE, 'LeftB_').replace(rbRE, '_RightB');
 }
 
 // The "2.0" version of renderDataStructures, which renders variables in
@@ -367,48 +328,16 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   // Value: CSS ID of the div element representing the value rendered in the heap
   connectionEndpointIDs = {};
 
-  var globalVars = Object.entries(curEntry.globals);
-  // nested helper functions are helpful!
-  function renderGlobals() {
-    // render global variables:
-    if (globalVars.length > 0) {
-      $(vizDiv + " #stack").append('<div class="stackFrame" id="globals"><div id="globals_header" class="stackFrameHeader inactiveStackFrameHeader">Global variables</div></div>');
-      $(vizDiv + " #stack #globals").append('<table class="stackFrameVarTable" id="global_table"></table>');
-      var tbl = $(vizDiv + " #global_table");
-
-      // iterate IN ORDER (it's possible that not all vars are in curEntry.globals)
-      $.each(globalVars, function (_, entry) {
-        var [varname, val] = entry;
-        // (use '!==' to do an EXACT match against undefined)
-        if (val !== undefined) { // might not be defined at this line, which is OKAY!
-          tbl.append('<tr><td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td></tr>');
-          var curTr = tbl.find('tr:last');
-
-          // render primitives inline
-          if (isPrimitiveType(val)) {
-            renderData(val, curTr.find("td.stackFrameValue"), false);
-          } else {
-            // add a stub so that we can connect it with a connector later.
-            // IE needs this div to be NON-EMPTY in order to properly
-            // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
-
-            // make sure varname doesn't contain any weird
-            // characters that are illegal for CSS ID's ...
-            var varDivID = 'global__' + varnameToCssID(varname);
-            curTr.find("td.stackFrameValue").append('<div id="' + varDivID + '">&nbsp;</div>');
-
-            assert(connectionEndpointIDs[varDivID] === undefined);
-            var heapObjID = 'heap_object_' + getObjectID(val);
-            connectionEndpointIDs[varDivID] = heapObjID;
-          }
-        }
-      });
+  // first render the vars
+  var encodedVarsList = curEntry.encoded_variables
+  if (encodedVarsList) {
+    if (!stackGrowsDown) {
+      encodedVarsList.reverse();
     }
-  }
 
-  function renderStackFrame(frame) {
-    var funcName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
-    var localVars = Object.entries(frame[1]);
+    $.each(encodedVarsList, function (_, frame) {
+      var funcName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
+    var encodedVars = Object.entries(frame[1]);
 
     // the stackFrame div's id is simply its index ("stack<index>")
     var divClass = (i == 0) ? "stackFrame topStackFrame" : "stackFrame";
@@ -418,21 +347,12 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     var headerDivID = "stack_header" + i;
     $(vizDiv + " #stack #" + divID).append('<div id="' + headerDivID + '" class="stackFrameHeader inactiveStackFrameHeader">' + funcName + '</div>');
 
-    if (localVars.length > 0) {
+    if (encodedVars.length > 0) {
       var tableID = divID + '_table';
       $(vizDiv + " #stack #" + divID).append('<table class="stackFrameVarTable" id="' + tableID + '"></table>');
       var tbl = $(vizDiv + " #" + tableID);
 
-      /* Assume return is always last to appear
-      // put return value at the VERY END (if it exists)
-      var retvalIdx = $.inArray('__return__', orderedVarnames); // more robust than indexOf()
-      if (retvalIdx > -1) {
-        orderedVarnames.splice(retvalIdx, 1);
-        orderedVarnames.push('__return__');
-      }
-      */
-
-      $.each(localVars, function (_, entry) {
+      $.each(encodedVars, function (_, entry) {
         var [varname, val] = entry;
 
         // special treatment for displaying return value and indicating
@@ -460,7 +380,16 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
           // make sure varname doesn't contain any weird
           // characters that are illegal for CSS ID's ...
-          var varDivID = divID + '__' + varnameToCssID(varname);
+          //
+          // I know for a fact that iterator tmp variables named '_[1]'
+          // are NOT legal names for CSS ID's.
+          // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
+          //
+          // TODO: what other characters are illegal???
+          var lbRE = new RegExp('\\[|{|\\(|<', 'g');
+          var rbRE = new RegExp('\\]|}|\\)|>', 'g');
+
+          var varDivID = divID + '__' + varname.replace(lbRE, 'LeftB_').replace(rbRE, '_RightB');
           curTr.find("td.stackFrameValue").append('<div id="' + varDivID + '">&nbsp;</div>');
 
           assert(connectionEndpointIDs[varDivID] === undefined);
@@ -469,26 +398,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
         }
       });
     }
-  }
-
-  // first render the stack (and global vars)
-  if (stackGrowsDown) {
-    renderGlobals();
-    if (curEntry.stack_locals) {
-      for (var i = curEntry.stack_locals.length - 1; i >= 0; i--) {
-        var frame = curEntry.stack_locals[i];
-        renderStackFrame(frame);
-      }
     }
-  }
-  else {
-    if (curEntry.stack_locals) {
-      for (var i = 0; i < curEntry.stack_locals.length; i++) {
-        var frame = curEntry.stack_locals[i];
-        renderStackFrame(frame);
-      }
-    }
-    renderGlobals();
   }
 
   // then render the heap
@@ -560,8 +470,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
       });
     }
 
-  }
-  else {
+  } else {
     // to accomplish this goal, go BACKWARDS starting at globals and
     // crawl up the stack, PREPENDING elements to the front of #heap
 
@@ -1031,4 +940,3 @@ function eduPythonCommonInit() {
   });
 
 }
-
