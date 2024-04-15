@@ -262,8 +262,8 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
         $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
         var tbl = $("#pyOutputPane table:last");
 
-        for (var i in localVars) {
-          var [varname, val] = localVars[i];
+        $.each(localVars, function(_, entry) {
+          var [varname, val] = entry;
           tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
           var curTr = tbl.find('tr:last');
           if (varname == '__return__') {
@@ -272,7 +272,7 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
             curTr.find("td.varname").html(varname);
           }
           renderData(val, curTr.find("td.val"), false);
-        };
+        });
 
         tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
         tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
@@ -290,8 +290,8 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
     $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
     var tbl = $("#pyOutputPane table:last");
 
-    for (var i in globalVars) {
-      var [varname, val] = globalVars[i]
+    $.each(globalVars, function(_, entry) {
+      var [varname, val] = entry
       // (use '!==' to do an EXACT match against undefined)
       if (val !== undefined) { // might not be defined at this line, which is OKAY!
         tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
@@ -299,7 +299,7 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
         curTr.find("td.varname").html(varname);
         renderData(val, curTr.find("td.val"), false);
       }
-    }
+    });
 
     tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
     tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
@@ -360,77 +360,25 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     else {
       stackGrowsDown = false;
     }
-
     updateOutput(); // refresh display!!!
   });
-
-  var nonEmptyGlobals = false;
-  var curGlobalFields = {};
-  if (curEntry.globals != undefined) {
-    // use plain ole' iteration rather than jQuery $.each() since
-    // the latter breaks when a variable is named "length"
-    for (varname in curEntry.globals) {
-      curGlobalFields[varname] = true;
-      nonEmptyGlobals = true;
-    }
-  }
-
-  // render all global variables IN THE ORDER they were created by the program,
-  // in order to ensure continuity:
-  var orderedGlobals = []
-
-  if (nonEmptyGlobals) {
-    // iterating over ALL instructions up to curInstr
-    // (could be SLOW if not for our optimization below)
-    //
-    // TODO: this loop still seems like it can be optimized further if necessary
-    for (var i = 0; i <= curInstr; i++) {
-      // some entries (like for exceptions) don't have GLOBALS
-      if (curTrace[i].globals == undefined) continue;
-
-      // use plain ole' iteration rather than jQuery $.each() since
-      // the latter breaks when a variable is named "length"
-      for (varname in curTrace[i].globals) {
-        // eliminate duplicates (act as an ordered set)
-        if ($.inArray(varname, orderedGlobals) == -1) {
-          orderedGlobals.push(varname);
-          curGlobalFields[varname] = undefined; // 'unset it'
-        }
-      }
-
-      var earlyStop = true;
-      // as an optimization, STOP as soon as you've found everything in curGlobalFields:
-      for (o in curGlobalFields) {
-        if (curGlobalFields[o] != undefined) {
-          earlyStop = false;
-          break;
-        }
-      }
-
-      if (earlyStop) {
-        break;
-      }
-    }
-  }
-
 
   // Key:   CSS ID of the div element representing the variable
   // Value: CSS ID of the div element representing the value rendered in the heap
   connectionEndpointIDs = {};
 
-
+  var globalVars = Object.entries(curEntry.globals);
   // nested helper functions are helpful!
   function renderGlobals() {
     // render global variables:
-    if (orderedGlobals.length > 0) {
+    if (globalVars.length > 0) {
       $(vizDiv + " #stack").append('<div class="stackFrame" id="globals"><div id="globals_header" class="stackFrameHeader inactiveStackFrameHeader">Global variables</div></div>');
-
       $(vizDiv + " #stack #globals").append('<table class="stackFrameVarTable" id="global_table"></table>');
-
       var tbl = $(vizDiv + " #global_table");
+
       // iterate IN ORDER (it's possible that not all vars are in curEntry.globals)
-      $.each(orderedGlobals, function (i, varname) {
-        var val = curEntry.globals[varname];
+      $.each(globalVars, function (_, entry) {
+        var [varname, val] = entry;
         // (use '!==' to do an EXACT match against undefined)
         if (val !== undefined) { // might not be defined at this line, which is OKAY!
           tbl.append('<tr><td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td></tr>');
@@ -439,8 +387,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
           // render primitives inline
           if (isPrimitiveType(val)) {
             renderData(val, curTr.find("td.stackFrameValue"), false);
-          }
-          else {
+          } else {
             // add a stub so that we can connect it with a connector later.
             // IE needs this div to be NON-EMPTY in order to properly
             // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
@@ -461,7 +408,7 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
 
   function renderStackFrame(frame) {
     var funcName = htmlspecialchars(frame[0]); // might contain '<' or '>' for weird names like <genexpr>
-    var localVars = frame[1];
+    var localVars = Object.entries(frame[1]);
 
     // the stackFrame div's id is simply its index ("stack<index>")
     var divClass = (i == 0) ? "stackFrame topStackFrame" : "stackFrame";
@@ -471,34 +418,22 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     var headerDivID = "stack_header" + i;
     $(vizDiv + " #stack #" + divID).append('<div id="' + headerDivID + '" class="stackFrameHeader inactiveStackFrameHeader">' + funcName + '</div>');
 
-    // render locals in alphabetical order for tidiness:
-    // TODO: later on, render locals in order of first appearance, for consistency!!!
-    // (the back-end can actually pre-compute this list so that the
-    // front-end doesn't have to do any extra work!)
-    var orderedVarnames = [];
-
-    // use plain ole' iteration rather than jQuery $.each() since
-    // the latter breaks when a variable is named "length"
-    for (varname in localVars) {
-      orderedVarnames.push(varname);
-    }
-    orderedVarnames.sort();
-
-    if (orderedVarnames.length > 0) {
+    if (localVars.length > 0) {
       var tableID = divID + '_table';
       $(vizDiv + " #stack #" + divID).append('<table class="stackFrameVarTable" id="' + tableID + '"></table>');
-
       var tbl = $(vizDiv + " #" + tableID);
 
+      /* Assume return is always last to appear
       // put return value at the VERY END (if it exists)
       var retvalIdx = $.inArray('__return__', orderedVarnames); // more robust than indexOf()
       if (retvalIdx > -1) {
         orderedVarnames.splice(retvalIdx, 1);
         orderedVarnames.push('__return__');
       }
+      */
 
-      $.each(orderedVarnames, function (i, varname) {
-        var val = localVars[varname];
+      $.each(localVars, function (_, entry) {
+        var [varname, val] = entry;
 
         // special treatment for displaying return value and indicating
         // that the function is about to return to its caller
@@ -533,14 +468,10 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
           connectionEndpointIDs[varDivID] = heapObjID;
         }
       });
-
     }
-
   }
 
-
   // first render the stack (and global vars)
-
   if (stackGrowsDown) {
     renderGlobals();
     if (curEntry.stack_locals) {
@@ -559,7 +490,6 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
     }
     renderGlobals();
   }
-
 
   // then render the heap
 
