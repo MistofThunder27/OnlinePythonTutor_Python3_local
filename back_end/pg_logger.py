@@ -133,7 +133,7 @@ class PGLogger(bdb.Bdb):
         self.visited_lines.add(frame.f_lineno)
 
         # each element is a pair of (function name, ENCODED locals dict)
-        encoded_variables = []
+        encoded_frames = []
 
         # climb up until you find "<module>", which is (hopefully) the global scope
         cur_frame = frame
@@ -148,18 +148,18 @@ class PGLogger(bdb.Bdb):
             elif cur_name == "":
                 cur_name = "unnamed function"
 
-            encoded_variables.append(
+            encoded_frames.append(
                 (cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}})
             )
             cur_frame = cur_frame.f_back
 
-        encoded_variables.append(
+        encoded_frames.append(
             ("global", {k: encode(v, set(), self.ignore_id) for k, v in frame.f_globals.items() if
                         k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
         )
 
-        trace_entry["encoded_variables"] = encoded_variables[::-1]
+        trace_entry["encoded_frames"] = encoded_frames[::-1]
 
         self.trace.append(trace_entry)
 
