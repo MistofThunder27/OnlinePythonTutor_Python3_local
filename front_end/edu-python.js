@@ -443,7 +443,13 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
-  $('#stack_header0').trigger('click');
+  console.log(curEntry.encoded_frames.length)
+  if (stackGrowsDown) {
+    $('#stack_header' + (curEntry.encoded_frames.length - 1)).trigger('click');
+  } else {
+    $('#stack_header0').trigger('click');
+  }
+
 }
 
 function isPrimitiveType(obj) {
