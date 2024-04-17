@@ -3,10 +3,13 @@ from urllib.parse import parse_qs
 import json
 import os
 
-from back_end.process_requests import process_post, process_questions
+from back_end.process_requests import process_post
+
+# TODO class calls being functions
+# TODO nested function call highlighting when on multiple lines (it pops the last call on user line)
+
 
 PORT = 8000
-
 content_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",
@@ -17,22 +20,13 @@ content_type_mapping = {
 }
 
 
-class MyServer(BaseHTTPRequestHandler):
+class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
-            self.path = f"/front_end/index.html"
+            self.path = "/front_end/index.html"
 
         if "?" in self.path:  # this can only be a question request
-            self.path, question_file = self.path.split("?")
-            print(self.path, question_file)
-            if "=" in question_file:
-                question_file = question_file.split("=")[-1]
-                output_json = json.dumps(process_questions(f"questions/{question_file}.txt"))
-                print(output_json)
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(output_json.encode())
-                return
+            self.path = self.path.split("?")[0]
 
         try:
             file_path = os.path.join(os.getcwd(), self.path[1:])
@@ -63,4 +57,4 @@ class MyServer(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Serving at port http://localhost:{PORT}/")
-    HTTPServer(("", PORT), MyServer).serve_forever()
+    HTTPServer(("", PORT), LocalServer).serve_forever()

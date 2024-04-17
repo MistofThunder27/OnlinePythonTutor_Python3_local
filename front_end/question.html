@@ -1,8 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 
 <!--
-
 Online Python Tutor
 Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -19,197 +18,132 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
  -->
-
 
 <head>
   <title>Online Python Tutor: Practice Questions</title>
+  <script type="text/javascript" src="jquery.min.js"></script>
+  <script type="text/javascript" src="hunt-mcilroy.js"></script>
+  <script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
+  <script type="text/javascript" src="jquery.textarea.js"></script>
 
-<!-- jQuery 1.6.0 -->
+  <!-- jsPlumb library for rendering connectors -->
+  <script type="text/javascript" src="jquery.jsPlumb-1.3.3-all-min.js "></script>
 
-<!-- local version for offline testing -->
-<script type="text/javascript" src="jquery.min.js"></script>
+  <!-- my own code -->
+  <script type="text/javascript" src="edu-python.js"></script>
+  <script type="text/javascript" src="edu-python-questions.js"></script>
 
-<!-- online version hosted by Google -->
-<!--
-  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js"></script>
- -->
-
-<script type="text/javascript" src="hunt-mcilroy.js"></script>
-
-<script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
-
-<script type="text/javascript" src="jquery.textarea.js"></script>
-
-<!-- jsPlumb library for rendering connectors -->
-<script type="text/javascript" src="jquery.jsPlumb-1.3.3-all-min.js "></script>
-
-<!-- my own code -->
-<script type="text/javascript" src="edu-python.js"></script>
-<script type="text/javascript" src="edu-python-questions.js"></script>
-
-<link rel="stylesheet" href="edu-python.css" type="text/css"/>
-
+  <link rel="stylesheet" href="edu-python.css" type="text/css"/>
 </head>
 
 <body>
 
-
-<center>
-
 <div id="questionsHeaderPane">
-
-<div class="questionsHeaderTitle" id="ProblemName">Please load a question ...</div>
-
-<div class="questionsHeaderStmt" id="ProblemStatement"></div>
-
-<div class="questionsHeaderStmt" id="HintStatement"><a href="#" id="showHintHref">Show hint</a></div>
-<div class="questionsHeaderStmt" id="SolutionStatement"><a href="#" id="showSolutionHref">Show solution</a></div>
-
+  <div class="questionsHeaderTitle" id="ProblemName">Please load a question ...</div>
+  <div class="questionsHeaderStmt" id="ProblemStatement"></div>
+  <div class="questionsHeaderStmt" id="HintStatement"><a href="#" id="showHintHref">Show hint</a></div>
+  <div class="questionsHeaderStmt" id="SolutionStatement"><a href="#" id="showSolutionHref">Show solution</a></div>
 </div>
-
-</center>
-
 
 <div id="pyInputPane">
+  <p>Write your solution code here:<br/></p>
+  <textarea class="codeInputPane" id="actualCodeInput" cols="60" rows="15" wrap="off"></textarea>
 
-<p/>Write your solution code here:<br/>
-<textarea class="codeInputPane" id="actualCodeInput" cols="60" rows="15" wrap="off">
-</textarea>
+  <p>Write your test code here:<br/></p>
+  <textarea class="codeInputPane" id="testCodeInput" cols="60" rows="3" wrap="off"></textarea>
 
-<p/>Write your test code here:<br/>
-<textarea class="codeInputPane" id="testCodeInput" cols="60" rows="3" wrap="off">
-</textarea>
-
-<p>
-
-<button id="executeBtn" class="bigBtn" type="button">Visualize execution</button>
-
+  <p><button id="executeBtn" class="bigBtn" type="button">Visualize execution</button></p>
 </div>
-
 
 <table border="0" id="pyOutputPane">
-<tr>
-<td valign="top">
+  <tr>
+    <td valign="top">
+      <div id="pyCodeOutputDiv">
+        Use <b>left</b> and <b>right</b> arrow keys to step through this code:
+        <table id="pyCodeOutput"></table>
+      </div>
 
-<center>
+      <div id="editCodeLinkDiv">
+        <button id="editBtn" class="medBtn" type="button">Edit code</button>
+        <span style="margin-left: 7px;"></span>
+        <button id="submitBtn" class="medBtn" type="button">Submit answer</button>
+      </div>
 
-<div id="pyCodeOutputDiv">
+      <div id="vcrControls">
+        <button id="jmpFirstInstr" type="button">&lt;&lt; First</button>
+        <button id="jmpStepBack" type="button">&lt; Back</button>
+        <span id="curInstr">Step ? of ?</span>
+        <button id="jmpStepFwd" type="button">Forward &gt;</button>
+        <button id="jmpLastInstr" type="button">Last &gt;&gt;</button>
+      </div>
 
-Use <b>left</b> and <b>right</b> arrow keys to step through this code:
-<table id="pyCodeOutput"></table>
+      <div id="errorOutput"></div>
 
-</div>
+      Program output:<br/>
+      <textarea id="pyStdout" cols="50" rows="13" wrap="off" readonly></textarea>
 
-<div id="editCodeLinkDiv">
+    </td>
 
-<button id="editBtn" class="medBtn" type="button">Edit code</button>
-<span style="margin-left: 7px;"/>
-<button id="submitBtn" class="medBtn" type="button">Submit answer</button>
-
-</div>
-
-<div id="vcrControls">
-  <button id="jmpFirstInstr", type="button">&lt;&lt; First</button>
-  <button id="jmpStepBack", type="button">&lt; Back</button>
-  <span id="curInstr">Step ? of ?</span>
-  <button id="jmpStepFwd", type="button">Forward &gt;</button>
-  <button id="jmpLastInstr", type="button">Last &gt;&gt;</button>
-</div>
-
-<div id="errorOutput"></div>
-
-
-</center>
-
-Program output:
-<br/>
-<textarea id="pyStdout" cols="50" rows="13" wrap="off" readonly></textarea>
-
-
-</td>
-<td valign="top">
-
-<div id="dataViz"></div>
-
-</td>
-</tr>
+    <td valign="top">
+      <div style="margin-right: auto; margin-left: auto; padding-bottom: 10px; display: inline-block;">
+        <input type="checkbox" id="stack_growth_selector"/> Grow stack upwards
+        <input type="checkbox" id="classicModeCheckbox"/> Render variables inline
+      </div>
+      <div id="dataViz"></div>
+    </td>
+  </tr>
 </table>
-
 
 <div id="pyGradingPane">
+  <div id="submittedSolutionDisplay" style="margin: auto;">
+    <pre id="submittedCodePRE"></pre>
+    <div id="gradeSummary"></div>
+  </div>
 
+  <table id="gradeMatrix" style="margin: auto;">
+    <thead>
+    <tr>
+      <td>Input</td>
+      <td>Result</td>
+      <td class="statusCell">Status</td>
+      <td></td>
+    </tr>
+    </thead>
 
-<center>
-
-<div id="submittedSolutionDisplay">
-  <pre id="submittedCodePRE"></pre>
-  <div id="gradeSummary"></div>
+    <tbody id="gradeMatrixTbody"></tbody>
+  </table>
 </div>
-
-<table id="gradeMatrix">
-<thead>
-<tr>
-<td>Input</td>
-<td>Result</td>
-<td class="statusCell">Status</td>
-<td></td>
-</tr>
-</thead>
-<tbody id="gradeMatrixTbody">
-</tbody>
-</table>
-
-</center>
-
-</div>
-
-
-<center>
 
 <div id="footer">
+  <p><a href="tutor.html">Write Python code and visualize execution</a></p>
 
-<input type="checkbox" id="classicModeCheckbox"/> Use low-bandwidth mode (for older browsers)
+  <p>
+    Solve:
+    <a href="question.html?two-sum">Two-sum</a> |
+    <a href="question.html?reverse">Reverse list</a> |
+    <a href="question.html?remove-dups">Remove duplicate chars</a>
 
-<p><a href="tutor.html">Write Python code and visualize execution</a></p>
+    <br/>Debug:
+    <a href="question.html?debug-ireverse">In-place reverse</a> |
+    <a href="question.html?debug-bsearch">Binary search</a> |
+    <a href="question.html?debug-mergesort">Mergesort</a>
 
-<p>
-Solve:
-<a href="question.html?two-sum">Two-sum</a> |
-<a href="question.html?reverse">Reverse list</a> |
-<a href="question.html?remove-dups">Remove duplicate chars</a>
+    <br/>Optimize:
+    <a href="question.html?optimize-sum">Greatest sum</a> |
+    <a href="question.html?optimize-find-dups">Find duplicates</a> |
+    <a href="question.html?optimize-search">List search</a>
+  </p>
 
-<br/>Debug:
-<a href="question.html?debug-ireverse">In-place reverse</a> |
-<a href="question.html?debug-bsearch">Binary search</a> |
-<a href="question.html?debug-mergesort">Mergesort</a>
+  <p>
+    This application supports the core <a href="https://docs.python.org/3/">Python 3</a> language, with no
+    module imports or file I/O.  It's meant to be used as a platform for creating programming tutorials,
+    not for running or debugging production code.
+  </p>
 
-<br/>Optimize:
-
-<a href="question.html?optimize-sum">Greatest sum</a> |
-<a href="question.html?optimize-find-dups">Find duplicates</a> |
-<a href="question.html?optimize-search">List search</a>
-
-</p>
-
-<p/>
-This application supports the core <a
-href="http://www.python.org/doc/2.5/">Python 2.5</a> language, with no
-module imports or file I/O.  It's meant to be used as a platform for
-creating programming tutorials, not for running or debugging
-production code.
-
-<p style="margin-top: 8px;"/> 
-Check out the <a
-href="https://github.com/pgbovine/OnlinePythonTutor/">GitHub</a>
-repository and send bug reports, feedback, and suggestions to philip@pgbovine.net
-
-<p style="margin-top: 8px;"/>
-Copyright &copy; 2010-2011 <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>.  All rights reserved.
+  <p style="margin-top: 8px;">
+    Copyright &copy; 2010-2011 <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>.  All rights reserved.
+  </p>
 </div>
-
-</center>
-
 </body>
 </html>

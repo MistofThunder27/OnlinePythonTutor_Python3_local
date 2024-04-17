@@ -83,6 +83,8 @@ div.activityPane {
   padding: 15px 20px 5px 20px;
   width: 450px;
   margin: 20px;
+  margin-right: auto;
+  margin-left: auto;
   text-align: left;
 }
 
@@ -107,6 +109,7 @@ pre {
   border-top: 1px solid #bbbbbb;
   padding-top: 5px;
   margin-top: 5px;
+  margin: auto;
 }
 
 h3 {
