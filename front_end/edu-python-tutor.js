@@ -19,29 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-// The Online Python Tutor front-end, which calls the back_end/web_exec.py
-// back-end with a string representing the user's script POST['user_script']
-// and receives a complete execution trace, which it parses and displays to HTML.
+// The Online Python Tutor front-end, which calls the back-end with a string
+// representing the user's script POST['user_script'] and receives a complete
+// execution trace, which it parses and displays to HTML.
 
 // Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
 
-
-function enterEditMode() {
-  $.bbq.pushState({ mode: 'edit' });
-}
-
-function enterVisualizeMode(traceData) {
-  curTrace = traceData; // first assign it to the global curTrace, then
-                        // let jQuery BBQ take care of the rest
-  $.bbq.pushState({ mode: 'visualize' });
-}
-
-
 $(document).ready(function() {
   eduPythonCommonInit(); // must call this first!
-
   $("#pyInput").tabby(); // recognize TAB and SHIFT-TAB
-
 
   // be friendly to the browser's forward and back buttons
   // thanks to http://benalman.com/projects/jquery-bbq-plugin/
@@ -53,13 +39,11 @@ $(document).ready(function() {
       appMode = 'edit';
     }
 
-    // if there's no curTrace, then default to edit mode since there's
-    // nothing to visualize:
+    // if there's no curTrace, then default to edit mode since there's nothing to visualize:
     if (!curTrace) {
       appMode = 'edit';
-      $.bbq.pushState({ mode: 'edit' });
+      $.bbq.pushState({mode: 'edit'});
     }
-
 
     if (appMode == 'edit') {
       $("#pyInputPane").show();
@@ -71,7 +55,6 @@ $(document).ready(function() {
 
       $('#executeBtn').html("Visualize execution");
       $('#executeBtn').attr('disabled', false);
-
 
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
@@ -88,7 +71,6 @@ $(document).ready(function() {
   //   loaded with.
   $(window).trigger( "hashchange" );
 
-
   $("#executeBtn").attr('disabled', false);
   $("#executeBtn").click(function() {
     $('#executeBtn').html("Please wait ... processing your code");
@@ -99,19 +81,18 @@ $(document).ready(function() {
            {user_script : $("#pyInput").val(), request : "execute"},
            function(traceData) {
              renderPyCodeOutput($("#pyInput").val());
-             enterVisualizeMode(traceData);
+             curTrace = traceData; // first assign it to the global curTrace, then
+                                   // let jQuery BBQ take care of the rest
+             $.bbq.pushState({ mode: 'visualize' });
            },
            "json");
   });
 
-
   $("#editBtn").click(function() {
-    enterEditMode();
+    $.bbq.pushState({ mode: 'edit' });
   });
 
-
   // canned examples
-
   $("#tutorialExampleLink").click(function() {
     $.get("../example_code/py_tutorial.py", function(dat) {$("#pyInput").val(dat);});
     return false;
@@ -206,7 +187,6 @@ $(document).ready(function() {
     $.get("../example_code/wentworth_try_finally.py", function(dat) {$("#pyInput").val(dat);});
     return false;
   });
-
 
   // select an example on start-up:
   $("#aliasExampleLink").trigger('click');

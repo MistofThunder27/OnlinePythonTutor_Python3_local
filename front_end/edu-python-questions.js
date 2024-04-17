@@ -93,15 +93,13 @@ $(document).ready(function() {
       processTrace(curTrace);
 
       // don't let the user submit answer when there's an error
-      var hasError = false;
       for (var i = 0; i < curTrace.length; i++) {
          var curEntry = curTrace[i];
          if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
-           hasError = true;
+           $('#submitBtn').attr('disabled', true);
            break;
          }
       }
-      $('#submitBtn').attr('disabled', hasError);
     }
     else if (appMode == 'grade') {
       $("#gradeMatrix #gradeMatrixTbody").empty(); // clear it!!!
@@ -117,39 +115,25 @@ $(document).ready(function() {
     }
   });
 
-
   // From: http://benalman.com/projects/jquery-bbq-plugin/
   //   Since the event is only triggered when the hash changes, we need
   //   to trigger the event now, to handle the hash the page may have
   //   loaded with.
   $(window).trigger( "hashchange" );
 
-
   // load the questions file specified by the query string
   $.post("../main.py",
         {request: "question", question_file : location.search.substring(1)},
         function(questionsDat) {
-        console.log(questionsDat)
           finishQuestionsInit(questionsDat);
         },
         "json");
-
 });
-
 
 // concatenate solution code and test code:
 function concatSolnTestCode(solnCode, testCode) {
   // use rtrim to get rid of trailing whitespace and newlines
   return solnCode.rtrim() + "\n\n# Everything below here is test code\n" + testCode;
-}
-
-
-function enterEditMode() {
-  $.bbq.pushState({ mode: 'edit' });
-}
-
-function enterGradingMode() {
-  $.bbq.pushState({ mode: 'grade' });
 }
 
 function genDebugLinkHandler(failingTestIndex) {
@@ -170,7 +154,6 @@ function genDebugLinkHandler(failingTestIndex) {
   return ret;
 }
 
-
 function finishQuestionsInit(questionsDat) {
   curQuestion = questionsDat; // initialize global
 
@@ -187,9 +170,7 @@ function finishQuestionsInit(questionsDat) {
     return false; // don't reload the page
   });
 
-
   $("#actualCodeInput").val(questionsDat.skeleton);
-
 
   // set some globals
   tests = questionsDat.tests;
@@ -202,7 +183,6 @@ function finishQuestionsInit(questionsDat) {
 
   $("#executeBtn").attr('disabled', false);
   $("#executeBtn").click(function() {
-
     if (curQuestion.max_line_delta) {
       // if the question has a 'max_line_delta' field, then check to see
       // if > curQuestion.max_line_delta lines have changed from
@@ -250,11 +230,9 @@ function finishQuestionsInit(questionsDat) {
            "json");
   });
 
-
   $("#editBtn").click(function() {
-    enterEditMode();
+    $.bbq.pushState({mode: 'edit'});
   });
-
 
   $("#submitBtn").click(function() {
     $('#submitBtn').html("Please wait ... submitting ...");
@@ -272,8 +250,6 @@ function finishQuestionsInit(questionsDat) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
-      console.log(postParams.expect_script)
-      console.log(testResults)
       $.post("../main.py",
              postParams,
              // create a closure
@@ -291,15 +267,13 @@ function finishQuestionsInit(questionsDat) {
                       return;
                     }
                   }
-
-                  enterGradingMode();
+                  $.bbq.pushState({mode: 'grade'});
                 };
              })(i),
              "json");
     }
   });
 }
-
 
 // should be called after ALL elements in testsTraces and expectsTraces
 // have been populated by their respective AJAX POST calls

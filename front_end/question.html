@@ -80,16 +80,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <div id="errorOutput"></div>
 
-      Program output:
-      <br/>
+      Program output:<br/>
       <textarea id="pyStdout" cols="50" rows="13" wrap="off" readonly></textarea>
 
     </td>
 
     <td valign="top">
+      <div style="margin-right: auto; margin-left: auto; padding-bottom: 10px; display: inline-block;">
+        <input type="checkbox" id="stack_growth_selector"/> Grow stack upwards
+        <input type="checkbox" id="classicModeCheckbox"/> Use low-bandwidth mode (for older browsers)
+      </div>
       <div id="dataViz"></div>
     </td>
-
   </tr>
 </table>
 
@@ -114,7 +116,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 </div>
 
 <div id="footer">
-  <input type="checkbox" id="classicModeCheckbox"/> Use low-bandwidth mode (for older browsers)
   <p><a href="tutor.html">Write Python code and visualize execution</a></p>
 
   <p>

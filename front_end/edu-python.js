@@ -33,9 +33,9 @@ var stackGrowsDown = true;
 
 
 /* colors - see edu-python.css */
-var lightLineColor = '#FFFFCC';
+var lightLineColor = '#FFE536';
 var errorColor = '#F87D76';
-var callingLineColor; var callingLineColor1 = '#add8e6'; var callingLineColor2 = '#90ee90';
+var callingLineColor; var callingLineColor1 = '#ADD8E6'; var callingLineColor2 = '#90EE90';
 var visitedLineColor = '#3D58A2';
 
 var lightGray = "#cccccc";
@@ -105,6 +105,7 @@ function updateOutput() {
   }
 
   useJsPlumbRendering = !($("#classicModeCheckbox").prop("checked"));
+  stackGrowsDown = !($("#stack_growth_selector").prop("checked"));
 
   var curEntry = curTrace[curInstr];
   var hasError = false;
@@ -228,55 +229,53 @@ function updateOutput() {
   // keep original horizontal scroll level:
   var oldLeft = $("#pyStdout").scrollLeft();
   $("#pyStdout").val(curEntry.stdout);
-
   $("#pyStdout").scrollLeft(oldLeft);
   // scroll to bottom, tho:
   $("#pyStdout").scrollTop($("#pyStdout").attr('scrollHeight'));
 
   // finally, render all the data structures!!!
-  if (useJsPlumbRendering) {
-    renderDataStructuresVersion2(curEntry, "#dataViz");
+  $("#dataViz").empty(); // jQuery empty() is better than .html('')
+
+  // organise frames based on settings
+  var orderedFrames;
+  if (stackGrowsDown) {
+    orderedFrames = curEntry.encoded_frames;
   } else {
-    renderDataStructuresVersion1(curEntry, "#dataViz");
+    orderedFrames = curEntry.encoded_frames.slice().reverse();
   }
-}
 
-// The ORIGINAL "1.0" version of renderDataStructures, which renders
-// variables and values INLINE within each stack frame without any
-// explicit representation of data structure aliasing.
-//
-// This version was originally created in January 2010
-function renderDataStructuresVersion1(curEntry, vizDiv) {
-  // render data structures:
-  $(vizDiv).empty(); // jQuery empty() is better than .html('')
+  if (useJsPlumbRendering) {
+    renderDataStructuresVersion2(curEntry, orderedFrames);
+  } else {
+    //render variables and values INLINE within each stack frame without any
+    // explicit representation of data structure aliasing.
+    $.each(orderedFrames, function (_, frame) {
+      $("#dataViz").append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + htmlspecialchars(frame[0]) + '</span> variables:</div>');
 
-  // render variables:
-  $.each(curEntry.encoded_frames, function (_, frame) {
-    $(vizDiv).append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + htmlspecialchars(frame[0]) + '</span> variables:</div>');
+      var encodedVars = Object.entries(frame[1]);
+      if (encodedVars.length > 0) {
+        $("#dataViz" + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
+        var tbl = $("#pyOutputPane table:last");
 
-    var encodedVars = Object.entries(frame[1]);
-    if (encodedVars.length > 0) {
-      $(vizDiv + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
-      var tbl = $("#pyOutputPane table:last");
+        $.each(encodedVars, function (_, entry) {
+          var [varname, val] = entry;
+          tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
+          var curTr = tbl.find('tr:last');
+          if (varname == '__return__') {
+            curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
+          } else {
+            curTr.find("td.varname").html(varname);
+          }
+          renderData(val, curTr.find("td.val"), false);
+        });
 
-      $.each(encodedVars, function (_, entry) {
-        var [varname, val] = entry;
-        tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
-        var curTr = tbl.find('tr:last');
-        if (varname == '__return__') {
-          curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
-        } else {
-          curTr.find("td.varname").html(varname);
-        }
-        renderData(val, curTr.find("td.val"), false);
-      });
-
-      tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
-      tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
-    } else {
-      $(vizDiv + " .vizFrame:last").append(' <i>none</i>');
-    }
-  });
+        tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
+        tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
+      } else {
+        $("#dataViz" + " .vizFrame:last").append('<i>none</i>');
+      }
+    });
+  }
 }
 
 // The "2.0" version of renderDataStructures, which renders variables in
@@ -284,7 +283,7 @@ function renderDataStructuresVersion1(curEntry, vizDiv) {
 // explicitly represented via line connectors (thanks to jsPlumb lib).
 //
 // This version was originally created in September 2011
-function renderDataStructuresVersion2(curEntry, vizDiv) {
+function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // before we wipe out the old state of the visualization, CLEAR all
   // the click listeners first
@@ -294,58 +293,30 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   // weird mis-behavior!!!
   jsPlumb.reset();
 
-  $(vizDiv).empty(); // jQuery empty() is better than .html('')
-
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
-  $(vizDiv).html('<table id="stackHeapTable"><tr><td id="stack_td"><div id="stack"></div></td><td id="heap_td"><div id="heap"></div></td></tr></table>');
-  $(vizDiv + " #stack").append('<div id="stackHeader">Stack grows <select id="stack_growth_selector"><option>down</option><option>up</option></select></div>');
-
-  // select a state based on stackGrowsDown global variable:
-  if (stackGrowsDown) {
-    $("#stack_growth_selector").val('down');
-  } else {
-    $("#stack_growth_selector").val('up');
-  }
-
-  // add trigger
-  $("#stack_growth_selector").change(function () {
-    var v = $("#stack_growth_selector").val();
-    if (v == 'down') {
-      stackGrowsDown = true;
-    } else {
-      stackGrowsDown = false;
-    }
-    updateOutput(); // refresh display!!!
-  });
+  $("#dataViz").html('<table id="stackHeapTable"><tr><td id="stack_td"><div id="stack"></div></td><td id="heap_td"><div id="heap"></div></td></tr></table>');
 
   // Key:   CSS ID of the div element representing the variable
   // Value: CSS ID of the div element representing the value rendered in the heap
   connectionEndpointIDs = {};
 
-  var encodedFrames;
-  if (stackGrowsDown) {
-    encodedFrames = curEntry.encoded_frames;
-  } else {
-    encodedFrames = curEntry.encoded_frames.slice().reverse();
-  }
-
   // first render the vars
-  $.each(encodedFrames, function (i, frame) {
+  $.each(orderedFrames, function (i, frame) {
     // the stackFrame div's id is simply its index ("stack<index>")
     var divClass = (i == 0) ? "stackFrame topStackFrame" : "stackFrame";
     var divID = "stack" + i;
-    $(vizDiv + " #stack").append('<div class="' + divClass + '" id="' + divID + '"></div>');
+    $("#dataViz" + " #stack").append('<div class="' + divClass + '" id="' + divID + '"></div>');
 
     var headerDivID = "stack_header" + i;
-    $(vizDiv + " #stack #" + divID).append('<div id="' + headerDivID + '" class="stackFrameHeader inactiveStackFrameHeader">' + htmlspecialchars(frame[0]) + '</div>');
+    $("#dataViz" + " #stack #" + divID).append('<div id="' + headerDivID + '" class="stackFrameHeader inactiveStackFrameHeader">' + htmlspecialchars(frame[0]) + '</div>');
 
     var encodedVars = Object.entries(frame[1]);
     if (encodedVars.length > 0) {
       var tableID = divID + '_table';
-      $(vizDiv + " #stack #" + divID).append('<table class="stackFrameVarTable" id="' + tableID + '"></table>');
-      var tbl = $(vizDiv + " #" + tableID);
-      
+      $("#dataViz" + " #stack #" + divID).append('<table class="stackFrameVarTable" id="' + tableID + '"></table>');
+      var tbl = $("#dataViz" + " #" + tableID);
+
       $.each(encodedVars, function (_, entry) {
         var [varname, val] = entry;
 
@@ -395,6 +366,8 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   });
 
   // then render the heap
+  $("#dataViz" + ' #heap').append('<div id="heapHeader">Heap</div>');
+
   // if there are multiple aliases to the same object, we want to render
   // the one deepest in the stack, so that we can hopefully prevent
   // objects from jumping around as functions are called and returned.
@@ -402,42 +375,29 @@ function renderDataStructuresVersion2(curEntry, vizDiv) {
   // function, we want to render L when rendering the global frame.
 
   alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
-
-  $.each(encodedFrames, function (_, frame) {
-    if (Object.entries(frame[1]).length > 0) {
-      $.each(Object.entries(frame[1]), function (_, entry) {
+  $.each(curEntry.encoded_frames, function (_, frame) {
+    var encodedVars = Object.entries(frame[1]);
+      $.each(encodedVars, function (_, entry) {
         var val = entry[1];
         // primitive types are already rendered in the stack
         if (!isPrimitiveType(val)) {
-          addToEnd = true; // APPEND
           var objectID = getObjectID(val);
 
           if (alreadyRenderedObjectIDs[objectID] === undefined) {
             var heapObjID = 'heap_object_' + objectID;
-            var newDiv = '<div class="heapObject" id="' + heapObjID + '"></div>';
-
-            if (addToEnd) {
-              $(vizDiv + ' #heap').append(newDiv);
-            }
-            else {
-              $(vizDiv + ' #heap').prepend(newDiv);
-            }
-            renderData(val, $(vizDiv + ' #heap #' + heapObjID), false);
+            $("#dataViz" + ' #heap').append('<div class="heapObject" id="' + heapObjID + '"></div>');
+            renderData(val, $("#dataViz" + ' #heap #' + heapObjID), false);
 
             alreadyRenderedObjectIDs[objectID] = 1;
           }
         }
       });
-    }
   });
-
-  // prepend heap header after all the dust settles:
-  $(vizDiv + ' #heap').prepend('<div id="heapHeader">Heap</div>');
 
   // finally connect stack variables to heap objects via connectors
   for (varID in connectionEndpointIDs) {
     var valueID = connectionEndpointIDs[varID];
-    jsPlumb.connect({ source: varID, target: valueID });
+    jsPlumb.connect({source: varID, target: valueID});
   }
 
   // add an on-click listener to all stack frame headers
@@ -737,7 +697,6 @@ function renderData(obj, jDomElt, ignoreIDs) {
   }
 }
 
-
 String.prototype.rtrim = function () {
   return this.replace(/\s*$/g, "");
 }
@@ -756,7 +715,6 @@ function renderPyCodeOutput(codeStr) {
     curRow.find('td.lineNo').html(lineNo);
     curRow.find('td.cod').html(htmlCod);
   });
-
 }
 
 // initialization function that should be called when the page is loaded
@@ -791,7 +749,6 @@ function eduPythonCommonInit() {
   $("#vcrControls #jmpStepFwd").attr("disabled", true);
   $("#vcrControls #jmpLastInstr").attr("disabled", true);
 
-
   // set some sensible jsPlumb defaults
   jsPlumb.Defaults.Endpoint = ["Dot", { radius: 3 }];
   //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
@@ -805,7 +762,6 @@ function eduPythonCommonInit() {
 
   jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
   jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
-
 
   // set keyboard event listeners ...
   $(document).keydown(function (k) {
@@ -835,6 +791,12 @@ function eduPythonCommonInit() {
     }
   });
 
+  $("#stack_growth_selector").click(function () {
+    if (appMode == 'visualize') {
+      updateOutput();
+    }
+  });
+
   $("#classicModeCheckbox").click(function () {
     if (appMode == 'visualize') {
       updateOutput();
@@ -845,5 +807,4 @@ function eduPythonCommonInit() {
   $(document).ajaxError(function () {
     alert("Uh oh, the server returned an error, boo :(  Please reload the page and try executing a different Python script.");
   });
-
 }

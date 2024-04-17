@@ -72,13 +72,13 @@ def process_post(parsed_post_dict):
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    vars_to_compare = list(expect_trace_final_entry['globals'])
+    vars_to_compare = list(expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
     single_var_to_compare = vars_to_compare[0]
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
-           'expect_val': expect_trace_final_entry['globals'][single_var_to_compare]}
+           'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
 
     user_trace = PGLogger(changed_max_executed_lines, True).runscript(user_script)
 
@@ -90,16 +90,16 @@ def process_post(parsed_post_dict):
     # that you're testing.
     for e in user_trace:
         if e['event'] == 'call':
-            ret['input_globals'] = e['globals']
+            ret['input_globals'] = e['encoded_frames'][0][-1]
             break
 
     user_trace_final_entry = user_trace[-1]
     if user_trace_final_entry['event'] == 'return':  # normal termination
-        if single_var_to_compare not in user_trace_final_entry['globals']:
+        if single_var_to_compare not in user_trace_final_entry['encoded_frames'][0][-1]:
             ret.update({'status': 'error',
                         'error_msg': f"Error: output has no global var named '{single_var_to_compare}'"})
         else:
-            ret['test_val'] = user_trace_final_entry['globals'][single_var_to_compare]
+            ret['test_val'] = user_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]
             if ret['expect_val'] == ret['test_val']:  # do the actual comparison here!
                 ret['passed_test'] = True
 
