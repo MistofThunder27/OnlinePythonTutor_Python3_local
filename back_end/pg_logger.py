@@ -43,8 +43,6 @@ class PGLogger(bdb.Bdb):
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
-        """This method is called when there is the remote possibility
-        that we ever need to stop in this function."""
         calling_frame = frame.f_back
 
         # true positions
@@ -82,7 +80,6 @@ class PGLogger(bdb.Bdb):
             })
 
     def user_line(self, frame):
-        """This function is called when we stop or break at this line."""
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -90,7 +87,6 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
-        """This function is called when a return trap is set here."""
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -110,8 +106,6 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "return")
 
     def user_exception(self, frame, exc_info):
-        """This function is called if an exception occurs,
-        but only if we are to stop at or just below this level."""
         frame.f_locals["__exception__"] = exc_info[:2]
         self.interaction(frame, "exception")
 
@@ -164,10 +158,10 @@ class PGLogger(bdb.Bdb):
         self.trace.append(trace_entry)
 
         if len(self.trace) >= self.max_executed_lines:
+            self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
                                                 "infinite loop)"})
-            self.set_quit()
 
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")

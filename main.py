@@ -22,16 +22,16 @@ content_type_mapping = {
 
 class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/":
-            self.path = "/front_end/index.html"
+        path = self.path
+        if path == "/":
+            path = "/front_end/index.html"
 
-        if "?" in self.path:  # this can only be a question request
-            self.path = self.path.split("?")[0]
+        path = path.split("?")[0]
 
         try:
-            file_path = os.path.join(os.getcwd(), self.path[1:])
+            file_path = os.path.join(os.getcwd(), path[1:])
             if os.path.exists(file_path):
-                file_type = content_type_mapping.get(os.path.splitext(self.path)[1], "")
+                file_type = content_type_mapping.get(os.path.splitext(path)[1], "")
                 self.send_response(200)
                 if file_type:
                     self.send_header("Content-type", file_type)
@@ -45,7 +45,12 @@ class LocalServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         output_json = json.dumps(
-            process_post(parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))), indent=4)
+            process_post(
+                parse_qs(
+                    self.rfile.read(
+                        int(self.headers["Content-Length"])
+                    ).decode("utf-8"))
+            ), indent=4)
 
         with open("output.json", "w") as f:
             f.write(output_json)
