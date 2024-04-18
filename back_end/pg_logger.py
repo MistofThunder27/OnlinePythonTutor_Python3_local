@@ -91,7 +91,7 @@ class PGLogger(bdb.Bdb):
 
     def user_return(self, frame, return_value):
         """This function is called when a return trap is set here."""
-        while self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
+        if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
@@ -117,8 +117,15 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type):
-        trace_entry = {"line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
-                       "func_name": frame.f_code.co_name, "stdout": frame.f_globals["__stdout__"].getvalue()}
+        trace_entry = {
+            "line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
+            "scope_name": frame.f_code.co_name,
+            "encoded_frames": [
+                ("global", {k: encode(v, set(), self.ignore_id) for k, v in frame.f_globals.items() if
+                            k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
+                ],
+            "stdout": frame.f_globals["__stdout__"].getvalue()
+        }
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -132,9 +139,7 @@ class PGLogger(bdb.Bdb):
         # Added after as currently highlighted line has not been executed yet
         self.visited_lines.add(frame.f_lineno)
 
-        # each element is a pair of (function name, ENCODED locals dict)
-        encoded_frames = []
-
+        encoded_frames = []  # each element is a pair of (function name, ENCODED locals dict)
         # climb up until you find "<module>", which is (hopefully) the global scope
         cur_frame = frame
         while True:
@@ -154,12 +159,7 @@ class PGLogger(bdb.Bdb):
             )
             cur_frame = cur_frame.f_back
 
-        encoded_frames.append(
-            ("global", {k: encode(v, set(), self.ignore_id) for k, v in frame.f_globals.items() if
-                        k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
-        )
-
-        trace_entry["encoded_frames"] = encoded_frames[::-1]
+        trace_entry["encoded_frames"].extend(encoded_frames[::-1])
 
         self.trace.append(trace_entry)
 
@@ -210,14 +210,14 @@ class PGLogger(bdb.Bdb):
         res = []
         for e in self.trace:
             res.append(e)
-            if e["event"] == "return" and e["func_name"] == "<module>":
+            if e["event"] == "return" and e["scope_name"] == "<module>":
                 break
 
         # another hack: if the SECOND to last entry is an "exception"
         # and the last entry is return from <module>, then axe the last
         # entry, for aesthetic reasons :)
         if len(res) >= 2 and res[-2]["event"] == "exception" and \
-                res[-1]["event"] == "return" and res[-1]["func_name"] == "<module>":
+                res[-1]["event"] == "return" and res[-1]["scope_name"] == "<module>":
             res.pop()
 
         return res

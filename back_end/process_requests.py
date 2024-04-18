@@ -65,7 +65,7 @@ def process_post(parsed_post_dict):
     # Make sure to ignore IDs so that we can do direct object comparisons!
     expect_trace_final_entry = PGLogger(ignore_id=True).runscript(parsed_post_dict["expect_script"][0])[-1]
 
-    if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['func_name'] != '<module>':
+    if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
 
     # Procedure for grading testResults vs. expectResults:

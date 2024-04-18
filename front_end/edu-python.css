@@ -96,7 +96,7 @@ span {
 
 td#stack_td,
 td#heap_td {
-  vertical-align:top;
+  vertical-align: top;
   font-size: 12pt;
 }
 
@@ -141,8 +141,8 @@ div#pyCodeOutputDiv {
 
 table#pyCodeOutput {
   font-family: Andale mono, monospace;
-  font-size:12pt;
-  line-height:1.1em;
+  font-size: 12pt;
+  line-height: 1.1em;
   border-spacing: 0px;
   border-top: 1px solid #999999;
   padding-top: 3px;
@@ -156,20 +156,21 @@ table#pyCodeOutput td {
 }
 
 table#pyCodeOutput .lineNo {
-  background-color:#FFFFFF;
-  color:#AAAAAA;
-  margin:0;
-  padding:0.2em;
-  padding-right:0.5em;
-  text-align:right;
-  width:2.1em;
+  background-color: #FFFFFF;
+  color: #AAAAAA;
+  margin: 0;
+  padding: 0.2em;
+  padding-right: 0.5em;
+  text-align: right;
+  width: 2.1em;
 }
 
 table#pyCodeOutput .cod {
   /*font-weight: bold;*/
   margin-left: 3px;
   padding-left: 7px;
-  text-align: left; /* necessary or else doesn't work properly in IE */
+  text-align: left;
+  /* necessary or else doesn't work properly in IE */
 }
 
 div#editCodeLinkDiv {
@@ -235,19 +236,16 @@ button.medBtn {
   color: #555555;
 }
 
-.numberObj {
-}
+.numberObj {}
 
-.boolObj {
-}
+.boolObj {}
 
 .stringObj {
   /* don't add a color since strings need to be rendered against various backgrounds */
   font-family: Andale mono, monospace;
 }
 
-.keyObj {
-}
+.keyObj {}
 
 .customObj {
   font-family: Andale mono, monospace;
@@ -273,16 +271,20 @@ table.listTbl {
 }
 
 table.tupleTbl {
-  background-color: #dddddd; /* must match .frameDataViz background-color */
+  background-color: #dddddd;
+  /* must match .frameDataViz background-color */
   color: black;
 }
 
 table.listTbl,
 table.tupleTbl {
   border-spacing: 0px;
-  border-bottom: 1px solid #555555; /* must match td.tupleHeader border */
-  border-top: 1px solid #555555; /* must match td.tupleHeader border */
-  border-right: 1px solid #555555; /* must match td.tupleHeader border */
+  border-bottom: 1px solid #555555;
+  /* must match td.tupleHeader border */
+  border-top: 1px solid #555555;
+  /* must match td.tupleHeader border */
+  border-right: 1px solid #555555;
+  /* must match td.tupleHeader border */
 }
 
 table.listTbl td.listHeader,
@@ -302,12 +304,14 @@ table.tupleTbl td.tupleElt {
   padding-left: 10px;
   padding-right: 10px;
   vertical-align: bottom;
-  border-left: 1px solid #555555; /* must match td.tupleHeader border */
+  border-left: 1px solid #555555;
+  /* must match td.tupleHeader border */
 }
 
 table.setTbl {
   border: 1px solid black;
-  /*background-color: #F4F776;*/ /*slightly brighter than #F5F798 */
+  /*background-color: #F4F776;*/
+  /*slightly brighter than #F5F798 */
   background-color: #F5F798;
   border-spacing: 0px;
   text-align: center;
@@ -372,7 +376,8 @@ table.instTbl td.instKey {
 
 table.instTbl,
 table.instTbl td.instVal {
-  background-color: #FFFFDD; /* must match color of table.instTbl */
+  background-color: #FFFFDD;
+  /* must match color of table.instTbl */
 }
 
 table.dictTbl td.dictKey,
@@ -487,9 +492,7 @@ td.stackFrameValue {
   padding-bottom: 3px;
 }
 
-.stackFrameVarTable tr {
-
-}
+.stackFrameVarTable tr {}
 
 .stackFrameVarTable {
   text-align: right;
@@ -507,7 +510,8 @@ div#heap {
 
 div.heapObject {
   margin-bottom: 15px;
-  padding-left: 7px; /* leave some room for connector endpoints */
+  padding-left: 7px;
+  /* leave some room for connector endpoints */
 }
 
 div#stackHeader {
@@ -564,7 +568,8 @@ table#gradeMatrix thead {
 }
 
 table#gradeMatrix thead td.statusCell {
-  padding-left: 18px; /* to line up with smiley faces */
+  padding-left: 18px;
+  /* to line up with smiley faces */
 }
 
 table#gradeMatrix td.testInputCell,
@@ -580,7 +585,7 @@ table#gradeMatrix tbody td.expectedCell {
   padding-bottom: 10px;
   vertical-align: middle;
 }
- 
+
 td.testInputVarnameCell,
 td.testOutputVarnameCell {
   padding-right: 2px;
@@ -600,7 +605,8 @@ pre#submittedCodePRE {
 }
 
 div#submittedSolutionDisplay {
-  width: 650px; /* to line up with questionsHeaderPane */
+  width: 650px;
+  /* to line up with questionsHeaderPane */
   text-align: left;
   font-size: 12pt;
   margin-bottom: 20px;
@@ -613,5 +619,3 @@ div#submittedSolutionDisplay {
 #pyGradingPane {
   margin-bottom: 20px;
 }
-
-
