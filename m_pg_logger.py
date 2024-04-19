@@ -19,7 +19,6 @@ import bdb
 import sys
 import io
 import inspect
-import re
 
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
@@ -27,8 +26,6 @@ import re
 # of all in-scope data structures after each executed instruction.
 
 MAX_EXECUTED_LINES = 200
-typeRE = re.compile("<type '(.*)'>")
-classRE = re.compile("<class '(.*)'>")
 
 
 class PGLogger(bdb.Bdb):
@@ -234,7 +231,7 @@ class PGLogger(bdb.Bdb):
 
                 return ret
 
-            return [typeRE.match(str(data_type)).group(1), my_small_id, str(data)]
+            return [data_type.__name__, my_small_id, str(data)]
 
         return recursive_encode(outer_data, set())
 
