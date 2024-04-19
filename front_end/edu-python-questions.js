@@ -35,7 +35,7 @@ var testResults = null;
 // Pre: 'tests' and 'expects' are non-null
 function resetTestResults() {
   testResults = [];
-  $.each(tests, function(i) {
+  $.each(tests, function (i) {
     testResults.push(null);
   });
 
@@ -44,14 +44,14 @@ function resetTestResults() {
 }
 
 
-$(document).ready(function() {
+$(document).ready(function () {
   eduPythonCommonInit(); // must call this first!
   $("#actualCodeInput").tabby(); // recognize TAB and SHIFT-TAB
   $("#testCodeInput").tabby();   // recognize TAB and SHIFT-TAB
 
   // be friendly to the browser's forward and back buttons
   // thanks to http://benalman.com/projects/jquery-bbq-plugin/
-  $(window).bind("hashchange", function(e) {
+  $(window).bind("hashchange", function (e) {
     appMode = $.bbq.getState("mode"); // assign this to the GLOBAL appMode
 
     // default mode is 'edit'
@@ -63,7 +63,7 @@ $(document).ready(function() {
     // nothing to visualize or grade:
     if (!curTrace) {
       appMode = 'edit';
-      $.bbq.pushState({mode: 'edit'});
+      $.bbq.pushState({ mode: 'edit' });
     }
 
     if (appMode == 'edit') {
@@ -94,11 +94,11 @@ $(document).ready(function() {
 
       // don't let the user submit answer when there's an error
       for (var i = 0; i < curTrace.length; i++) {
-         var curEntry = curTrace[i];
-         if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
-           $('#submitBtn').attr('disabled', true);
-           break;
-         }
+        var curEntry = curTrace[i];
+        if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
+          $('#submitBtn').attr('disabled', true);
+          break;
+        }
       }
     }
     else if (appMode == 'grade') {
@@ -119,15 +119,15 @@ $(document).ready(function() {
   //   Since the event is only triggered when the hash changes, we need
   //   to trigger the event now, to handle the hash the page may have
   //   loaded with.
-  $(window).trigger( "hashchange" );
+  $(window).trigger("hashchange");
 
   // load the questions file specified by the query string
   $.post("../main.py",
-        {request: "question", question_file : location.search.substring(1)},
-        function(questionsDat) {
-          finishQuestionsInit(questionsDat);
-        },
-        "json");
+    { request: "question", question_file: location.search.substring(1) },
+    function (questionsDat) {
+      finishQuestionsInit(questionsDat);
+    },
+    "json");
 });
 
 // concatenate solution code and test code:
@@ -160,12 +160,12 @@ function finishQuestionsInit(questionsDat) {
   $("#ProblemName").html(questionsDat.name);
   $("#ProblemStatement").html(questionsDat.question);
 
-  $("#showHintHref").click(function() {
+  $("#showHintHref").click(function () {
     $("#HintStatement").html("<b>Hint</b>: " + questionsDat.hint);
     return false; // don't reload the page
   });
 
-  $("#showSolutionHref").click(function() {
+  $("#showSolutionHref").click(function () {
     $("#SolutionStatement").html("<b>Solution</b>: " + questionsDat.solution);
     return false; // don't reload the page
   });
@@ -182,7 +182,7 @@ function finishQuestionsInit(questionsDat) {
   $("#testCodeInput").val(tests[curTestIndex]);
 
   $("#executeBtn").attr('disabled', false);
-  $("#executeBtn").click(function() {
+  $("#executeBtn").click(function () {
     if (curQuestion.max_line_delta) {
       // if the question has a 'max_line_delta' field, then check to see
       // if > curQuestion.max_line_delta lines have changed from
@@ -194,7 +194,7 @@ function finishQuestionsInit(questionsDat) {
       // whitespace and newlines)
       var diffResults = diff($("#actualCodeInput").val().rtrim().split(/\n/), questionsDat.skeleton.rtrim().split(/\n/));
       //console.log(diffResults);
-      $.each(diffResults, function(i, e) {
+      $.each(diffResults, function (i, e) {
         if (e.file1 && e.file2) {
           // i THINK this is the right way to calculate the number of
           // changed lines ... taking the MAXIMUM of the delta lengths
@@ -215,26 +215,26 @@ function finishQuestionsInit(questionsDat) {
 
     var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), $("#testCodeInput").val());
 
-    var postParams = {user_script : submittedCode, request : "execute"};
+    var postParams = { user_script: submittedCode, request: "execute" };
     if (questionsDat.max_instructions) {
       postParams.max_instructions = questionsDat.max_instructions;
     }
 
     $.post("../main.py",
-           postParams,
-           function(traceData) {
-             renderPyCodeOutput(submittedCode);
-             curTrace = traceData; // first assign it to the global curTrace, then let jQuery BBQ take care of the rest
-             $.bbq.pushState({mode: 'visualize'});
-           },
-           "json");
+      postParams,
+      function (traceData) {
+        renderPyCodeOutput(submittedCode);
+        curTrace = traceData; // first assign it to the global curTrace, then let jQuery BBQ take care of the rest
+        $.bbq.pushState({ mode: 'visualize' });
+      },
+      "json");
   });
 
-  $("#editBtn").click(function() {
-    $.bbq.pushState({mode: 'edit'});
+  $("#editBtn").click(function () {
+    $.bbq.pushState({ mode: 'edit' });
   });
 
-  $("#submitBtn").click(function() {
+  $("#submitBtn").click(function () {
     $('#submitBtn').html("Please wait ... submitting ...");
     $('#submitBtn').attr('disabled', true);
 
@@ -245,32 +245,32 @@ function finishQuestionsInit(questionsDat) {
     for (var i = 0; i < tests.length; i++) {
       var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), tests[i]);
 
-      var postParams = {request : "run test", user_script : submittedCode, expect_script : expects[i]};
+      var postParams = { request: "run test", user_script: submittedCode, expect_script: expects[i] };
       if (questionsDat.max_instructions) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
       $.post("../main.py",
-             postParams,
-             // create a closure
-             (function(idx) {
-                return function(res) {
-                  assert(testResults[idx] === null);
-                  testResults[idx] = res;
+        postParams,
+        // create a closure
+        (function (idx) {
+          return function (res) {
+            assert(testResults[idx] === null);
+            testResults[idx] = res;
 
-                  // if ALL results have been successfully delivered, then call
-                  // enterGradingMode() (remember that each result comes in
-                  // asynchronously and probably out-of-order)
+            // if ALL results have been successfully delivered, then call
+            // enterGradingMode() (remember that each result comes in
+            // asynchronously and probably out-of-order)
 
-                  for (var i = 0; i < testResults.length; i++) {
-                    if (testResults[i] === null) {
-                      return;
-                    }
-                  }
-                  $.bbq.pushState({mode: 'grade'});
-                };
-             })(i),
-             "json");
+            for (var i = 0; i < testResults.length; i++) {
+              if (testResults[i] === null) {
+                return;
+              }
+            }
+            $.bbq.pushState({ mode: 'grade' });
+          };
+        })(i),
+        "json");
     }
   });
 }
@@ -334,15 +334,15 @@ function gradeSubmission() {
     else {
       var sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
 
-      var debugBtnID  = 'debug_test_' + i;
+      var debugBtnID = 'debug_test_' + i;
       var debugMeBtn = '<button id="' + debugBtnID + '" class="debugBtn" type="button">Debug me</button>';
       var expectedTd = '<td class="expectedCell">Expected: </td>';
 
       $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="statusCell">' + sadFaceImg + debugMeBtn + '</td>' + expectedTd);
 
       renderData(res.expect_val,
-                 $("#gradeMatrix tr.gradeMatrixRow:last td.expectedCell:last"),
-                 true /* ignoreIDs */);
+        $("#gradeMatrix tr.gradeMatrixRow:last td.expectedCell:last"),
+        true /* ignoreIDs */);
 
       $('#' + debugBtnID).unbind(); // unbind it just to be paranoid
       $('#' + debugBtnID).click(genDebugLinkHandler(i));

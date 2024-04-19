@@ -3,14 +3,14 @@
 // auto-growing text area code taken from:
 //   http://onehackoranother.com/projects/jquery/jquery-grab-bag/autogrow-textarea.html
 //   http://github.com/jaz303/jquery-grab-bag/blob/master/javascripts/jquery.autogrow-textarea.js
-(function($) {
-/*
-* Auto-growing textareas; technique ripped from Facebook
-*/
+(function ($) {
+    /*
+    * Auto-growing textareas; technique ripped from Facebook
+    */
 
-    $.fn.autogrow = function(options) {
+    $.fn.autogrow = function (options) {
 
-        this.filter('textarea').each(function() {
+        this.filter('textarea').each(function () {
 
             var $this = $(this),
                 minHeight = $this.height(),
@@ -27,19 +27,19 @@
                 resize: 'none'
             }).appendTo(document.body);
 
-            var update = function() {
+            var update = function () {
 
-                var times = function(string, number) {
-                    for (var i = 0, r = ''; i < number; i ++) r += string;
+                var times = function (string, number) {
+                    for (var i = 0, r = ''; i < number; i++) r += string;
                     return r;
                 };
 
                 var val = this.value.replace(/</g, '&lt;')
-                                    .replace(/>/g, '&gt;')
-                                    .replace(/&/g, '&amp;')
-                                    .replace(/\n$/, '<br/>&nbsp;')
-                                    .replace(/\n/g, '<br/>')
-                                    .replace(/ {2,}/g, function(space) { return times('&nbsp;', space.length -1) + ' ' });
+                    .replace(/>/g, '&gt;')
+                    .replace(/&/g, '&amp;')
+                    .replace(/\n$/, '<br/>&nbsp;')
+                    .replace(/\n/g, '<br/>')
+                    .replace(/ {2,}/g, function (space) { return times('&nbsp;', space.length - 1) + ' ' });
 
                 shadow.html(val);
                 // pgbovine - tweak the value below to adjust the 'slack'

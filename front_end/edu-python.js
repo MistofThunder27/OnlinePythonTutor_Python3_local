@@ -377,27 +377,27 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
   $.each(curEntry.encoded_frames, function (_, frame) {
     var encodedVars = Object.entries(frame[1]);
-      $.each(encodedVars, function (_, entry) {
-        var val = entry[1];
-        // primitive types are already rendered in the stack
-        if (!isPrimitiveType(val)) {
-          var objectID = getObjectID(val);
+    $.each(encodedVars, function (_, entry) {
+      var val = entry[1];
+      // primitive types are already rendered in the stack
+      if (!isPrimitiveType(val)) {
+        var objectID = getObjectID(val);
 
-          if (alreadyRenderedObjectIDs[objectID] === undefined) {
-            var heapObjID = 'heap_object_' + objectID;
-            $("#dataViz" + ' #heap').append('<div class="heapObject" id="' + heapObjID + '"></div>');
-            renderData(val, $("#dataViz" + ' #heap #' + heapObjID), false);
+        if (alreadyRenderedObjectIDs[objectID] === undefined) {
+          var heapObjID = 'heap_object_' + objectID;
+          $("#dataViz" + ' #heap').append('<div class="heapObject" id="' + heapObjID + '"></div>');
+          renderData(val, $("#dataViz" + ' #heap #' + heapObjID), false);
 
-            alreadyRenderedObjectIDs[objectID] = 1;
-          }
+          alreadyRenderedObjectIDs[objectID] = 1;
         }
-      });
+      }
+    });
   });
 
   // finally connect stack variables to heap objects via connectors
   for (varID in connectionEndpointIDs) {
     var valueID = connectionEndpointIDs[varID];
-    jsPlumb.connect({source: varID, target: valueID});
+    jsPlumb.connect({ source: varID, target: valueID });
   }
 
   // add an on-click listener to all stack frame headers

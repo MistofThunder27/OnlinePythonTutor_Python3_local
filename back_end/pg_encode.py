@@ -74,20 +74,20 @@ def encode(data, compound_obj_ids, ignore_id=False):
 
     if data_type == list:
         ret = ["LIST", my_small_id]
-        for e in data: ret.append(encode(e, new_compound_obj_ids, ignore_id))
+        for e in data:
+            ret.append(encode(e, new_compound_obj_ids, ignore_id))
     elif data_type == tuple:
         ret = ["TUPLE", my_small_id]
-        for e in data: ret.append(encode(e, new_compound_obj_ids, ignore_id))
+        for e in data:
+            ret.append(encode(e, new_compound_obj_ids, ignore_id))
     elif data_type == set:
         ret = ["SET", my_small_id]
         for e in data:
             ret.append(encode(e, new_compound_obj_ids, ignore_id))
     elif data_type == dict:
         ret = ["DICT", my_small_id]
-        for (k, v) in data.items():
-            # don"t display some built-in locals ...
-            if k not in ("__module__", "__return__"):
-                ret.append([encode(k, new_compound_obj_ids, ignore_id), encode(v, new_compound_obj_ids, ignore_id)])
+        for k, v in data.items():
+            ret.append([encode(k, new_compound_obj_ids, ignore_id), encode(v, new_compound_obj_ids, ignore_id)])
     elif not isinstance(data, type) or "__class__" in dir(data):
         if not isinstance(data, type):
             ret = ["INSTANCE", data.__class__.__name__, my_small_id]
@@ -97,12 +97,9 @@ def encode(data, compound_obj_ids, ignore_id=False):
 
         # traverse inside its __dict__ to grab attributes
         # (filter out useless-seeming ones):
-        user_attrs = sorted([e for e in list(data.__dict__.keys())
-                             if e not in ("__doc__", "__module__", "__return__", "__dict__",
-                                          "__weakref__")])
-        for attr in user_attrs:
-            ret.append([encode(attr, new_compound_obj_ids, ignore_id),
-                        encode(data.__dict__[attr], new_compound_obj_ids, ignore_id)])
+        for k, v in data.__dict__.items():
+            if k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}:
+                ret.append([encode(k, new_compound_obj_ids, ignore_id), encode(v, new_compound_obj_ids, ignore_id)])
 
     else:
         typeStr = str(data_type)

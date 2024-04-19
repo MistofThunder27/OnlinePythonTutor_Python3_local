@@ -1,9 +1,9 @@
-(function() {
+(function () {
     var r = !!document.createElement("canvas").getContext;
     var d = !!window.SVGAngle || document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1");
     var a = !(r | d);
-    var l = function(y, z, w, C) {
-        var B = function(E, D) {
+    var l = function (y, z, w, C) {
+        var B = function (E, D) {
             if (E === D) {
                 return true
             } else {
@@ -32,7 +32,7 @@
         }
         return -1
     };
-    var g = function(y, w, x) {
+    var g = function (y, w, x) {
         var v = y[w];
         if (v == null) {
             v = [];
@@ -42,44 +42,44 @@
         return v
     };
     var p = null;
-    var c = function(v, w) {
+    var c = function (v, w) {
         return i.CurrentLibrary.getAttribute(u(v), w)
     }
-      , e = function(w, x, v) {
-        i.CurrentLibrary.setAttribute(u(w), x, v)
-    }
-      , s = function(w, v) {
-        i.CurrentLibrary.addClass(u(w), v)
-    }
-      , f = function(w, v) {
-        return i.CurrentLibrary.hasClass(u(w), v)
-    }
-      , h = function(w, v) {
-        i.CurrentLibrary.removeClass(u(w), v)
-    }
-      , u = function(v) {
-        return i.CurrentLibrary.getElementObject(v)
-    }
-      , n = function(v) {
-        return i.CurrentLibrary.getOffset(u(v))
-    }
-      , b = function(v) {
-        return i.CurrentLibrary.getSize(u(v))
-    }
-      , k = function(v, w) {
-        if (v.logEnabled && typeof console != "undefined") {
-            console.log(w)
+        , e = function (w, x, v) {
+            i.CurrentLibrary.setAttribute(u(w), x, v)
         }
-    };
-    var o = function() {
+        , s = function (w, v) {
+            i.CurrentLibrary.addClass(u(w), v)
+        }
+        , f = function (w, v) {
+            return i.CurrentLibrary.hasClass(u(w), v)
+        }
+        , h = function (w, v) {
+            i.CurrentLibrary.removeClass(u(w), v)
+        }
+        , u = function (v) {
+            return i.CurrentLibrary.getElementObject(v)
+        }
+        , n = function (v) {
+            return i.CurrentLibrary.getOffset(u(v))
+        }
+        , b = function (v) {
+            return i.CurrentLibrary.getSize(u(v))
+        }
+        , k = function (v, w) {
+            if (v.logEnabled && typeof console != "undefined") {
+                console.log(w)
+            }
+        };
+    var o = function () {
         var x = {}
-          , w = this;
+            , w = this;
         var v = ["ready"];
-        this.bind = function(y, z) {
+        this.bind = function (y, z) {
             g(x, y, z)
         }
-        ;
-        this.fire = function(A, B, y) {
+            ;
+        this.fire = function (A, B, y) {
             if (x[A]) {
                 for (var z = 0; z < x[A].length; z++) {
                     if (l(v, A) != -1) {
@@ -94,8 +94,8 @@
                 }
             }
         }
-        ;
-        this.clearListeners = function(y) {
+            ;
+        this.clearListeners = function (y) {
             if (y) {
                 delete x[y]
             } else {
@@ -104,22 +104,22 @@
             }
         }
     };
-    var t = function(z) {
+    var t = function (z) {
         var x = this
-          , w = arguments
-          , v = false;
+            , w = arguments
+            , v = false;
         x._jsPlumb = z._jsPlumb;
         o.apply(this);
-        this.clone = function() {
+        this.clone = function () {
             var B = new Object();
             x.constructor.apply(B, w);
             return B
         }
-        ;
+            ;
         this.overlayPlacements = [],
-        this.paintStyle = null,
-        this.hoverPaintStyle = null;
-        var A = function() {
+            this.paintStyle = null,
+            this.hoverPaintStyle = null;
+        var A = function () {
             if (x.paintStyle && x.hoverPaintStyle) {
                 var B = {};
                 i.extend(B, x.paintStyle);
@@ -131,7 +131,7 @@
                 x.hoverPaintStyle = B
             }
         };
-        this.setPaintStyle = function(B, C) {
+        this.setPaintStyle = function (B, C) {
             x.paintStyle = B;
             x.paintStyleInUse = x.paintStyle;
             A();
@@ -139,16 +139,16 @@
                 x.repaint()
             }
         }
-        ;
-        this.setHoverPaintStyle = function(B, C) {
+            ;
+        this.setHoverPaintStyle = function (B, C) {
             x.hoverPaintStyle = B;
             A();
             if (!C) {
                 x.repaint()
             }
         }
-        ;
-        this.setHover = function(B, C) {
+            ;
+        this.setHover = function (B, C) {
             v = B;
             if (x.hoverPaintStyle != null) {
                 x.paintStyleInUse = B ? x.hoverPaintStyle : x.paintStyle;
@@ -158,29 +158,29 @@
                 }
             }
         }
-        ;
-        this.isHover = function() {
+            ;
+        this.isHover = function () {
             return v
         }
-        ;
-        this.attachListeners = function(G, H) {
+            ;
+        this.attachListeners = function (G, H) {
             var E = i.CurrentLibrary
-              , C = ["click", "dblclick", "mouseenter", "mouseout", "mousemove", "mousedown", "mouseup"]
-              , F = {
-                mouseout: "mouseexit"
-            }
-              , D = function(J) {
-                var I = F[J] || J;
-                E.bind(G, J, function(K) {
-                    H.fire(I, H, K)
-                })
-            };
+                , C = ["click", "dblclick", "mouseenter", "mouseout", "mousemove", "mousedown", "mouseup"]
+                , F = {
+                    mouseout: "mouseexit"
+                }
+                , D = function (J) {
+                    var I = F[J] || J;
+                    E.bind(G, J, function (K) {
+                        H.fire(I, H, K)
+                    })
+                };
             for (var B = 0; B < C.length; B++) {
                 D(C[B])
             }
         }
-        ;
-        var y = function(D) {
+            ;
+        var y = function (D) {
             var C = x.getAttachedElements();
             if (C) {
                 for (var B = 0; B < C.length; B++) {
@@ -189,7 +189,7 @@
             }
         }
     };
-    var q = function(A) {
+    var q = function (A) {
         this.Defaults = {
             Anchor: "BottomCenter",
             Anchors: [null, null],
@@ -225,363 +225,363 @@
         this.logEnabled = this.Defaults.LogEnabled;
         o.apply(this);
         var av = this.bind;
-        this.bind = function(ay, ax) {
+        this.bind = function (ay, ax) {
             if ("ready" === ay && J) {
                 ax()
             } else {
                 av(ay, ax)
             }
         }
-        ;
+            ;
         var D = this
-          , F = null
-          , ak = function() {
-            i.repaintEverything()
-        }
-          , y = true
-          , aj = function() {
-            if (y) {
-                ak()
+            , F = null
+            , ak = function () {
+                i.repaintEverything()
             }
-        }
-          , ai = null
-          , J = false
-          , L = {}
-          , ah = {}
-          , T = {}
-          , V = {}
-          , C = {}
-          , Z = {}
-          , ag = {}
-          , ap = this.Defaults.MouseEventsEnabled
-          , Y = true
-          , af = []
-          , P = []
-          , al = {}
-          , B = this.Defaults.Scope
-          , aa = null
-          , S = function(aA, ay, az) {
-            var ax = aA[ay];
-            if (ax == null) {
-                ax = [];
-                aA[ay] = ax
-            }
-            ax.push(az);
-            return ax
-        }
-          , R = function(ay, ax) {
-            if (D.Defaults.Container) {
-                i.CurrentLibrary.appendElement(ay, D.Defaults.Container)
-            } else {
-                if (!ax) {
-                    document.body.appendChild(ay)
-                } else {
-                    i.CurrentLibrary.appendElement(ay, ax)
+            , y = true
+            , aj = function () {
+                if (y) {
+                    ak()
                 }
             }
-        }
-          , ar = function() {
-            return "" + (new Date()).getTime()
-        }
-          , w = function(ax) {
-            return ax._nodes ? ax._nodes : ax
-        }
-          , at = function(aD, aI, aG) {
-            var ax = c(aD, "id");
-            var ay = ah[ax];
-            if (!aG) {
-                aG = ar()
+            , ai = null
+            , J = false
+            , L = {}
+            , ah = {}
+            , T = {}
+            , V = {}
+            , C = {}
+            , Z = {}
+            , ag = {}
+            , ap = this.Defaults.MouseEventsEnabled
+            , Y = true
+            , af = []
+            , P = []
+            , al = {}
+            , B = this.Defaults.Scope
+            , aa = null
+            , S = function (aA, ay, az) {
+                var ax = aA[ay];
+                if (ax == null) {
+                    ax = [];
+                    aA[ay] = ax
+                }
+                ax.push(az);
+                return ax
             }
-            if (ay) {
-                E({
-                    elId: ax,
-                    offset: aI,
-                    recalc: false,
-                    timestamp: aG
-                });
-                var aH = V[ax]
-                  , aF = P[ax];
-                for (var aE = 0; aE < ay.length; aE++) {
-                    ay[aE].paint({
-                        timestamp: aG,
-                        offset: aH,
-                        dimensions: aF
+            , R = function (ay, ax) {
+                if (D.Defaults.Container) {
+                    i.CurrentLibrary.appendElement(ay, D.Defaults.Container)
+                } else {
+                    if (!ax) {
+                        document.body.appendChild(ay)
+                    } else {
+                        i.CurrentLibrary.appendElement(ay, ax)
+                    }
+                }
+            }
+            , ar = function () {
+                return "" + (new Date()).getTime()
+            }
+            , w = function (ax) {
+                return ax._nodes ? ax._nodes : ax
+            }
+            , at = function (aD, aI, aG) {
+                var ax = c(aD, "id");
+                var ay = ah[ax];
+                if (!aG) {
+                    aG = ar()
+                }
+                if (ay) {
+                    E({
+                        elId: ax,
+                        offset: aI,
+                        recalc: false,
+                        timestamp: aG
                     });
-                    var aA = ay[aE].connections;
-                    for (var aC = 0; aC < aA.length; aC++) {
-                        aA[aC].paint({
-                            elId: ax,
-                            ui: aI,
-                            recalc: false,
-                            timestamp: aG
+                    var aH = V[ax]
+                        , aF = P[ax];
+                    for (var aE = 0; aE < ay.length; aE++) {
+                        ay[aE].paint({
+                            timestamp: aG,
+                            offset: aH,
+                            dimensions: aF
                         });
-                        var aJ = aA[aC].endpoints[0] == ay[aE] ? 1 : 0
-                          , az = aA[aC].endpoints[aJ];
-                        if (az.anchor.isDynamic && !az.isFloating()) {
-                            E({
-                                elId: az.elementId,
+                        var aA = ay[aE].connections;
+                        for (var aC = 0; aC < aA.length; aC++) {
+                            aA[aC].paint({
+                                elId: ax,
+                                ui: aI,
+                                recalc: false,
                                 timestamp: aG
                             });
-                            az.paint({
-                                elementWithPrecedence: ax
-                            });
-                            for (var aB = 0; aB < az.connections.length; aB++) {
-                                if (az.connections[aB] !== aA) {
-                                    az.connections[aB].paint({
-                                        elId: ax,
-                                        ui: aI,
-                                        recalc: false,
-                                        timestamp: aG
-                                    })
+                            var aJ = aA[aC].endpoints[0] == ay[aE] ? 1 : 0
+                                , az = aA[aC].endpoints[aJ];
+                            if (az.anchor.isDynamic && !az.isFloating()) {
+                                E({
+                                    elId: az.elementId,
+                                    timestamp: aG
+                                });
+                                az.paint({
+                                    elementWithPrecedence: ax
+                                });
+                                for (var aB = 0; aB < az.connections.length; aB++) {
+                                    if (az.connections[aB] !== aA) {
+                                        az.connections[aB].paint({
+                                            elId: ax,
+                                            ui: aI,
+                                            recalc: false,
+                                            timestamp: aG
+                                        })
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-          , I = function(ay, aA) {
-            var aB = null;
-            if (ay.constructor == Array) {
-                aB = [];
-                for (var ax = 0; ax < ay.length; ax++) {
-                    var az = u(ay[ax])
-                      , aC = c(az, "id");
-                    aB.push(aA(az, aC))
-                }
-            } else {
-                var az = u(ay)
-                  , aC = c(az, "id");
-                aB = aA(az, aC)
-            }
-            return aB
-        }
-          , X = function(ax) {
-            return T[ax]
-        }
-          , O = function(aB, aA, az) {
-            var ax = aA == null ? Y : aA;
-            if (ax) {
-                if (i.CurrentLibrary.isDragSupported(aB) && !i.CurrentLibrary.isAlreadyDraggable(aB)) {
-                    var ay = az || D.Defaults.DragOptions || i.Defaults.DragOptions;
-                    ay = i.extend({}, ay);
-                    var aD = i.CurrentLibrary.dragEvents.drag;
-                    var aC = i.CurrentLibrary.dragEvents.stop;
-                    ay[aD] = am(ay[aD], function() {
-                        var aE = i.CurrentLibrary.getUIPosition(arguments);
-                        at(aB, aE);
-                        s(aB, "jsPlumb_dragged")
-                    });
-                    ay[aC] = am(ay[aC], function() {
-                        var aE = i.CurrentLibrary.getUIPosition(arguments);
-                        at(aB, aE);
-                        h(aB, "jsPlumb_dragged")
-                    });
-                    var ax = ag[aw(aB)];
-                    ay.disabled = ax == null ? false : !ax;
-                    i.CurrentLibrary.initDraggable(aB, ay)
-                }
-            }
-        }
-          , au = function(aB) {
-            var aA = i.Defaults.ConnectionType || G
-              , az = i.Defaults.EndpointType || aq
-              , ay = i.CurrentLibrary.getParent;
-            if (aB.container) {
-                aB.parent = aB.container
-            } else {
-                if (aB.sourceEndpoint) {
-                    aB.parent = aB.sourceEndpoint.parent
+            , I = function (ay, aA) {
+                var aB = null;
+                if (ay.constructor == Array) {
+                    aB = [];
+                    for (var ax = 0; ax < ay.length; ax++) {
+                        var az = u(ay[ax])
+                            , aC = c(az, "id");
+                        aB.push(aA(az, aC))
+                    }
                 } else {
-                    if (aB.source.constructor == az) {
-                        aB.parent = aB.source.parent
-                    } else {
-                        aB.parent = ay(aB.source)
+                    var az = u(ay)
+                        , aC = c(az, "id");
+                    aB = aA(az, aC)
+                }
+                return aB
+            }
+            , X = function (ax) {
+                return T[ax]
+            }
+            , O = function (aB, aA, az) {
+                var ax = aA == null ? Y : aA;
+                if (ax) {
+                    if (i.CurrentLibrary.isDragSupported(aB) && !i.CurrentLibrary.isAlreadyDraggable(aB)) {
+                        var ay = az || D.Defaults.DragOptions || i.Defaults.DragOptions;
+                        ay = i.extend({}, ay);
+                        var aD = i.CurrentLibrary.dragEvents.drag;
+                        var aC = i.CurrentLibrary.dragEvents.stop;
+                        ay[aD] = am(ay[aD], function () {
+                            var aE = i.CurrentLibrary.getUIPosition(arguments);
+                            at(aB, aE);
+                            s(aB, "jsPlumb_dragged")
+                        });
+                        ay[aC] = am(ay[aC], function () {
+                            var aE = i.CurrentLibrary.getUIPosition(arguments);
+                            at(aB, aE);
+                            h(aB, "jsPlumb_dragged")
+                        });
+                        var ax = ag[aw(aB)];
+                        ay.disabled = ax == null ? false : !ax;
+                        i.CurrentLibrary.initDraggable(aB, ay)
                     }
                 }
             }
-            aB._jsPlumb = D;
-            var ax = new aA(aB);
-            z("click", "click", ax);
-            z("dblclick", "dblclick", ax);
-            return ax
-        }
-          , z = function(ax, ay, az) {
-            az.bind(ax, function(aB, aA) {
-                D.fire(ay, az, aA)
-            })
-        }
-          , an = function(ay) {
-            var ax = i.Defaults.EndpointType || aq;
-            if (ay.container) {
-                ay.parent = ay.container
-            } else {
-                ay.parent = i.CurrentLibrary.getParent(ay.source)
-            }
-            ay._jsPlumb = D,
-            ep = new ax(ay);
-            z("click", "endpointClick", ep);
-            z("dblclick", "endpointDblClick", ep);
-            return ep
-        }
-          , U = function(az, aC, aB) {
-            var ax = ah[az];
-            if (ax && ax.length) {
-                for (var aA = 0; aA < ax.length; aA++) {
-                    for (var ay = 0; ay < ax[aA].connections.length; ay++) {
-                        var aD = aC(ax[aA].connections[ay]);
-                        if (aD) {
-                            return
+            , au = function (aB) {
+                var aA = i.Defaults.ConnectionType || G
+                    , az = i.Defaults.EndpointType || aq
+                    , ay = i.CurrentLibrary.getParent;
+                if (aB.container) {
+                    aB.parent = aB.container
+                } else {
+                    if (aB.sourceEndpoint) {
+                        aB.parent = aB.sourceEndpoint.parent
+                    } else {
+                        if (aB.source.constructor == az) {
+                            aB.parent = aB.source.parent
+                        } else {
+                            aB.parent = ay(aB.source)
                         }
                     }
-                    if (aB) {
-                        aB(ax[aA])
-                    }
                 }
+                aB._jsPlumb = D;
+                var ax = new aA(aB);
+                z("click", "click", ax);
+                z("dblclick", "dblclick", ax);
+                return ax
             }
-        }
-          , K = function(ay) {
-            for (var ax in ah) {
-                U(ax, ay)
+            , z = function (ax, ay, az) {
+                az.bind(ax, function (aB, aA) {
+                    D.fire(ay, az, aA)
+                })
             }
-        }
-          , ae = function(ax, ay) {
-            if (ax != null && ax.parentNode != null) {
-                ax.parentNode.removeChild(ax)
-            }
-        }
-          , Q = function(az, ay) {
-            for (var ax = 0; ax < az.length; ax++) {
-                ae(az[ax], ay)
-            }
-        }
-          , M = function(aB, az, aA) {
-            if (az != null) {
-                var ax = aB[az];
-                if (ax != null) {
-                    var ay = l(ax, aA);
-                    if (ay >= 0) {
-                        delete (ax[ay]);
-                        ax.splice(ay, 1);
-                        return true
-                    }
-                }
-            }
-            return false
-        }
-          , v = function(ay, ax) {
-            return I(ay, function(az, aA) {
-                ag[aA] = ax;
-                if (i.CurrentLibrary.isDragSupported(az)) {
-                    i.CurrentLibrary.setDraggable(az, ax)
-                }
-            })
-        }
-          , ao = function(az, aA, ax) {
-            aA = aA === "block";
-            var ay = null;
-            if (ax) {
-                if (aA) {
-                    ay = function(aC) {
-                        aC.setVisible(true, true, true)
-                    }
+            , an = function (ay) {
+                var ax = i.Defaults.EndpointType || aq;
+                if (ay.container) {
+                    ay.parent = ay.container
                 } else {
-                    ay = function(aC) {
-                        aC.setVisible(false, true, true)
+                    ay.parent = i.CurrentLibrary.getParent(ay.source)
+                }
+                ay._jsPlumb = D,
+                    ep = new ax(ay);
+                z("click", "endpointClick", ep);
+                z("dblclick", "endpointDblClick", ep);
+                return ep
+            }
+            , U = function (az, aC, aB) {
+                var ax = ah[az];
+                if (ax && ax.length) {
+                    for (var aA = 0; aA < ax.length; aA++) {
+                        for (var ay = 0; ay < ax[aA].connections.length; ay++) {
+                            var aD = aC(ax[aA].connections[ay]);
+                            if (aD) {
+                                return
+                            }
+                        }
+                        if (aB) {
+                            aB(ax[aA])
+                        }
                     }
                 }
             }
-            var aB = c(az, "id");
-            U(aB, function(aD) {
-                if (aA && ax) {
-                    var aC = aD.sourceId === aB ? 1 : 0;
-                    if (aD.endpoints[aC].isVisible()) {
-                        aD.setVisible(true)
-                    }
-                } else {
-                    aD.setVisible(aA)
-                }
-            }, ay)
-        }
-          , N = function(ax) {
-            return I(ax, function(az, ay) {
-                var aA = ag[ay] == null ? Y : ag[ay];
-                aA = !aA;
-                ag[ay] = aA;
-                i.CurrentLibrary.setDraggable(az, aA);
-                return aA
-            })
-        }
-          , x = function(ax, az) {
-            var ay = null;
-            if (az) {
-                ay = function(aA) {
-                    var aB = aA.isVisible();
-                    aA.setVisible(!aB)
+            , K = function (ay) {
+                for (var ax in ah) {
+                    U(ax, ay)
                 }
             }
-            U(ax, function(aB) {
-                var aA = aB.isVisible();
-                aB.setVisible(!aA)
-            }, ay)
-        }
-          , E = function(aC) {
-            var aA = aC.timestamp
-              , ax = aC.recalc
-              , aB = aC.offset
-              , ay = aC.elId;
-            if (!ax) {
-                if (aA && aA === C[ay]) {
-                    return V[ay]
+            , ae = function (ax, ay) {
+                if (ax != null && ax.parentNode != null) {
+                    ax.parentNode.removeChild(ax)
                 }
             }
-            if (ax || aB == null) {
-                var az = u(ay);
+            , Q = function (az, ay) {
+                for (var ax = 0; ax < az.length; ax++) {
+                    ae(az[ax], ay)
+                }
+            }
+            , M = function (aB, az, aA) {
                 if (az != null) {
-                    P[ay] = b(az);
-                    V[ay] = n(az);
-                    C[ay] = aA
-                }
-            } else {
-                V[ay] = aB
-            }
-            return V[ay]
-        }
-          , aw = function(ax, ay) {
-            var az = u(ax);
-            var aA = c(az, "id");
-            if (!aA || aA == "undefined") {
-                if (arguments.length == 2 && arguments[1] != undefined) {
-                    aA = ay
-                } else {
-                    aA = "jsPlumb_" + ar()
-                }
-                e(az, "id", aA)
-            }
-            return aA
-        }
-          , am = function(az, ax, ay) {
-            az = az || function() {}
-            ;
-            ax = ax || function() {}
-            ;
-            return function() {
-                var aA = null;
-                try {
-                    aA = ax.apply(this, arguments)
-                } catch (aB) {
-                    k(D, "jsPlumb function failed : " + aB)
-                }
-                if (ay == null || (aA !== ay)) {
-                    try {
-                        az.apply(this, arguments)
-                    } catch (aB) {
-                        k(D, "wrapped function failed : " + aB)
+                    var ax = aB[az];
+                    if (ax != null) {
+                        var ay = l(ax, aA);
+                        if (ay >= 0) {
+                            delete (ax[ay]);
+                            ax.splice(ay, 1);
+                            return true
+                        }
                     }
+                }
+                return false
+            }
+            , v = function (ay, ax) {
+                return I(ay, function (az, aA) {
+                    ag[aA] = ax;
+                    if (i.CurrentLibrary.isDragSupported(az)) {
+                        i.CurrentLibrary.setDraggable(az, ax)
+                    }
+                })
+            }
+            , ao = function (az, aA, ax) {
+                aA = aA === "block";
+                var ay = null;
+                if (ax) {
+                    if (aA) {
+                        ay = function (aC) {
+                            aC.setVisible(true, true, true)
+                        }
+                    } else {
+                        ay = function (aC) {
+                            aC.setVisible(false, true, true)
+                        }
+                    }
+                }
+                var aB = c(az, "id");
+                U(aB, function (aD) {
+                    if (aA && ax) {
+                        var aC = aD.sourceId === aB ? 1 : 0;
+                        if (aD.endpoints[aC].isVisible()) {
+                            aD.setVisible(true)
+                        }
+                    } else {
+                        aD.setVisible(aA)
+                    }
+                }, ay)
+            }
+            , N = function (ax) {
+                return I(ax, function (az, ay) {
+                    var aA = ag[ay] == null ? Y : ag[ay];
+                    aA = !aA;
+                    ag[ay] = aA;
+                    i.CurrentLibrary.setDraggable(az, aA);
+                    return aA
+                })
+            }
+            , x = function (ax, az) {
+                var ay = null;
+                if (az) {
+                    ay = function (aA) {
+                        var aB = aA.isVisible();
+                        aA.setVisible(!aB)
+                    }
+                }
+                U(ax, function (aB) {
+                    var aA = aB.isVisible();
+                    aB.setVisible(!aA)
+                }, ay)
+            }
+            , E = function (aC) {
+                var aA = aC.timestamp
+                    , ax = aC.recalc
+                    , aB = aC.offset
+                    , ay = aC.elId;
+                if (!ax) {
+                    if (aA && aA === C[ay]) {
+                        return V[ay]
+                    }
+                }
+                if (ax || aB == null) {
+                    var az = u(ay);
+                    if (az != null) {
+                        P[ay] = b(az);
+                        V[ay] = n(az);
+                        C[ay] = aA
+                    }
+                } else {
+                    V[ay] = aB
+                }
+                return V[ay]
+            }
+            , aw = function (ax, ay) {
+                var az = u(ax);
+                var aA = c(az, "id");
+                if (!aA || aA == "undefined") {
+                    if (arguments.length == 2 && arguments[1] != undefined) {
+                        aA = ay
+                    } else {
+                        aA = "jsPlumb_" + ar()
+                    }
+                    e(az, "id", aA)
                 }
                 return aA
             }
-        };
+            , am = function (az, ax, ay) {
+                az = az || function () { }
+                    ;
+                ax = ax || function () { }
+                    ;
+                return function () {
+                    var aA = null;
+                    try {
+                        aA = ax.apply(this, arguments)
+                    } catch (aB) {
+                        k(D, "jsPlumb function failed : " + aB)
+                    }
+                    if (ay == null || (aA !== ay)) {
+                        try {
+                            az.apply(this, arguments)
+                        } catch (aB) {
+                            k(D, "wrapped function failed : " + aB)
+                        }
+                    }
+                    return aA
+                }
+            };
         this.connectorClass = "_jsPlumb_connector";
         this.endpointClass = "_jsPlumb_endpoint";
         this.overlayClass = "_jsPlumb_overlay";
@@ -601,7 +601,7 @@
             svg: {},
             vml: {}
         };
-        this.addEndpoint = function(az, aA, aJ) {
+        this.addEndpoint = function (az, aA, aJ) {
             aJ = aJ || {};
             var ay = i.extend({}, aJ);
             i.extend(ay, aA);
@@ -609,10 +609,10 @@
             ay.paintStyle = ay.paintStyle || D.Defaults.EndpointStyle || i.Defaults.EndpointStyle;
             az = w(az);
             var aB = []
-              , aE = az.length && az.constructor != String ? az : [az];
+                , aE = az.length && az.constructor != String ? az : [az];
             for (var aC = 0; aC < aE.length; aC++) {
                 var aH = u(aE[aC])
-                  , ax = aw(aH);
+                    , ax = aw(aH);
                 ay.source = aH;
                 E({
                     elId: ax
@@ -620,7 +620,7 @@
                 var aG = an(ay);
                 S(ah, ax, aG);
                 var aF = V[ax]
-                  , aD = P[ax];
+                    , aD = P[ax];
                 var aI = aG.anchor.compute({
                     xy: [aF.left, aF.top],
                     wh: aD,
@@ -633,8 +633,8 @@
             }
             return aB.length == 1 ? aB[0] : aB
         }
-        ;
-        this.addEndpoints = function(aB, ay, ax) {
+            ;
+        this.addEndpoints = function (aB, ay, ax) {
             var aA = [];
             for (var az = 0; az < ay.length; az++) {
                 var aC = D.addEndpoint(aB, ay[az], ax);
@@ -646,23 +646,23 @@
             }
             return aA
         }
-        ;
-        this.animate = function(az, ay, ax) {
+            ;
+        this.animate = function (az, ay, ax) {
             var aA = u(az)
-              , aD = c(az, "id");
+                , aD = c(az, "id");
             ax = ax || {};
             var aC = i.CurrentLibrary.dragEvents.step;
             var aB = i.CurrentLibrary.dragEvents.complete;
-            ax[aC] = am(ax[aC], function() {
+            ax[aC] = am(ax[aC], function () {
                 D.repaint(aD)
             });
-            ax[aB] = am(ax[aB], function() {
+            ax[aB] = am(ax[aB], function () {
                 D.repaint(aD)
             });
             i.CurrentLibrary.animate(aA, ay, ax)
         }
-        ;
-        this.connect = function(aA, aG) {
+            ;
+        this.connect = function (aA, aG) {
             var ax = i.extend({}, aA);
             if (aG) {
                 i.extend(ax, aG)
@@ -687,8 +687,8 @@
             }
             if (ax.target && !ax.target.endpoint) {
                 var aB = aw(ax.target)
-                  , ay = W[aB];
-                var az = function(aJ, aH, aI, aK) {
+                    , ay = W[aB];
+                var az = function (aJ, aH, aI, aK) {
                     if (aK[aI]) {
                         if (ax[aH]) {
                             ax[aH][1] = aK[aI]
@@ -728,8 +728,8 @@
             at(aD.source);
             return aD
         }
-        ;
-        this.deleteEndpoint = function(ay) {
+            ;
+        this.deleteEndpoint = function (ay) {
             var aD = (typeof ay == "string") ? T[ay] : ay;
             if (aD) {
                 var aA = aD.getUuid();
@@ -753,8 +753,8 @@
                 delete aD
             }
         }
-        ;
-        this.deleteEveryEndpoint = function() {
+            ;
+        this.deleteEveryEndpoint = function () {
             for (var az in ah) {
                 var ax = ah[az];
                 if (ax && ax.length) {
@@ -768,8 +768,8 @@
             delete T;
             T = {}
         }
-        ;
-        var ad = function(ax) {
+            ;
+        var ad = function (ax) {
             D.fire("jsPlumbConnectionDetached", {
                 connection: ax,
                 source: ax.source,
@@ -780,13 +780,13 @@
                 targetEndpoint: ax.endpoints[1]
             })
         };
-        this.detach = function(ax, aB) {
+        this.detach = function (ax, aB) {
             if (arguments.length == 2) {
                 var aF = u(ax)
-                  , az = aw(aF);
+                    , az = aw(aF);
                 var aE = u(aB)
-                  , aA = aw(aE);
-                U(az, function(aG) {
+                    , aA = aw(aE);
+                U(az, function (aG) {
                     if ((aG.sourceId == az && aG.targetId == aA) || (aG.targetId == az && aG.sourceId == aA)) {
                         Q(aG.connector.getDisplayElements(), aG.parent);
                         aG.endpoints[0].removeConnection(aG);
@@ -811,7 +811,7 @@
                                 } else {
                                     var aD = aw(ay.source);
                                     var aC = aw(ay.target);
-                                    U(aD, function(aG) {
+                                    U(aD, function (aG) {
                                         if ((aG.sourceId == aD && aG.targetId == aC) || (aG.targetId == aD && aG.sourceId == aC)) {
                                             Q(aG.connector.getDisplayElements(), aG.parent);
                                             aG.endpoints[0].removeConnection(aG);
@@ -826,8 +826,8 @@
                 }
             }
         }
-        ;
-        this.detachAllConnections = function(az) {
+            ;
+        this.detachAllConnections = function (az) {
             var aA = c(az, "id");
             var ax = ah[aA];
             if (ax && ax.length) {
@@ -836,9 +836,9 @@
                 }
             }
         }
-        ;
+            ;
         this.detachAll = this.detachAllConnections;
-        this.detachEveryConnection = function() {
+        this.detachEveryConnection = function () {
             for (var az in ah) {
                 var ax = ah[az];
                 if (ax && ax.length) {
@@ -850,9 +850,9 @@
             delete L;
             L = {}
         }
-        ;
+            ;
         this.detachEverything = this.detachEveryConnection;
-        this.draggable = function(az, ax) {
+        this.draggable = function (az, ax) {
             if (typeof az == "object" && az.length) {
                 for (var ay = 0; ay < az.length; ay++) {
                     var aA = u(az[ay]);
@@ -876,20 +876,20 @@
                 }
             }
         }
-        ;
-        this.extend = function(ay, ax) {
+            ;
+        this.extend = function (ay, ax) {
             return i.CurrentLibrary.extend(ay, ax)
         }
-        ;
-        this.getDefaultEndpointType = function() {
+            ;
+        this.getDefaultEndpointType = function () {
             return aq
         }
-        ;
-        this.getDefaultConnectionType = function() {
+            ;
+        this.getDefaultConnectionType = function () {
             return G
         }
-        ;
-        this.getConnections = function(aI) {
+            ;
+        this.getConnections = function (aI) {
             if (!aI) {
                 aI = {}
             } else {
@@ -899,7 +899,7 @@
                     }
                 }
             }
-            var aF = function(aJ) {
+            var aF = function (aJ) {
                 var aK = [];
                 if (aJ) {
                     if (typeof aJ == "string") {
@@ -911,25 +911,25 @@
                 return aK
             };
             var aG = aI.scope || i.getDefaultScope()
-              , aE = aF(aG)
-              , ax = aF(aI.source)
-              , aC = aF(aI.target)
-              , ay = function(aK, aJ) {
-                return aK.length > 0 ? l(aK, aJ) != -1 : true
-            }
-              , aB = aE.length > 1 ? {} : []
-              , aH = function(aK, aL) {
-                if (aE.length > 1) {
-                    var aJ = aB[aK];
-                    if (aJ == null) {
-                        aJ = [];
-                        aB[aK] = aJ
-                    }
-                    aJ.push(aL)
-                } else {
-                    aB.push(aL)
+                , aE = aF(aG)
+                , ax = aF(aI.source)
+                , aC = aF(aI.target)
+                , ay = function (aK, aJ) {
+                    return aK.length > 0 ? l(aK, aJ) != -1 : true
                 }
-            };
+                , aB = aE.length > 1 ? {} : []
+                , aH = function (aK, aL) {
+                    if (aE.length > 1) {
+                        var aJ = aB[aK];
+                        if (aJ == null) {
+                            aJ = [];
+                            aB[aK] = aJ
+                        }
+                        aJ.push(aL)
+                    } else {
+                        aB.push(aL)
+                    }
+                };
             for (var aA in L) {
                 if (ay(aE, aA)) {
                     for (var az = 0; az < L[aA].length; az++) {
@@ -942,31 +942,31 @@
             }
             return aB
         }
-        ;
-        this.getAllConnections = function() {
+            ;
+        this.getAllConnections = function () {
             return L
         }
-        ;
-        this.getDefaultScope = function() {
+            ;
+        this.getDefaultScope = function () {
             return B
         }
-        ;
+            ;
         this.getEndpoint = X;
-        this.getEndpoints = function(ax) {
+        this.getEndpoints = function (ax) {
             return ah[aw(ax)]
         }
-        ;
+            ;
         this.getId = aw;
         this.appendElement = R;
-        this.hide = function(ax, ay) {
+        this.hide = function (ax, ay) {
             ao(ax, "none", ay)
         }
-        ;
-        this.init = function() {
+            ;
+        this.init = function () {
             if (!J) {
                 D.setRenderMode(D.Defaults.RenderMode);
-                var ax = function(ay) {
-                    i.CurrentLibrary.bind(document, ay, function(aE) {
+                var ax = function (ay) {
+                    i.CurrentLibrary.bind(document, ay, function (aE) {
                         if (!D.currentlyDragging && ap && aa == i.CANVAS) {
                             for (var aD in L) {
                                 var aF = L[aD];
@@ -997,10 +997,10 @@
                 D.fire("ready")
             }
         }
-        ;
+            ;
         this.jsPlumbUIComponent = t;
         this.EventGenerator = o;
-        this.makeAnchor = function(aE, aB, aC, az, aA, ax) {
+        this.makeAnchor = function (aE, aB, aC, az, aA, ax) {
             if (arguments.length == 0) {
                 return null
             }
@@ -1039,14 +1039,14 @@
                 }
             }
             var aD = new ac(ay);
-            aD.clone = function() {
+            aD.clone = function () {
                 return new ac(ay)
             }
-            ;
+                ;
             return aD
         }
-        ;
-        this.makeAnchors = function(ay) {
+            ;
+        this.makeAnchors = function (ay) {
             var az = [];
             for (var ax = 0; ax < ay.length; ax++) {
                 if (typeof ay[ax] == "string") {
@@ -1059,86 +1059,86 @@
             }
             return az
         }
-        ;
-        this.makeDynamicAnchor = function(ax, ay) {
-            return new ab(ax,ay)
+            ;
+        this.makeDynamicAnchor = function (ax, ay) {
+            return new ab(ax, ay)
         }
-        ;
+            ;
         var W = {};
-        this.makeTarget = function(az, aA, aG) {
+        this.makeTarget = function (az, aA, aG) {
             var ay = i.extend({}, aG);
             i.extend(ay, aA);
             var aF = i.CurrentLibrary
-              , aH = ay.scope || D.Defaults.Scope
-              , aB = ay.deleteEndpointsOnDetach || false
-              , ax = function(aM) {
-                var aK = aw(aM);
-                W[aK] = ay.endpoint;
-                var aJ = i.extend({}, ay.dropOptions || {});
-                var aI = function() {
-                    var aN = u(aF.getDragObject(arguments))
-                      , aU = c(aN, "dragId")
-                      , aP = c(aN, "originalScope");
-                    if (aP) {
-                        i.CurrentLibrary.setDragScope(aN, aP)
-                    }
-                    var aR = Z[aU]
-                      , aQ = aR.endpoints[0]
-                      , aT = ay.endpoint ? i.extend({}, ay.endpoint) : null
-                      , aO = i.addEndpoint(aM, aT);
-                    var aS = i.connect({
-                        source: aQ,
-                        target: aO,
-                        scope: aP
-                    });
-                    if (aB) {
-                        aS.endpointToDeleteOnDetach = aO
-                    }
+                , aH = ay.scope || D.Defaults.Scope
+                , aB = ay.deleteEndpointsOnDetach || false
+                , ax = function (aM) {
+                    var aK = aw(aM);
+                    W[aK] = ay.endpoint;
+                    var aJ = i.extend({}, ay.dropOptions || {});
+                    var aI = function () {
+                        var aN = u(aF.getDragObject(arguments))
+                            , aU = c(aN, "dragId")
+                            , aP = c(aN, "originalScope");
+                        if (aP) {
+                            i.CurrentLibrary.setDragScope(aN, aP)
+                        }
+                        var aR = Z[aU]
+                            , aQ = aR.endpoints[0]
+                            , aT = ay.endpoint ? i.extend({}, ay.endpoint) : null
+                            , aO = i.addEndpoint(aM, aT);
+                        var aS = i.connect({
+                            source: aQ,
+                            target: aO,
+                            scope: aP
+                        });
+                        if (aB) {
+                            aS.endpointToDeleteOnDetach = aO
+                        }
+                    };
+                    var aL = aF.dragEvents.drop;
+                    aJ.scope = aJ.scope || aH;
+                    aJ[aL] = am(aJ[aL], aI);
+                    aF.initDroppable(aM, aJ)
                 };
-                var aL = aF.dragEvents.drop;
-                aJ.scope = aJ.scope || aH;
-                aJ[aL] = am(aJ[aL], aI);
-                aF.initDroppable(aM, aJ)
-            };
             az = w(az);
             var aD = []
-              , aE = az.length && az.constructor != String ? az : [az];
+                , aE = az.length && az.constructor != String ? az : [az];
             for (var aC = 0; aC < aE.length; aC++) {
                 ax(u(aE[aC]))
             }
         }
-        ;
-        this.makeTargets = function(az, aA, ax) {
+            ;
+        this.makeTargets = function (az, aA, ax) {
             for (var ay = 0; ay < az.length; ay++) {
                 D.makeTarget(az[ay], aA, ax)
             }
         }
-        ;
-        this.ready = function(ax) {
+            ;
+        this.ready = function (ax) {
             D.bind("ready", ax)
         }
-        ,
-        this.repaint = function(ay) {
-            var az = function(aA) {
-                at(u(aA))
-            };
-            if (typeof ay == "object") {
-                for (var ax = 0; ax < ay.length; ax++) {
-                    az(ay[ax])
+            ,
+            this.repaint = function (ay) {
+                var az = function (aA) {
+                    at(u(aA))
+                };
+                if (typeof ay == "object") {
+                    for (var ax = 0; ax < ay.length; ax++) {
+                        az(ay[ax])
+                    }
+                } else {
+                    az(ay)
                 }
-            } else {
-                az(ay)
             }
-        }
-        ;
-        this.repaintEverything = function() {
+            ;
+        this.repaintEverything = function () {
             var ay = ar();
             for (var ax in ah) {
                 at(u(ax), null, ay)
             }
         }
-        ;
-        this.removeAllEndpoints = function(az) {
+            ;
+        this.removeAllEndpoints = function (az) {
             var ax = c(az, "id");
             var aA = ah[ax];
             for (var ay in aA) {
@@ -1146,46 +1146,46 @@
             }
             ah[ax] = []
         }
-        ;
+            ;
         this.removeEveryEndpoint = this.deleteEveryEndpoint;
-        this.removeEndpoint = function(ax, ay) {
+        this.removeEndpoint = function (ax, ay) {
             D.deleteEndpoint(ay)
         }
-        ;
-        this.reset = function() {
+            ;
+        this.reset = function () {
             this.deleteEveryEndpoint();
             this.clearListeners()
         }
-        ;
-        this.setAutomaticRepaint = function(ax) {
+            ;
+        this.setAutomaticRepaint = function (ax) {
             y = ax
         }
-        ;
-        this.setDefaultScope = function(ax) {
+            ;
+        this.setDefaultScope = function (ax) {
             B = ax
         }
-        ;
+            ;
         this.setDraggable = v;
-        this.setDraggableByDefault = function(ax) {
+        this.setDraggableByDefault = function (ax) {
             Y = ax
         }
-        ;
-        this.setDebugLog = function(ax) {
+            ;
+        this.setDebugLog = function (ax) {
             F = ax
         }
-        ;
-        this.setRepaintFunction = function(ax) {
+            ;
+        this.setRepaintFunction = function (ax) {
             ak = ax
         }
-        ;
-        this.setMouseEventsEnabled = function(ax) {
+            ;
+        this.setMouseEventsEnabled = function (ax) {
             ap = ax
         }
-        ;
+            ;
         this.CANVAS = "canvas";
         this.SVG = "svg";
         this.VML = "vml";
-        this.setRenderMode = function(ax) {
+        this.setRenderMode = function (ax) {
             if (ax) {
                 ax = ax.toLowerCase()
             } else {
@@ -1207,16 +1207,16 @@
             }
             return aa
         }
-        ;
-        this.getRenderMode = function() {
+            ;
+        this.getRenderMode = function () {
             return aa
         }
-        ;
-        this.show = function(ax, ay) {
+            ;
+        this.show = function (ax, ay) {
             ao(ax, "block", ay)
         }
-        ;
-        this.sizeCanvas = function(az, ax, aB, ay, aA) {
+            ;
+        this.sizeCanvas = function (az, ax, aB, ay, aA) {
             if (az) {
                 az.style.height = aA + "px";
                 az.height = aA;
@@ -1226,15 +1226,15 @@
                 az.style.top = aB + "px"
             }
         }
-        ;
-        this.getTestHarness = function() {
+            ;
+        this.getTestHarness = function () {
             return {
                 endpointsByElement: ah,
-                endpointCount: function(ax) {
+                endpointCount: function (ax) {
                     var ay = ah[ax];
                     return ay ? ay.length : 0
                 },
-                connectionCount: function(ax) {
+                connectionCount: function (ax) {
                     ax = ax || B;
                     var ay = L[ax];
                     return ay ? ay.length : 0
@@ -1245,11 +1245,11 @@
                 makeDynamicAnchor: self.makeDynamicAnchor
             }
         }
-        ;
+            ;
         this.toggle = x;
         this.toggleVisible = x;
         this.toggleDraggable = N;
-        this.unload = function() {
+        this.unload = function () {
             delete ah;
             delete T;
             delete V;
@@ -1258,23 +1258,23 @@
             delete ag;
             delete af
         }
-        ;
+            ;
         this.wrap = am;
         this.addListener = this.bind;
-        var ac = function(aB) {
+        var ac = function (aB) {
             var az = this;
             this.x = aB.x || 0;
             this.y = aB.y || 0;
             var ay = aB.orientation || [0, 0];
             var aA = null
-              , ax = null;
+                , ax = null;
             this.offsets = aB.offsets || [0, 0];
             az.timestamp = null;
-            this.compute = function(aH) {
+            this.compute = function (aH) {
                 var aG = aH.xy
-                  , aC = aH.wh
-                  , aE = aH.element
-                  , aF = aH.timestamp;
+                    , aC = aH.wh
+                    , aE = aH.element
+                    , aF = aH.timestamp;
                 if (aF && aF === az.timestamp) {
                     return ax
                 }
@@ -1290,12 +1290,12 @@
                 az.timestamp = aF;
                 return ax
             }
-            ;
-            this.getOrientation = function() {
+                ;
+            this.getOrientation = function () {
                 return ay
             }
-            ;
-            this.equals = function(aC) {
+                ;
+            this.equals = function (aC) {
                 if (!aC) {
                     return false
                 }
@@ -1303,22 +1303,22 @@
                 var aE = this.getOrientation();
                 return this.x == aC.x && this.y == aC.y && this.offsets[0] == aC.offsets[0] && this.offsets[1] == aC.offsets[1] && aE[0] == aD[0] && aE[1] == aD[1]
             }
-            ;
-            this.getCurrentLocation = function() {
+                ;
+            this.getCurrentLocation = function () {
                 return ax
             }
         };
-        var H = function(aD) {
+        var H = function (aD) {
             var aB = aD.reference;
             var aC = aD.referenceCanvas;
             var az = b(u(aC));
             var ay = 0
-              , aE = 0;
+                , aE = 0;
             var ax = null;
             var aA = null;
-            this.compute = function(aJ) {
+            this.compute = function (aJ) {
                 var aI = aJ.xy
-                  , aH = aJ.element;
+                    , aH = aJ.element;
                 var aF = [aI[0] + (az[0] / 2), aI[1] + (az[1] / 2)];
                 if (aH.canvas && aH.canvas.offsetParent) {
                     var aG = aH.canvas.offsetParent.tagName.toLowerCase() === "body" ? {
@@ -1331,8 +1331,8 @@
                 aA = aF;
                 return aF
             }
-            ;
-            this.getOrientation = function() {
+                ;
+            this.getOrientation = function () {
                 if (ax) {
                     return ax
                 } else {
@@ -1340,67 +1340,67 @@
                     return [Math.abs(aF[0]) * ay * -1, Math.abs(aF[1]) * aE * -1]
                 }
             }
-            ;
-            this.over = function(aF) {
+                ;
+            this.over = function (aF) {
                 ax = aF.getOrientation()
             }
-            ;
-            this.out = function() {
+                ;
+            this.out = function () {
                 ax = null
             }
-            ;
-            this.getCurrentLocation = function() {
+                ;
+            this.getCurrentLocation = function () {
                 return aA
             }
         };
-        var ab = function(az, ay) {
+        var ab = function (az, ay) {
             this.isSelective = true;
             this.isDynamic = true;
             var aG = []
-              , aE = function(aH) {
-                return aH.constructor == ac ? aH : i.makeAnchor(aH)
-            };
+                , aE = function (aH) {
+                    return aH.constructor == ac ? aH : i.makeAnchor(aH)
+                };
             for (var aD = 0; aD < az.length; aD++) {
                 aG[aD] = aE(az[aD])
             }
-            this.addAnchor = function(aH) {
+            this.addAnchor = function (aH) {
                 aG.push(aE(aH))
             }
-            ;
-            this.getAnchors = function() {
+                ;
+            this.getAnchors = function () {
                 return aG
             }
-            ;
+                ;
             this.locked = false;
             var aA = aG.length > 0 ? aG[0] : null
-              , aC = aG.length > 0 ? 0 : -1
-              , aF = this
-              , aB = function(aJ, aH, aN, aM, aI) {
-                var aL = aM[0] + (aJ.x * aI[0])
-                  , aK = aM[1] + (aJ.y * aI[1]);
-                return Math.sqrt(Math.pow(aH - aL, 2) + Math.pow(aN - aK, 2))
-            }
-              , ax = ay || function(aR, aI, aJ, aK, aH) {
-                var aM = aJ[0] + (aK[0] / 2)
-                  , aL = aJ[1] + (aK[1] / 2);
-                var aO = -1
-                  , aQ = Infinity;
-                for (var aN = 0; aN < aH.length; aN++) {
-                    var aP = aB(aH[aN], aM, aL, aR, aI);
-                    if (aP < aQ) {
-                        aO = aN + 0;
-                        aQ = aP
-                    }
+                , aC = aG.length > 0 ? 0 : -1
+                , aF = this
+                , aB = function (aJ, aH, aN, aM, aI) {
+                    var aL = aM[0] + (aJ.x * aI[0])
+                        , aK = aM[1] + (aJ.y * aI[1]);
+                    return Math.sqrt(Math.pow(aH - aL, 2) + Math.pow(aN - aK, 2))
                 }
-                return aH[aO]
-            }
-            ;
-            this.compute = function(aL) {
+                , ax = ay || function (aR, aI, aJ, aK, aH) {
+                    var aM = aJ[0] + (aK[0] / 2)
+                        , aL = aJ[1] + (aK[1] / 2);
+                    var aO = -1
+                        , aQ = Infinity;
+                    for (var aN = 0; aN < aH.length; aN++) {
+                        var aP = aB(aH[aN], aM, aL, aR, aI);
+                        if (aP < aQ) {
+                            aO = aN + 0;
+                            aQ = aP
+                        }
+                    }
+                    return aH[aO]
+                }
+                ;
+            this.compute = function (aL) {
                 var aK = aL.xy
-                  , aH = aL.wh
-                  , aJ = aL.timestamp
-                  , aI = aL.txy
-                  , aN = aL.twh;
+                    , aH = aL.wh
+                    , aJ = aL.timestamp
+                    , aI = aL.txy
+                    , aN = aL.twh;
                 if (aF.locked || aI == null || aN == null) {
                     return aA.compute(aL)
                 } else {
@@ -1410,48 +1410,48 @@
                 var aM = aA.compute(aL);
                 return aM
             }
-            ;
-            this.getCurrentLocation = function() {
+                ;
+            this.getCurrentLocation = function () {
                 var aH = aA != null ? aA.getCurrentLocation() : null;
                 return aH
             }
-            ;
-            this.getOrientation = function() {
+                ;
+            this.getOrientation = function () {
                 return aA != null ? aA.getOrientation() : [0, 0]
             }
-            ;
-            this.over = function(aH) {
+                ;
+            this.over = function (aH) {
                 if (aA != null) {
                     aA.over(aH)
                 }
             }
-            ;
-            this.out = function() {
+                ;
+            this.out = function () {
                 if (aA != null) {
                     aA.out()
                 }
             }
         };
-        var G = function(aR) {
+        var G = function (aR) {
             t.apply(this, arguments);
             var aG = this;
             var ay = true;
-            this.isVisible = function() {
+            this.isVisible = function () {
                 return ay
             }
-            ;
-            this.setVisible = function(aS) {
+                ;
+            this.setVisible = function (aS) {
                 ay = aS;
                 if (aG.connector && aG.connector.canvas) {
                     aG.connector.canvas.style.display = aS ? "block" : "none"
                 }
             }
-            ;
+                ;
             var aJ = new String("_jsplumb_c_" + (new Date()).getTime());
-            this.getId = function() {
+            this.getId = function () {
                 return aJ
             }
-            ;
+                ;
             this.parent = aR.parent;
             this.source = u(aR.source);
             this.target = u(aR.target);
@@ -1464,24 +1464,24 @@
             this.sourceId = c(this.source, "id");
             this.targetId = c(this.target, "id");
             this.endpointsOnTop = aR.endpointsOnTop != null ? aR.endpointsOnTop : true;
-            this.getAttachedElements = function() {
+            this.getAttachedElements = function () {
                 return aG.endpoints
             }
-            ;
-            this.savePosition = function() {
+                ;
+            this.savePosition = function () {
                 srcWhenMouseDown = i.CurrentLibrary.getOffset(i.CurrentLibrary.getElementObject(aG.source));
                 targetWhenMouseDown = i.CurrentLibrary.getOffset(i.CurrentLibrary.getElementObject(aG.target))
             }
-            ;
+                ;
             this.scope = aR.scope;
             this.endpoints = [];
             this.endpointStyles = [];
-            var aP = function(aS) {
+            var aP = function (aS) {
                 if (aS) {
                     return i.makeAnchor(aS)
                 }
             };
-            var aM = function(aS, aX, aT, aV, aU, aW) {
+            var aM = function (aS, aX, aT, aV, aU, aW) {
                 if (aS) {
                     aG.endpoints[aX] = aS;
                     aS.addConnection(aG)
@@ -1516,17 +1516,17 @@
                         }
                     }
                     var aZ = aT.anchors ? aT.anchors[aX] : aP(D.Defaults.Anchors[aX]) || aP(i.Defaults.Anchors[aX]) || aP(D.Defaults.Anchor) || aP(i.Defaults.Anchor)
-                      , a2 = aT.uuids ? aT.uuids[aX] : null
-                      , aY = an({
-                        paintStyle: a1,
-                        hoverPaintStyle: a0,
-                        endpoint: a3,
-                        connections: [aG],
-                        uuid: a2,
-                        anchor: aZ,
-                        source: aV,
-                        container: aT.container
-                    });
+                        , a2 = aT.uuids ? aT.uuids[aX] : null
+                        , aY = an({
+                            paintStyle: a1,
+                            hoverPaintStyle: a0,
+                            endpoint: a3,
+                            connections: [aG],
+                            uuid: a2,
+                            anchor: aZ,
+                            source: aV,
+                            container: aT.container
+                        });
                     aG.endpoints[aX] = aY;
                     if (aT.drawEndpoints === false) {
                         aY.setVisible(false, true, true)
@@ -1545,7 +1545,7 @@
             if (!this.scope) {
                 this.scope = this.endpoints[0].scope
             }
-            this.setConnector = function(aS, aT) {
+            this.setConnector = function (aS, aT) {
                 if (aG.connector != null) {
                     Q(aG.connector.getDisplayElements(), aG.parent)
                 }
@@ -1563,15 +1563,15 @@
                     }
                 }
                 this.canvas = this.connector.canvas;
-                this.connector.bind("click", function(aV, aW) {
+                this.connector.bind("click", function (aV, aW) {
                     _mouseWasDown = false;
                     aG.fire("click", aG, aW)
                 });
-                this.connector.bind("dblclick", function(aV, aW) {
+                this.connector.bind("dblclick", function (aV, aW) {
                     _mouseWasDown = false;
                     aG.fire("dblclick", aG, aW)
                 });
-                this.connector.bind("mouseenter", function(aV, aW) {
+                this.connector.bind("mouseenter", function (aV, aW) {
                     if (!aG.isHover()) {
                         if (p == null) {
                             aG.setHover(true)
@@ -1579,7 +1579,7 @@
                         aG.fire("mouseenter", aG, aW)
                     }
                 });
-                this.connector.bind("mouseexit", function(aV, aW) {
+                this.connector.bind("mouseexit", function (aV, aW) {
                     if (aG.isHover()) {
                         if (p == null) {
                             aG.setHover(false)
@@ -1587,12 +1587,12 @@
                         aG.fire("mouseexit", aG, aW)
                     }
                 });
-                this.connector.bind("mousedown", function(aV, aW) {
+                this.connector.bind("mousedown", function (aV, aW) {
                     _mouseDown = true;
                     _mouseDownAt = i.CurrentLibrary.getPageXY(aW);
                     aG.savePosition()
                 });
-                this.connector.bind("mouseup", function(aV, aW) {
+                this.connector.bind("mouseup", function (aV, aW) {
                     _mouseDown = false;
                     if (aG.connector == p) {
                         p = null
@@ -1602,7 +1602,7 @@
                     aG.repaint()
                 }
             }
-            ;
+                ;
             aG.setConnector(this.endpoints[0].connector || this.endpoints[1].connector || aR.connector || D.Defaults.Connector || i.Defaults.Connector, true);
             this.setPaintStyle(this.endpoints[0].connectorStyle || this.endpoints[1].connectorStyle || aR.paintStyle || D.Defaults.PaintStyle || i.Defaults.PaintStyle, true);
             this.setHoverPaintStyle(this.endpoints[0].connectorHoverStyle || this.endpoints[1].connectorHoverStyle || aR.hoverPaintStyle || D.Defaults.HoverPaintStyle || i.Defaults.HoverPaintStyle, true);
@@ -1612,7 +1612,7 @@
             if (az) {
                 for (var aO = 0; aO < az.length; aO++) {
                     var aN = az[aO]
-                      , aC = null;
+                        , aC = null;
                     if (aN.constructor == Array) {
                         var aA = aN[0];
                         var aK = i.CurrentLibrary.extend({
@@ -1641,7 +1641,7 @@
                     this.overlays.push(aC)
                 }
             }
-            var aQ = function(aU) {
+            var aQ = function (aU) {
                 var aS = -1;
                 for (var aT = 0; aT < aG.overlays.length; aT++) {
                     if (aU === aG.overlays[aT].id) {
@@ -1651,47 +1651,47 @@
                 }
                 return aS
             };
-            this.addOverlay = function(aS) {
+            this.addOverlay = function (aS) {
                 aG.overlays.push(aS)
             }
-            ;
-            this.getOverlay = function(aT) {
+                ;
+            this.getOverlay = function (aT) {
                 var aS = aQ(aT);
                 return aS >= 0 ? aG.overlays[aS] : null
             }
-            ;
-            this.hideOverlay = function(aT) {
+                ;
+            this.hideOverlay = function (aT) {
                 var aS = aG.getOverlay(aT);
                 if (aS) {
                     aS.hide()
                 }
             }
-            ;
-            this.showOverlay = function(aT) {
+                ;
+            this.showOverlay = function (aT) {
                 var aS = aG.getOverlay(aT);
                 if (aS) {
                     aS.show()
                 }
             }
-            ;
-            this.removeAllOverlays = function() {
+                ;
+            this.removeAllOverlays = function () {
                 aG.overlays.splice(0, aG.overlays.length);
                 aG.repaint()
             }
-            ;
-            this.removeOverlay = function(aT) {
+                ;
+            this.removeOverlay = function (aT) {
                 var aS = aQ(aT);
                 if (aS != -1) {
                     aG.overlays.splice(aS, 1)
                 }
             }
-            ;
-            this.removeOverlays = function() {
+                ;
+            this.removeOverlays = function () {
                 for (var aS = 0; aS < arguments.length; aS++) {
                     aG.removeOverlay(arguments[aS])
                 }
             }
-            ;
+                ;
             this.labelStyle = aR.labelStyle || D.Defaults.LabelStyle || i.Defaults.LabelStyle;
             this.label = aR.label;
             if (this.label) {
@@ -1709,13 +1709,13 @@
             E({
                 elId: this.targetId
             });
-            this.setLabel = function(aS) {
+            this.setLabel = function (aS) {
                 aG.label = aS;
                 D.repaint(aG.source)
             }
-            ;
+                ;
             var aD = V[this.sourceId]
-              , aB = P[this.sourceId];
+                , aB = P[this.sourceId];
             var ax = V[this.targetId];
             var aE = P[this.targetId];
             var aL = this.endpoints[0].anchor.compute({
@@ -1740,17 +1740,17 @@
             this.endpoints[1].paint({
                 anchorLoc: aL
             });
-            this.paint = function(aV) {
+            this.paint = function (aV) {
                 aV = aV || {};
                 var aW = aV.elId
-                  , a5 = aV.ui
-                  , a2 = aV.recalc
-                  , a4 = aV.timestamp
-                  , aT = false
-                  , a0 = aT ? this.sourceId : this.targetId
-                  , aU = aT ? this.targetId : this.sourceId
-                  , a3 = aT ? 0 : 1
-                  , a7 = aT ? 1 : 0;
+                    , a5 = aV.ui
+                    , a2 = aV.recalc
+                    , a4 = aV.timestamp
+                    , aT = false
+                    , a0 = aT ? this.sourceId : this.targetId
+                    , aU = aT ? this.targetId : this.sourceId
+                    , a3 = aT ? 0 : 1
+                    , a7 = aT ? 1 : 0;
                 E({
                     elId: aW,
                     offset: a5,
@@ -1762,7 +1762,7 @@
                     timestamp: a4
                 });
                 var a1 = this.endpoints[a7].anchor.getCurrentLocation()
-                  , aY = this.endpoints[a3].anchor.getCurrentLocation();
+                    , aY = this.endpoints[a3].anchor.getCurrentLocation();
                 var a6 = 0;
                 for (var aX = 0; aX < aG.overlays.length; aX++) {
                     var aS = aG.overlays[aX];
@@ -1782,33 +1782,33 @@
                     }
                 }
             }
-            ;
-            this.repaint = function() {
+                ;
+            this.repaint = function () {
                 this.paint({
                     elId: this.sourceId,
                     recalc: true
                 })
             }
-            ;
+                ;
             O(aG.source, aR.draggable, aR.dragOptions);
             O(aG.target, aR.draggable, aR.dragOptions);
             if (this.source.resize) {
-                this.source.resize(function(aS) {
+                this.source.resize(function (aS) {
                     i.repaint(aG.sourceId)
                 })
             }
             aG.repaint()
         };
-        var aq = function(aY) {
+        var aq = function (aY) {
             i.jsPlumbUIComponent.apply(this, arguments);
             aY = aY || {};
             var aN = this;
             var az = true;
-            this.isVisible = function() {
+            this.isVisible = function () {
                 return az
             }
-            ;
-            this.setVisible = function(a0, a3, aZ) {
+                ;
+            this.setVisible = function (a0, a3, aZ) {
                 az = a0;
                 if (aN.canvas) {
                     aN.canvas.style.display = a0 ? "block" : "none"
@@ -1825,23 +1825,23 @@
                     }
                 }
             }
-            ;
+                ;
             var aO = new String("_jsplumb_e_" + (new Date()).getTime());
-            this.getId = function() {
+            this.getId = function () {
                 return aO
             }
-            ;
+                ;
             if (aY.dynamicAnchors) {
                 aN.anchor = new ab(i.makeAnchors(aY.dynamicAnchors))
             } else {
                 aN.anchor = aY.anchor ? i.makeAnchor(aY.anchor) : aY.anchors ? i.makeAnchor(aY.anchors) : i.makeAnchor("TopCenter")
             }
             var aL = aY.endpoint || D.Defaults.Endpoint || i.Defaults.Endpoint || "Dot"
-              , aF = {
-                _jsPlumb: aN._jsPlumb,
-                parent: aY.parent,
-                container: aY.container
-            };
+                , aF = {
+                    _jsPlumb: aN._jsPlumb,
+                    parent: aY.parent,
+                    container: aY.container
+                };
             if (aL.constructor == String) {
                 aL = new i.Endpoints[aa][aL](aF)
             } else {
@@ -1852,27 +1852,27 @@
                     aL = aL.clone()
                 }
             }
-            this.clone = function() {
+            this.clone = function () {
                 var aZ = new Object();
                 aL.constructor.apply(aZ, [aF]);
                 return aZ
             }
-            ;
+                ;
             aN.endpoint = aL;
             aN.type = aN.endpoint.type;
-            this.endpoint.bind("click", function(aZ) {
+            this.endpoint.bind("click", function (aZ) {
                 aN.fire("click", aN, aZ)
             });
-            this.endpoint.bind("dblclick", function(aZ) {
+            this.endpoint.bind("dblclick", function (aZ) {
                 aN.fire("dblclick", aN, aZ)
             });
-            this.endpoint.bind("mouseenter", function(aZ, a0) {
+            this.endpoint.bind("mouseenter", function (aZ, a0) {
                 if (!aN.isHover()) {
                     aN.setHover(true);
                     aN.fire("mouseenter", aN, a0)
                 }
             });
-            this.endpoint.bind("mouseexit", function(aZ, a0) {
+            this.endpoint.bind("mouseexit", function (aZ, a0) {
                 if (aN.isHover()) {
                     aN.setHover(false);
                     aN.fire("mouseexit", aN, a0)
@@ -1889,9 +1889,9 @@
             this.isSource = aY.isSource || false;
             this.isTarget = aY.isTarget || false;
             var aM = aY.source
-              , aH = aY.uuid
-              , aW = null
-              , aB = null;
+                , aH = aY.uuid
+                , aW = null
+                , aB = null;
             if (aH) {
                 T[aH] = aN
             }
@@ -1899,25 +1899,25 @@
             this.elementId = aE;
             this.element = aM;
             var aT = aY.maxConnections || D.Defaults.MaxConnections;
-            this.getAttachedElements = function() {
+            this.getAttachedElements = function () {
                 return aN.connections
             }
-            ;
+                ;
             this.canvas = this.endpoint.canvas;
             this.connections = aY.connections || [];
             this.scope = aY.scope || B;
             this.timestamp = null;
             var aJ = aY.reattach || false;
             var aI = aY.dragAllowedWhenFull || true;
-            this.computeAnchor = function(aZ) {
+            this.computeAnchor = function (aZ) {
                 return aN.anchor.compute(aZ)
             }
-            ;
-            this.addConnection = function(aZ) {
+                ;
+            this.addConnection = function (aZ) {
                 aN.connections.push(aZ)
             }
-            ;
-            this.detach = function(a0, a2) {
+                ;
+            this.detach = function (a0, a2) {
                 var aZ = l(aN.connections, a0);
                 if (aZ >= 0) {
                     aN.connections.splice(aZ, 1);
@@ -1935,14 +1935,14 @@
                     }
                 }
             }
-            ;
-            this.detachAll = function() {
+                ;
+            this.detachAll = function () {
                 while (aN.connections.length > 0) {
                     aN.detach(aN.connections[0])
                 }
             }
-            ;
-            this.detachFrom = function(a0) {
+                ;
+            this.detachFrom = function (a0) {
                 var a1 = [];
                 for (var aZ = 0; aZ < aN.connections.length; aZ++) {
                     if (aN.connections[aZ].endpoints[1] == a0 || aN.connections[aZ].endpoints[0] == a0) {
@@ -1954,23 +1954,23 @@
                     aN.detach(a1[aZ])
                 }
             }
-            ;
-            this.detachFromConnection = function(a0) {
+                ;
+            this.detachFromConnection = function (a0) {
                 var aZ = l(aN.connections, a0);
                 if (aZ >= 0) {
                     aN.connections.splice(aZ, 1)
                 }
             }
-            ;
-            this.getElement = function() {
+                ;
+            this.getElement = function () {
                 return aM
             }
-            ;
-            this.getUuid = function() {
+                ;
+            this.getUuid = function () {
                 return aH
             }
-            ;
-            this.makeInPlaceCopy = function() {
+                ;
+            this.makeInPlaceCopy = function () {
                 return an({
                     anchor: aN.anchor,
                     source: aM,
@@ -1978,8 +1978,8 @@
                     endpoint: aL
                 })
             }
-            ;
-            this.isConnectedTo = function(a1) {
+                ;
+            this.isConnectedTo = function (a1) {
                 var a0 = false;
                 if (a1) {
                     for (var aZ = 0; aZ < aN.connections.length; aZ++) {
@@ -1991,29 +1991,29 @@
                 }
                 return a0
             }
-            ;
-            this.isFloating = function() {
+                ;
+            this.isFloating = function () {
                 return aW != null
             }
-            ;
-            this.connectorSelector = function() {
+                ;
+            this.connectorSelector = function () {
                 return (aN.connections.length < aT) || aT == -1 ? null : aN.connections[0]
             }
-            ;
-            this.isFull = function() {
+                ;
+            this.isFull = function () {
                 return !(aN.isFloating() || aT < 1 || aN.connections.length < aT)
             }
-            ;
-            this.setDragAllowedWhenFull = function(aZ) {
+                ;
+            this.setDragAllowedWhenFull = function (aZ) {
                 aI = aZ
             }
-            ;
+                ;
             this.setStyle = aN.setPaintStyle;
-            this.equals = function(aZ) {
+            this.equals = function (aZ) {
                 return this.anchor.equals(aZ.anchor)
             }
-            ;
-            var aK = function(a0) {
+                ;
+            var aK = function (a0) {
                 var aZ = 0;
                 if (a0 != null) {
                     for (var a1 = 0; a1 < aN.connections.length; a1++) {
@@ -2025,13 +2025,13 @@
                 }
                 return aN.connections[aZ]
             };
-            this.paint = function(a2) {
+            this.paint = function (a2) {
                 a2 = a2 || {};
                 var a6 = a2.timestamp;
                 if (!a6 || aN.timestamp !== a6) {
                     var a5 = a2.anchorPoint
-                      , a1 = a2.canvas
-                      , a3 = a2.connectorPaintStyle;
+                        , a1 = a2.canvas
+                        , a3 = a2.connectorPaintStyle;
                     if (a5 == null) {
                         var bc = a2.offset || V[aE];
                         var aZ = a2.dimensions || P[aE];
@@ -2055,7 +2055,7 @@
                                 var bb = a9.endpoints[0] == aN ? 1 : 0;
                                 var a4 = bb == 0 ? a9.sourceId : a9.targetId;
                                 var a8 = V[a4]
-                                  , ba = P[a4];
+                                    , ba = P[a4];
                                 a0.txy = [a8.left, a8.top];
                                 a0.twh = ba;
                                 a0.tElement = a9.endpoints[bb]
@@ -2068,16 +2068,16 @@
                     aN.timestamp = a6
                 }
             }
-            ;
+                ;
             this.repaint = this.paint;
             this.removeConnection = this.detach;
             if (aY.isSource && i.CurrentLibrary.isDragSupported(aM)) {
                 var aS = null
-                  , aO = null
-                  , aR = null
-                  , ax = false
-                  , aA = null;
-                var aC = function() {
+                    , aO = null
+                    , aR = null
+                    , ax = false
+                    , aA = null;
+                var aC = function () {
                     aR = aN.connectorSelector();
                     if (aN.isFull() && !aI) {
                         return false
@@ -2093,14 +2093,14 @@
                     R(aS, aN.parent);
                     var a0 = aw(a6);
                     var a7 = u(aB.canvas)
-                      , a5 = i.CurrentLibrary.getOffset(a7)
-                      , a2 = aB.canvas.offsetParent != null ? aB.canvas.offsetParent.tagName.toLowerCase() === "body" ? {
-                        left: 0,
-                        top: 0
-                    } : n(aB.canvas.offsetParent) : {
-                        left: 0,
-                        top: 0
-                    };
+                        , a5 = i.CurrentLibrary.getOffset(a7)
+                        , a2 = aB.canvas.offsetParent != null ? aB.canvas.offsetParent.tagName.toLowerCase() === "body" ? {
+                            left: 0,
+                            top: 0
+                        } : n(aB.canvas.offsetParent) : {
+                            left: 0,
+                            top: 0
+                        };
                     i.CurrentLibrary.setOffset(aS, {
                         left: a5.left - a2.left,
                         top: a5.top - a2.top
@@ -2165,20 +2165,20 @@
                     D.currentlyDragging = true
                 };
                 var ay = i.CurrentLibrary
-                  , aU = aY.dragOptions || {}
-                  , aP = i.extend({}, ay.defaultDragOptions)
-                  , aQ = ay.dragEvents.start
-                  , aX = ay.dragEvents.stop
-                  , aG = ay.dragEvents.drag;
+                    , aU = aY.dragOptions || {}
+                    , aP = i.extend({}, ay.defaultDragOptions)
+                    , aQ = ay.dragEvents.start
+                    , aX = ay.dragEvents.stop
+                    , aG = ay.dragEvents.drag;
                 aU = i.extend(aP, aU);
                 aU.scope = aU.scope || aN.scope;
                 aU[aQ] = am(aU[aQ], aC);
-                aU[aG] = am(aU[aG], function() {
+                aU[aG] = am(aU[aG], function () {
                     var aZ = i.CurrentLibrary.getUIPosition(arguments);
                     i.CurrentLibrary.setOffset(aS, aZ);
                     at(u(aS), aZ)
                 });
-                aU[aX] = am(aU[aX], function() {
+                aU[aX] = am(aU[aX], function () {
                     M(ah, aO, aW);
                     Q([aS, aW.canvas], aM);
                     ae(aB.canvas, aM);
@@ -2221,7 +2221,7 @@
                 var aV = u(aN.canvas);
                 i.CurrentLibrary.initDraggable(aV, aU)
             }
-            var aD = function(a2) {
+            var aD = function (a2) {
                 if (aY.isTarget && i.CurrentLibrary.isDropSupported(aM)) {
                     var aZ = aY.dropOptions || D.Defaults.DropOptions || i.Defaults.DropOptions;
                     aZ = i.extend({}, aZ);
@@ -2230,7 +2230,7 @@
                     var a3 = i.CurrentLibrary.dragEvents.drop;
                     var a4 = i.CurrentLibrary.dragEvents.over;
                     var a0 = i.CurrentLibrary.dragEvents.out;
-                    var a1 = function() {
+                    var a1 = function () {
                         var be = u(i.CurrentLibrary.getDragObject(arguments));
                         var a6 = c(be, "dragId");
                         var a8 = c(be, "elId");
@@ -2240,7 +2240,7 @@
                         }
                         var ba = Z[a6];
                         var bb = ba.floatingAnchorIndex == null ? 1 : ba.floatingAnchorIndex
-                          , bc = bb == 0 ? 1 : 0;
+                            , bc = bb == 0 ? 1 : 0;
                         if (!aN.isFull() && !(bb == 0 && !aN.isSource) && !(bb == 1 && !aN.isTarget)) {
                             if (bb == 0) {
                                 ba.source = aM;
@@ -2260,7 +2260,7 @@
                                 O(aM, aY.draggable, {})
                             } else {
                                 var a9 = ba.suspendedEndpoint.getElement()
-                                  , a7 = ba.suspendedEndpoint.elementId;
+                                    , a7 = ba.suspendedEndpoint.elementId;
                                 D.fire("jsPlumbConnectionDetached", {
                                     source: bb == 0 ? a9 : ba.source,
                                     target: bb == 1 ? a9 : ba.target,
@@ -2286,7 +2286,7 @@
                         delete Z[a6]
                     };
                     aZ[a3] = am(aZ[a3], a1);
-                    aZ[a4] = am(aZ[a4], function() {
+                    aZ[a4] = am(aZ[a4], function () {
                         var a7 = i.CurrentLibrary.getDragObject(arguments);
                         var a9 = c(u(a7), "dragId");
                         var a8 = Z[a9];
@@ -2295,10 +2295,10 @@
                             a8.endpoints[a6].anchor.over(aN.anchor)
                         }
                     });
-                    aZ[a0] = am(aZ[a0], function() {
+                    aZ[a0] = am(aZ[a0], function () {
                         var a7 = i.CurrentLibrary.getDragObject(arguments)
-                          , a9 = c(u(a7), "dragId")
-                          , a8 = Z[a9];
+                            , a9 = c(u(a7), "dragId")
+                            , a8 = Z[a9];
                         if (a8 != null) {
                             var a6 = a8.floatingAnchorIndex == null ? 1 : a8.floatingAnchorIndex;
                             a8.endpoints[a6].anchor.out()
@@ -2312,14 +2312,14 @@
         }
     };
     var i = window.jsPlumb = new q();
-    i.getInstance = function(w) {
+    i.getInstance = function (w) {
         var v = new q(w);
         v.init();
         return v
     }
-    ;
-    var m = function(v, A, z, w) {
-        return function() {
+        ;
+    var m = function (v, A, z, w) {
+        return function () {
             return i.makeAnchor(v, A, z, w)
         }
     };
@@ -2332,33 +2332,33 @@
     i.Anchors.BottomRight = m(1, 1, 0, 1);
     i.Anchors.TopLeft = m(0, 0, 0, -1);
     i.Anchors.BottomLeft = m(0, 1, 0, 1);
-    i.Defaults.DynamicAnchors = function() {
+    i.Defaults.DynamicAnchors = function () {
         return i.makeAnchors(["TopCenter", "RightMiddle", "BottomCenter", "LeftMiddle"])
     }
-    ;
-    i.Anchors.AutoDefault = function() {
+        ;
+    i.Anchors.AutoDefault = function () {
         return i.makeDynamicAnchor(i.Defaults.DynamicAnchors())
     }
 }
 )();
-(function() {
-    jsPlumb.DOMElementComponent = function(b) {
+(function () {
+    jsPlumb.DOMElementComponent = function (b) {
         jsPlumb.jsPlumbUIComponent.apply(this, arguments);
-        this.mousemove = this.dblclick = this.click = this.mousedown = this.mouseup = function(c) {}
+        this.mousemove = this.dblclick = this.click = this.mousedown = this.mouseup = function (c) { }
     }
-    ;
-    jsPlumb.Connectors.Straight = function() {
+        ;
+    jsPlumb.Connectors.Straight = function () {
         this.type = "Straight";
         var o = this;
         var h = null;
         var d, i, m, l, k, e, n, g, f, c, b;
-        this.compute = function(s, G, C, p, z, r) {
+        this.compute = function (s, G, C, p, z, r) {
             var F = Math.abs(s[0] - G[0]);
             var v = Math.abs(s[1] - G[1]);
             var A = false
-              , t = false;
+                , t = false;
             var u = 0.45 * F
-              , q = 0.45 * v;
+                , q = 0.45 * v;
             F *= 1.9;
             v *= 1.9;
             var D = Math.min(s[0], G[0]) - u;
@@ -2380,16 +2380,16 @@
             b = s[1] < G[1] ? v - q : q;
             h = [D, B, F, v, g, f, c, b];
             l = c - g,
-            k = (b - f);
+                k = (b - f);
             d = k / l,
-            i = -1 / d;
+                i = -1 / d;
             m = -1 * ((d * g) - f);
             e = Math.atan(d);
             n = Math.atan(i);
             return h
         }
-        ;
-        this.pointOnPath = function(p) {
+            ;
+        this.pointOnPath = function (p) {
             var q = g + (p * l);
             var r = (d == Infinity || d == -Infinity) ? f + (p * (b - f)) : (d * q) + m;
             return {
@@ -2397,12 +2397,12 @@
                 y: r
             }
         }
-        ;
-        this.gradientAtPoint = function(p) {
+            ;
+        this.gradientAtPoint = function (p) {
             return d
         }
-        ;
-        this.pointAlongPathFrom = function(r, v) {
+            ;
+        this.pointAlongPathFrom = function (r, v) {
             var t = o.pointOnPath(r);
             var s = v > 0 ? 1 : -1;
             var u = Math.abs(v * Math.sin(e));
@@ -2418,8 +2418,8 @@
                 y: t.y + (s * u)
             }
         }
-        ;
-        this.perpendicularToPathAt = function(t, u, z) {
+            ;
+        this.perpendicularToPathAt = function (t, u, z) {
             var v = o.pointAlongPathFrom(t, z);
             var s = o.gradientAtPoint(v.location);
             var r = Math.atan(-1 / s);
@@ -2434,21 +2434,21 @@
             }]
         }
     }
-    ;
-    jsPlumb.Connectors.Bezier = function(f) {
+        ;
+    jsPlumb.Connectors.Bezier = function (f) {
         var p = this;
         f = f || {};
         this.majorAnchor = f.curviness || 150;
         this.minorAnchor = 10;
         var i = null;
         this.type = "Bezier";
-        this._findControlPoint = function(z, q, u, x, r) {
+        this._findControlPoint = function (z, q, u, x, r) {
             var w = x.getOrientation()
-              , y = r.getOrientation();
+                , y = r.getOrientation();
             var t = w[0] != y[0] || w[1] == y[1];
             var s = [];
             var A = p.majorAnchor
-              , v = p.minorAnchor;
+                , v = p.minorAnchor;
             if (!t) {
                 if (w[0] == 0) {
                     s.push(q[0] < u[0] ? z[0] + v : z[0] - v)
@@ -2474,9 +2474,9 @@
             }
             return s
         }
-        ;
+            ;
         var o, n, k, c, b, k, g, e, d, m, h;
-        this.compute = function(K, t, I, r, q, E) {
+        this.compute = function (K, t, I, r, q, E) {
             q = q || 0;
             m = Math.abs(K[0] - t[0]) + q;
             h = Math.abs(K[1] - t[1]) + q;
@@ -2545,8 +2545,8 @@
             i = [e, d, m, h, k, g, c, b, o[0], o[1], n[0], n[1]];
             return i
         }
-        ;
-        var l = function() {
+            ;
+        var l = function () {
             return [{
                 x: k,
                 y: g
@@ -2561,33 +2561,33 @@
                 y: b
             }]
         };
-        this.pointOnPath = function(q) {
+        this.pointOnPath = function (q) {
             return jsBezier.pointOnCurve(l(), q)
         }
-        ;
-        this.gradientAtPoint = function(q) {
+            ;
+        this.gradientAtPoint = function (q) {
             return jsBezier.gradientAtPoint(l(), q)
         }
-        ;
-        this.pointAlongPathFrom = function(q, r) {
+            ;
+        this.pointAlongPathFrom = function (q, r) {
             return jsBezier.pointAlongCurveFrom(l(), q, r)
         }
-        ;
-        this.perpendicularToPathAt = function(q, r, s) {
+            ;
+        this.perpendicularToPathAt = function (q, r, s) {
             return jsBezier.perpendicularToCurveAt(l(), q, r, s)
         }
     }
-    ;
-    jsPlumb.Connectors.Flowchart = function(g) {
+        ;
+    jsPlumb.Connectors.Flowchart = function (g) {
         this.type = "Flowchart";
         g = g || {};
-        var o = this, c = g.stub || g.minStubLength || 30, k = [], i = [], m = [], h = [], b = [], n = [], e, d, q = function(u, t, B, A) {
+        var o = this, c = g.stub || g.minStubLength || 30, k = [], i = [], m = [], h = [], b = [], n = [], e, d, q = function (u, t, B, A) {
             var y = 0;
             for (var s = 0; s < k.length; s++) {
                 var z = s == 0 ? u : k[s][2]
-                  , x = s == 0 ? t : k[s][3]
-                  , w = k[s][0]
-                  , v = k[s][1];
+                    , x = s == 0 ? t : k[s][3]
+                    , w = k[s][0]
+                    , v = k[s][1];
                 i[s] = z == w ? Infinity : 0;
                 h[s] = Math.abs(z == w ? v - x : w - z);
                 y += h[s]
@@ -2597,19 +2597,19 @@
                 b[s] = h[s] / y;
                 m[s] = [r, (r += (h[s] / y))]
             }
-        }, p = function() {
+        }, p = function () {
             n.push(k.length);
             for (var r = 0; r < k.length; r++) {
                 n.push(k[r][0]);
                 n.push(k[r][1])
             }
-        }, f = function(s, A, z, w, t, r) {
+        }, f = function (s, A, z, w, t, r) {
             var v = k.length == 0 ? z : k[k.length - 1][0];
             var u = k.length == 0 ? w : k[k.length - 1][1];
             k.push([s, A, v, u])
-        }, l = function(t) {
+        }, l = function (t) {
             var r = m.length - 1
-              , s = 0;
+                , s = 0;
             for (var u = 0; u < m.length; u++) {
                 if (m[u][1] >= t) {
                     r = u;
@@ -2623,7 +2623,7 @@
                 index: r
             }
         };
-        this.compute = function(R, z, Q, s, r, I) {
+        this.compute = function (R, z, Q, s, r, I) {
             k = [];
             i = [];
             b = [];
@@ -2632,14 +2632,14 @@
             e = z[0] < R[0];
             d = z[1] < R[1];
             var A = r || 1
-              , v = (A / 2) + (c * 2)
-              , t = (A / 2) + (c * 2)
-              , N = Q.orientation || Q.getOrientation()
-              , u = s.orientation || s.getOrientation()
-              , G = e ? z[0] : R[0]
-              , F = d ? z[1] : R[1]
-              , H = Math.abs(z[0] - R[0]) + 2 * v
-              , M = Math.abs(z[1] - R[1]) + 2 * t;
+                , v = (A / 2) + (c * 2)
+                , t = (A / 2) + (c * 2)
+                , N = Q.orientation || Q.getOrientation()
+                , u = s.orientation || s.getOrientation()
+                , G = e ? z[0] : R[0]
+                , F = d ? z[1] : R[1]
+                , H = Math.abs(z[0] - R[0]) + 2 * v
+                , M = Math.abs(z[1] - R[1]) + 2 * t;
             if (H < I) {
                 v += (I - H) / 2;
                 H = I
@@ -2649,19 +2649,19 @@
                 M = I
             }
             var K = e ? H - v : v
-              , J = d ? M - t : t
-              , T = e ? v : H - v
-              , S = d ? t : M - t
-              , E = K + (N[0] * c)
-              , D = J + (N[1] * c)
-              , C = T + (u[0] * c)
-              , B = S + (u[1] * c)
-              , O = E + ((C - E) / 2)
-              , L = D + ((B - D) / 2);
+                , J = d ? M - t : t
+                , T = e ? v : H - v
+                , S = d ? t : M - t
+                , E = K + (N[0] * c)
+                , D = J + (N[1] * c)
+                , C = T + (u[0] * c)
+                , B = S + (u[1] * c)
+                , O = E + ((C - E) / 2)
+                , L = D + ((B - D) / 2);
             G -= v;
             F -= t;
             n = [G, F, H, M, K, J, T, S],
-            extraPoints = [];
+                extraPoints = [];
             f(E, D, K, J, T, S);
             if (N[0] == 0) {
                 var P = D < B;
@@ -2690,21 +2690,21 @@
             q(K, J, T, S);
             return n
         }
-        ;
-        this.pointOnPath = function(r) {
+            ;
+        this.pointOnPath = function (r) {
             return o.pointAlongPathFrom(r, 0)
         }
-        ;
-        this.gradientAtPoint = function(r) {
+            ;
+        this.gradientAtPoint = function (r) {
             return i[l(r)["index"]]
         }
-        ;
-        this.pointAlongPathFrom = function(v, z) {
+            ;
+        this.pointAlongPathFrom = function (v, z) {
             var w = l(v)
-              , u = w.segment
-              , y = w.proportion
-              , t = h[w.index]
-              , r = i[w.index];
+                , u = w.segment
+                , y = w.proportion
+                , t = h[w.index]
+                , r = i[w.index];
             var x = {
                 x: r == Infinity ? u[2] : u[2] > u[0] ? u[0] + ((1 - y) * t) - z : u[2] + (y * t) + z,
                 y: r == 0 ? u[3] : u[3] > u[1] ? u[1] + ((1 - y) * t) - z : u[3] + (y * t) + z,
@@ -2712,8 +2712,8 @@
             };
             return x
         }
-        ;
-        this.perpendicularToPathAt = function(u, v, A) {
+            ;
+        this.perpendicularToPathAt = function (u, v, A) {
             var w = o.pointAlongPathFrom(u, A);
             var t = i[w.segmentInfo.index];
             var s = Math.atan(-1 / t);
@@ -2728,29 +2728,29 @@
             }]
         }
     }
-    ;
-    jsPlumb.Endpoints.Dot = function(c) {
+        ;
+    jsPlumb.Endpoints.Dot = function (c) {
         this.type = "Dot";
         var b = this;
         c = c || {};
         this.radius = c.radius || 10;
         this.defaultOffset = 0.5 * this.radius;
         this.defaultInnerRadius = this.radius / 3;
-        this.compute = function(h, e, k, g) {
+        this.compute = function (h, e, k, g) {
             var f = k.radius || b.radius;
             var d = h[0] - f;
             var i = h[1] - f;
             return [d, i, f * 2, f * 2, f]
         }
     }
-    ;
-    jsPlumb.Endpoints.Rectangle = function(c) {
+        ;
+    jsPlumb.Endpoints.Rectangle = function (c) {
         this.type = "Rectangle";
         var b = this;
         c = c || {};
         this.width = c.width || 20;
         this.height = c.height || 20;
-        this.compute = function(i, f, l, h) {
+        this.compute = function (i, f, l, h) {
             var g = l.width || b.width;
             var e = l.height || b.height;
             var d = i[0] - (g / 2);
@@ -2758,20 +2758,20 @@
             return [d, k, g, e]
         }
     }
-    ;
-    jsPlumb.Endpoints.Image = function(e) {
+        ;
+    jsPlumb.Endpoints.Image = function (e) {
         this.type = "Image";
         jsPlumb.DOMElementComponent.apply(this, arguments);
         var b = this
-          , d = false;
+            , d = false;
         this.img = new Image();
         b.ready = false;
-        this.img.onload = function() {
+        this.img.onload = function () {
             b.ready = true
         }
-        ;
+            ;
         this.img.src = e.src || e.url;
-        this.compute = function(h, f, i, g) {
+        this.compute = function (h, f, i, g) {
             b.anchorPoint = h;
             if (b.ready) {
                 return [h[0] - b.img.width / 2, h[1] - b.img.height / 2, b.img.width, b.img.height]
@@ -2779,9 +2779,9 @@
                 return [0, 0, 0, 0]
             }
         }
-        ;
+            ;
         b.canvas = document.createElement("img"),
-        d = false;
+            d = false;
         b.canvas.style.margin = 0;
         b.canvas.style.padding = 0;
         b.canvas.style.outline = 0;
@@ -2789,36 +2789,36 @@
         b.canvas.className = jsPlumb.endpointClass;
         jsPlumb.appendElement(b.canvas, e.parent);
         b.attachListeners(b.canvas, b);
-        var c = function(l, k, h) {
+        var c = function (l, k, h) {
             if (!d) {
                 b.canvas.setAttribute("src", b.img.src);
                 d = true
             }
             var i = b.img.width
-              , g = b.img.height
-              , f = b.anchorPoint[0] - (i / 2)
-              , m = b.anchorPoint[1] - (g / 2);
+                , g = b.img.height
+                , f = b.anchorPoint[0] - (i / 2)
+                , m = b.anchorPoint[1] - (g / 2);
             jsPlumb.sizeCanvas(b.canvas, f, m, i, g)
         };
-        this.paint = function(h, g, f) {
+        this.paint = function (h, g, f) {
             if (b.ready) {
                 c(h, g, f)
             } else {
-                window.setTimeout(function() {
+                window.setTimeout(function () {
                     b.paint(h, g, f)
                 }, 200)
             }
         }
     }
-    ;
-    jsPlumb.Endpoints.Blank = function(c) {
+        ;
+    jsPlumb.Endpoints.Blank = function (c) {
         var b = this;
         this.type = "Blank";
         jsPlumb.DOMElementComponent.apply(this, arguments);
-        this.compute = function() {
+        this.compute = function () {
             return [0, 0, 10, 0]
         }
-        ;
+            ;
         b.canvas = document.createElement("div");
         b.canvas.style.display = "block";
         b.canvas.style.width = "1px";
@@ -2826,17 +2826,17 @@
         b.canvas.style.background = "transparent";
         b.canvas.style.position = "absolute";
         jsPlumb.appendElement(b.canvas, c.parent);
-        this.paint = function() {}
+        this.paint = function () { }
     }
-    ;
-    jsPlumb.Endpoints.Triangle = function(b) {
+        ;
+    jsPlumb.Endpoints.Triangle = function (b) {
         this.type = "Triangle";
         b = b || {};
         b.width = b.width || 55;
         param.height = b.height || 55;
         this.width = b.width;
         this.height = b.height;
-        this.compute = function(h, e, k, g) {
+        this.compute = function (h, e, k, g) {
             var f = k.width || self.width;
             var d = k.height || self.height;
             var c = h[0] - (f / 2);
@@ -2844,28 +2844,28 @@
             return [c, i, f, d]
         }
     }
-    ;
-    var a = function() {
+        ;
+    var a = function () {
         var c = true
-          , b = this;
-        this.setVisible = function(d) {
+            , b = this;
+        this.setVisible = function (d) {
             c = d;
             b.connection.repaint()
         }
-        ;
-        this.isVisible = function() {
+            ;
+        this.isVisible = function () {
             return c
         }
-        ;
-        this.hide = function() {
+            ;
+        this.hide = function () {
             b.setVisible(false)
         }
-        ;
-        this.show = function() {
+            ;
+        this.show = function () {
             b.setVisible(true)
         }
     };
-    jsPlumb.Overlays.Arrow = function(g) {
+    jsPlumb.Overlays.Arrow = function (g) {
         this.type = "Arrow";
         a.apply(this);
         g = g || {};
@@ -2880,7 +2880,7 @@
         };
         this.loc = g.location == null ? 0.5 : g.location;
         var b = g.foldback || 0.623;
-        var e = function(h, k) {
+        var e = function (h, k) {
             if (b == 0.5) {
                 return h.pointOnPath(k)
             } else {
@@ -2888,21 +2888,21 @@
                 return h.pointAlongPathFrom(k, f * c.length * i)
             }
         };
-        this.computeMaxSize = function() {
+        this.computeMaxSize = function () {
             return c.width * 1.5
         }
-        ;
-        this.draw = function(l, r, x) {
+            ;
+        this.draw = function (l, r, x) {
             var z = l.pointAlongPathFrom(c.loc, f * (c.length / 2));
             var u = l.pointAlongPathFrom(c.loc, -1 * f * (c.length / 2))
-              , C = u.x
-              , B = u.y;
+                , C = u.x
+                , B = u.y;
             var s = l.perpendicularToPathAt(c.loc, c.width, -1 * f * (c.length / 2));
             var k = e(l, c.loc);
             if (c.loc == 1) {
                 var i = l.pointOnPath(c.loc);
                 var w = (i.x - z.x) * f
-                  , v = (i.y - z.y) * f;
+                    , v = (i.y - z.y) * f;
                 k.x += w;
                 k.y += v;
                 u.x += w;
@@ -2921,7 +2921,7 @@
                     y: s[0].y + ((s[1].y - s[0].y) / 2)
                 };
                 var w = (i.x - t.x) * f
-                  , v = (i.y - t.y) * f;
+                    , v = (i.y - t.y) * f;
                 k.x += w;
                 k.y += v;
                 u.x += w;
@@ -2942,15 +2942,15 @@
                 tail: s,
                 cxy: k
             }
-              , y = d.strokeStyle || r.strokeStyle
-              , q = d.fillStyle || r.strokeStyle
-              , h = d.lineWidth || r.lineWidth;
+                , y = d.strokeStyle || r.strokeStyle
+                , q = d.fillStyle || r.strokeStyle
+                , h = d.lineWidth || r.lineWidth;
             c.paint(l, A, h, y, q, x);
             return [p, o, n, m]
         }
     }
-    ;
-    jsPlumb.Overlays.PlainArrow = function(c) {
+        ;
+    jsPlumb.Overlays.PlainArrow = function (c) {
         c = c || {};
         var b = jsPlumb.extend(c, {
             foldback: 1
@@ -2958,8 +2958,8 @@
         jsPlumb.Overlays.Arrow.call(this, b);
         this.type = "PlainArrow"
     }
-    ;
-    jsPlumb.Overlays.Diamond = function(d) {
+        ;
+    jsPlumb.Overlays.Diamond = function (d) {
         d = d || {};
         var b = d.length || 40;
         var c = jsPlumb.extend(d, {
@@ -2969,8 +2969,8 @@
         jsPlumb.Overlays.Arrow.call(this, c);
         this.type = "Diamond"
     }
-    ;
-    jsPlumb.Overlays.Label = function(e) {
+        ;
+    jsPlumb.Overlays.Label = function (e) {
         this.type = "Label";
         jsPlumb.DOMElementComponent.apply(this, arguments);
         a.apply(this);
@@ -2981,14 +2981,14 @@
         this.id = e.id;
         var l = this;
         var i = null
-          , f = null
-          , d = null
-          , c = null;
+            , f = null
+            , d = null
+            , c = null;
         this.location = e.location || 0.5;
         this.cachedDimensions = null;
         var k = false
-          , d = null
-          , b = document.createElement("div");
+            , d = null
+            , b = document.createElement("div");
         b.style.position = "absolute";
         b.style.font = l.labelStyle.font;
         b.style.color = l.labelStyle.color || "black";
@@ -3008,12 +3008,12 @@
         jsPlumb.getId(b);
         l.attachListeners(b, l);
         var m = l.setVisible;
-        l.setVisible = function(n) {
+        l.setVisible = function (n) {
             m(n);
             b.style.display = n ? "block" : "none"
         }
-        ;
-        this.paint = function(n, p, o) {
+            ;
+        this.paint = function (n, p, o) {
             if (!k) {
                 n.appendDisplayElement(b);
                 l.attachListeners(b, n);
@@ -3022,24 +3022,24 @@
             b.style.left = (o[0] + p.minx) + "px";
             b.style.top = (o[1] + p.miny) + "px"
         }
-        ;
-        this.getTextDimensions = function(n) {
+            ;
+        this.getTextDimensions = function (n) {
             d = typeof l.label == "function" ? l.label(l) : l.label;
             b.innerHTML = d.replace(/\r\n/g, "<br/>");
             var p = jsPlumb.CurrentLibrary.getElementObject(b)
-              , o = jsPlumb.CurrentLibrary.getSize(p);
+                , o = jsPlumb.CurrentLibrary.getSize(p);
             return {
                 width: o[0],
                 height: o[1]
             }
         }
-        ;
-        this.computeMaxSize = function(n) {
+            ;
+        this.computeMaxSize = function (n) {
             var o = l.getTextDimensions(n);
             return o.width ? Math.max(o.width, o.height) * 1.5 : 0
         }
-        ;
-        this.draw = function(p, r, q) {
+            ;
+        this.draw = function (p, r, q) {
             var t = l.getTextDimensions(p);
             if (t.width != null) {
                 var s = p.pointOnPath(l.location);
@@ -3059,7 +3059,7 @@
     }
 }
 )();
-(function() {
+(function () {
     var h = {
         "stroke-linejoin": "joinstyle",
         joinstyle: "joinstyle",
@@ -3076,195 +3076,195 @@
         document.namespaces.add("jsplumb", "urn:schemas-microsoft-com:vml")
     }
     var c = 1000
-      , d = function(p, q) {
-        for (var n in q) {
-            p[n] = q[n]
-        }
-    }
-      , m = function(n, q, r) {
-        r = r || {};
-        var p = document.createElement("jsplumb:" + n);
-        p.className = (r["class"] ? r["class"] + " " : "") + "jsplumb_vml";
-        l(p, q);
-        d(p, r);
-        return p
-    }
-      , l = function(p, n) {
-        p.style.left = n[0] + "px";
-        p.style.top = n[1] + "px";
-        p.style.width = n[2] + "px";
-        p.style.height = n[3] + "px";
-        p.style.position = "absolute"
-    }
-      , g = function(n) {
-        return Math.floor(n * c)
-    }
-      , a = function(p, n) {
-        var v = p
-          , u = function(o) {
-            return o.length == 1 ? "0" + o : o
-        }
-          , q = function(o) {
-            return u(Number(o).toString(16))
-        }
-          , r = /(rgb[a]?\()(.*)(\))/;
-        if (p.match(r)) {
-            var t = p.match(r)[2].split(",");
-            v = "#" + q(t[0]) + q(t[1]) + q(t[2]);
-            if (!n && t.length == 4) {
-                v = v + q(t[3])
+        , d = function (p, q) {
+            for (var n in q) {
+                p[n] = q[n]
             }
         }
-        return v
-    }
-      , f = function(s, r, p) {
-        var u = {};
-        if (r.strokeStyle) {
-            u.stroked = "true";
-            u.strokecolor = a(r.strokeStyle, true);
-            u.strokeweight = r.lineWidth + "px"
-        } else {
-            u.stroked = "false"
+        , m = function (n, q, r) {
+            r = r || {};
+            var p = document.createElement("jsplumb:" + n);
+            p.className = (r["class"] ? r["class"] + " " : "") + "jsplumb_vml";
+            l(p, q);
+            d(p, r);
+            return p
         }
-        if (r.fillStyle) {
-            u.filled = "true";
-            u.fillcolor = a(r.fillStyle, true)
-        } else {
-            u.filled = "false"
+        , l = function (p, n) {
+            p.style.left = n[0] + "px";
+            p.style.top = n[1] + "px";
+            p.style.width = n[2] + "px";
+            p.style.height = n[3] + "px";
+            p.style.position = "absolute"
         }
-        if (r.dashstyle) {
-            if (p.strokeNode == null) {
-                p.strokeNode = m("stroke", [0, 0, 0, 0], {
-                    dashstyle: r.dashstyle
-                });
-                s.appendChild(p.strokeNode)
-            } else {
-                p.strokeNode.dashstyle = r.dashstyle
-            }
-        } else {
-            if (r["stroke-dasharray"] && r.lineWidth) {
-                var o = r["stroke-dasharray"].indexOf(",") == -1 ? " " : ","
-                  , t = r["stroke-dasharray"].split(o)
-                  , n = "";
-                for (var q = 0; q < t.length; q++) {
-                    n += (Math.floor(t[q] / r.lineWidth) + o)
+        , g = function (n) {
+            return Math.floor(n * c)
+        }
+        , a = function (p, n) {
+            var v = p
+                , u = function (o) {
+                    return o.length == 1 ? "0" + o : o
                 }
+                , q = function (o) {
+                    return u(Number(o).toString(16))
+                }
+                , r = /(rgb[a]?\()(.*)(\))/;
+            if (p.match(r)) {
+                var t = p.match(r)[2].split(",");
+                v = "#" + q(t[0]) + q(t[1]) + q(t[2]);
+                if (!n && t.length == 4) {
+                    v = v + q(t[3])
+                }
+            }
+            return v
+        }
+        , f = function (s, r, p) {
+            var u = {};
+            if (r.strokeStyle) {
+                u.stroked = "true";
+                u.strokecolor = a(r.strokeStyle, true);
+                u.strokeweight = r.lineWidth + "px"
+            } else {
+                u.stroked = "false"
+            }
+            if (r.fillStyle) {
+                u.filled = "true";
+                u.fillcolor = a(r.fillStyle, true)
+            } else {
+                u.filled = "false"
+            }
+            if (r.dashstyle) {
                 if (p.strokeNode == null) {
                     p.strokeNode = m("stroke", [0, 0, 0, 0], {
-                        dashstyle: n
+                        dashstyle: r.dashstyle
                     });
                     s.appendChild(p.strokeNode)
                 } else {
-                    p.strokeNode.dashstyle = n
+                    p.strokeNode.dashstyle = r.dashstyle
+                }
+            } else {
+                if (r["stroke-dasharray"] && r.lineWidth) {
+                    var o = r["stroke-dasharray"].indexOf(",") == -1 ? " " : ","
+                        , t = r["stroke-dasharray"].split(o)
+                        , n = "";
+                    for (var q = 0; q < t.length; q++) {
+                        n += (Math.floor(t[q] / r.lineWidth) + o)
+                    }
+                    if (p.strokeNode == null) {
+                        p.strokeNode = m("stroke", [0, 0, 0, 0], {
+                            dashstyle: n
+                        });
+                        s.appendChild(p.strokeNode)
+                    } else {
+                        p.strokeNode.dashstyle = n
+                    }
                 }
             }
+            d(s, u)
         }
-        d(s, u)
-    }
-      , i = function() {
-        jsPlumb.jsPlumbUIComponent.apply(this, arguments)
-    }
-      , e = function(p) {
-        var n = this;
-        n.strokeNode = null;
-        n.canvas = null;
-        i.apply(this, arguments);
-        clazz = n._jsPlumb.connectorClass + (p.cssClass ? (" " + p.cssClass) : "");
-        this.paint = function(w, s, q) {
-            if (s != null) {
-                var v = n.getPath(w)
-                  , u = {
-                    path: v
-                };
-                if (s.outlineColor) {
-                    var t = s.outlineWidth || 1
-                      , r = s.lineWidth + (2 * t);
-                    outlineStyle = {
-                        strokeStyle: a(s.outlineColor),
-                        lineWidth: r
-                    };
-                    if (n.bgCanvas == null) {
+        , i = function () {
+            jsPlumb.jsPlumbUIComponent.apply(this, arguments)
+        }
+        , e = function (p) {
+            var n = this;
+            n.strokeNode = null;
+            n.canvas = null;
+            i.apply(this, arguments);
+            clazz = n._jsPlumb.connectorClass + (p.cssClass ? (" " + p.cssClass) : "");
+            this.paint = function (w, s, q) {
+                if (s != null) {
+                    var v = n.getPath(w)
+                        , u = {
+                            path: v
+                        };
+                    if (s.outlineColor) {
+                        var t = s.outlineWidth || 1
+                            , r = s.lineWidth + (2 * t);
+                        outlineStyle = {
+                            strokeStyle: a(s.outlineColor),
+                            lineWidth: r
+                        };
+                        if (n.bgCanvas == null) {
+                            u["class"] = clazz;
+                            u.coordsize = (w[2] * c) + "," + (w[3] * c);
+                            n.bgCanvas = m("shape", w, u);
+                            jsPlumb.appendElement(n.bgCanvas, p.parent);
+                            l(n.bgCanvas, w);
+                            o.push(n.bgCanvas)
+                        } else {
+                            u.coordsize = (w[2] * c) + "," + (w[3] * c);
+                            l(n.bgCanvas, w);
+                            d(n.bgCanvas, u)
+                        }
+                        f(n.bgCanvas, outlineStyle, n)
+                    }
+                    if (n.canvas == null) {
                         u["class"] = clazz;
                         u.coordsize = (w[2] * c) + "," + (w[3] * c);
-                        n.bgCanvas = m("shape", w, u);
-                        jsPlumb.appendElement(n.bgCanvas, p.parent);
-                        l(n.bgCanvas, w);
-                        o.push(n.bgCanvas)
+                        n.canvas = m("shape", w, u);
+                        jsPlumb.appendElement(n.canvas, p.parent);
+                        o.push(n.canvas);
+                        n.attachListeners(n.canvas, n)
                     } else {
                         u.coordsize = (w[2] * c) + "," + (w[3] * c);
-                        l(n.bgCanvas, w);
-                        d(n.bgCanvas, u)
+                        l(n.canvas, w);
+                        d(n.canvas, u)
                     }
-                    f(n.bgCanvas, outlineStyle, n)
+                    f(n.canvas, s, n)
                 }
-                if (n.canvas == null) {
-                    u["class"] = clazz;
-                    u.coordsize = (w[2] * c) + "," + (w[3] * c);
-                    n.canvas = m("shape", w, u);
-                    jsPlumb.appendElement(n.canvas, p.parent);
-                    o.push(n.canvas);
-                    n.attachListeners(n.canvas, n)
+            }
+                ;
+            var o = [n.canvas];
+            this.getDisplayElements = function () {
+                return o
+            }
+                ;
+            this.appendDisplayElement = function (q) {
+                n.canvas.parentNode.appendChild(q);
+                o.push(q)
+            }
+        }
+        , k = function (p) {
+            i.apply(this, arguments);
+            var n = null
+                , o = this;
+            o.canvas = document.createElement("div");
+            o.canvas.style.position = "absolute";
+            jsPlumb.appendElement(o.canvas, p.parent);
+            this.paint = function (t, r, q) {
+                var s = {};
+                jsPlumb.sizeCanvas(o.canvas, t[0], t[1], t[2], t[3]);
+                if (n == null) {
+                    s["class"] = jsPlumb.endpointClass;
+                    n = o.getVml([0, 0, t[2], t[3]], s, q);
+                    o.canvas.appendChild(n);
+                    o.attachListeners(n, o)
                 } else {
-                    u.coordsize = (w[2] * c) + "," + (w[3] * c);
-                    l(n.canvas, w);
-                    d(n.canvas, u)
+                    l(n, [0, 0, t[2], t[3]]);
+                    d(n, s)
                 }
-                f(n.canvas, s, n)
+                f(n, r)
             }
-        }
-        ;
-        var o = [n.canvas];
-        this.getDisplayElements = function() {
-            return o
-        }
-        ;
-        this.appendDisplayElement = function(q) {
-            n.canvas.parentNode.appendChild(q);
-            o.push(q)
-        }
-    }
-      , k = function(p) {
-        i.apply(this, arguments);
-        var n = null
-          , o = this;
-        o.canvas = document.createElement("div");
-        o.canvas.style.position = "absolute";
-        jsPlumb.appendElement(o.canvas, p.parent);
-        this.paint = function(t, r, q) {
-            var s = {};
-            jsPlumb.sizeCanvas(o.canvas, t[0], t[1], t[2], t[3]);
-            if (n == null) {
-                s["class"] = jsPlumb.endpointClass;
-                n = o.getVml([0, 0, t[2], t[3]], s, q);
-                o.canvas.appendChild(n);
-                o.attachListeners(n, o)
-            } else {
-                l(n, [0, 0, t[2], t[3]]);
-                d(n, s)
-            }
-            f(n, r)
-        }
-    };
-    jsPlumb.Connectors.vml.Bezier = function() {
+        };
+    jsPlumb.Connectors.vml.Bezier = function () {
         jsPlumb.Connectors.Bezier.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(n) {
+        this.getPath = function (n) {
             return "m" + g(n[4]) + "," + g(n[5]) + " c" + g(n[8]) + "," + g(n[9]) + "," + g(n[10]) + "," + g(n[11]) + "," + g(n[6]) + "," + g(n[7]) + " e"
         }
     }
-    ;
-    jsPlumb.Connectors.vml.Straight = function() {
+        ;
+    jsPlumb.Connectors.vml.Straight = function () {
         jsPlumb.Connectors.Straight.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(n) {
+        this.getPath = function (n) {
             return "m" + g(n[4]) + "," + g(n[5]) + " l" + g(n[6]) + "," + g(n[7]) + " e"
         }
     }
-    ;
-    jsPlumb.Connectors.vml.Flowchart = function() {
+        ;
+    jsPlumb.Connectors.vml.Flowchart = function () {
         jsPlumb.Connectors.Flowchart.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(o) {
+        this.getPath = function (o) {
             var q = "m " + g(o[4]) + "," + g(o[5]) + " l";
             for (var n = 0; n < o[8]; n++) {
                 q = q + " " + g(o[9 + (n * 2)]) + "," + g(o[10 + (n * 2)])
@@ -3273,36 +3273,36 @@
             return q
         }
     }
-    ;
-    jsPlumb.Endpoints.vml.Dot = function() {
+        ;
+    jsPlumb.Endpoints.vml.Dot = function () {
         jsPlumb.Endpoints.Dot.apply(this, arguments);
         k.apply(this, arguments);
-        this.getVml = function(o, p, n) {
+        this.getVml = function (o, p, n) {
             return m("oval", o, p)
         }
     }
-    ;
-    jsPlumb.Endpoints.vml.Rectangle = function() {
+        ;
+    jsPlumb.Endpoints.vml.Rectangle = function () {
         jsPlumb.Endpoints.Rectangle.apply(this, arguments);
         k.apply(this, arguments);
-        this.getVml = function(o, p, n) {
+        this.getVml = function (o, p, n) {
             return m("rect", o, p)
         }
     }
-    ;
+        ;
     jsPlumb.Endpoints.vml.Image = jsPlumb.Endpoints.Image;
     jsPlumb.Endpoints.vml.Blank = jsPlumb.Endpoints.Blank;
     jsPlumb.Overlays.vml.Label = jsPlumb.Overlays.Label;
-    var b = function(s, q) {
+    var b = function (s, q) {
         s.apply(this, q);
         i.apply(this, arguments);
         var o = this
-          , p = null
-          , r = null;
-        var n = function(u, t) {
+            , p = null
+            , r = null;
+        var n = function (u, t) {
             return "m " + g(u.hxy.x) + "," + g(u.hxy.y) + " l " + g(u.tail[0].x) + "," + g(u.tail[0].y) + " " + g(u.cxy.x) + "," + g(u.cxy.y) + " " + g(u.tail[1].x) + "," + g(u.tail[1].y) + " x e"
         };
-        this.paint = function(x, C, B, D, H, G) {
+        this.paint = function (x, C, B, D, H, G) {
             var u = {};
             if (D) {
                 u.stroked = "true";
@@ -3316,12 +3316,12 @@
                 u.fillcolor = H
             }
             var t = Math.min(C.hxy.x, C.tail[0].x, C.tail[1].x, C.cxy.x)
-              , F = Math.min(C.hxy.y, C.tail[0].y, C.tail[1].y, C.cxy.y)
-              , y = Math.max(C.hxy.x, C.tail[0].x, C.tail[1].x, C.cxy.x)
-              , v = Math.max(C.hxy.y, C.tail[0].y, C.tail[1].y, C.cxy.y)
-              , E = Math.abs(y - t)
-              , A = Math.abs(v - F)
-              , z = [t, F, E, A];
+                , F = Math.min(C.hxy.y, C.tail[0].y, C.tail[1].y, C.cxy.y)
+                , y = Math.max(C.hxy.x, C.tail[0].x, C.tail[1].x, C.cxy.x)
+                , v = Math.max(C.hxy.y, C.tail[0].y, C.tail[1].y, C.cxy.y)
+                , E = Math.abs(y - t)
+                , A = Math.abs(v - F)
+                , z = [t, F, E, A];
             u.path = n(C, G);
             u.coordsize = (G[2] * c) + "," + (G[3] * c);
             z[0] = G[0];
@@ -3338,20 +3338,20 @@
             }
         }
     };
-    jsPlumb.Overlays.vml.Arrow = function() {
+    jsPlumb.Overlays.vml.Arrow = function () {
         b.apply(this, [jsPlumb.Overlays.Arrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.vml.PlainArrow = function() {
+        ;
+    jsPlumb.Overlays.vml.PlainArrow = function () {
         b.apply(this, [jsPlumb.Overlays.PlainArrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.vml.Diamond = function() {
+        ;
+    jsPlumb.Overlays.vml.Diamond = function () {
         b.apply(this, [jsPlumb.Overlays.Diamond, arguments])
     }
 }
 )();
-(function() {
+(function () {
     var i = {
         "stroke-linejoin": "stroke-linejoin",
         joinstyle: "stroke-linejoin",
@@ -3361,125 +3361,125 @@
         svg: "http://www.w3.org/2000/svg",
         xhtml: "http://www.w3.org/1999/xhtml"
     }
-      , d = function(r, p) {
-        for (var q in p) {
-            r.setAttribute(q, "" + p[q])
-        }
-    }
-      , o = function(q, p) {
-        var r = document.createElementNS(h.svg, q);
-        p = p || {};
-        p.version = "1.1";
-        p.xmnls = h.xhtml;
-        d(r, p);
-        return r
-    }
-      , m = function(p) {
-        return "position:absolute;left:" + p[0] + "px;top:" + p[1] + "px"
-    }
-      , a = function(q, p) {
-        var w = q
-          , v = function(s) {
-            return s.length == 1 ? "0" + s : s
-        }
-          , r = function(s) {
-            return v(Number(s).toString(16))
-        }
-          , t = /(rgb[a]?\()(.*)(\))/;
-        if (q.match(t)) {
-            var u = q.match(t)[2].split(",");
-            w = "#" + r(u[0]) + r(u[1]) + r(u[2]);
-            if (!p && u.length == 4) {
-                w = w + r(u[3])
+        , d = function (r, p) {
+            for (var q in p) {
+                r.setAttribute(q, "" + p[q])
             }
         }
-        return w
-    }
-      , b = function(q) {
-        for (var p = 0; p < q.childNodes.length; p++) {
-            if (q.childNodes[p].tagName == "linearGradient" || q.childNodes[p].tagName == "radialGradient") {
-                q.removeChild(q.childNodes[p])
+        , o = function (q, p) {
+            var r = document.createElementNS(h.svg, q);
+            p = p || {};
+            p.version = "1.1";
+            p.xmnls = h.xhtml;
+            d(r, p);
+            return r
+        }
+        , m = function (p) {
+            return "position:absolute;left:" + p[0] + "px;top:" + p[1] + "px"
+        }
+        , a = function (q, p) {
+            var w = q
+                , v = function (s) {
+                    return s.length == 1 ? "0" + s : s
+                }
+                , r = function (s) {
+                    return v(Number(s).toString(16))
+                }
+                , t = /(rgb[a]?\()(.*)(\))/;
+            if (q.match(t)) {
+                var u = q.match(t)[2].split(",");
+                w = "#" + r(u[0]) + r(u[1]) + r(u[2]);
+                if (!p && u.length == 4) {
+                    w = w + r(u[3])
+                }
+            }
+            return w
+        }
+        , b = function (q) {
+            for (var p = 0; p < q.childNodes.length; p++) {
+                if (q.childNodes[p].tagName == "linearGradient" || q.childNodes[p].tagName == "radialGradient") {
+                    q.removeChild(q.childNodes[p])
+                }
             }
         }
-    }
-      , l = function(z, v, r, p) {
-        var t = "jsplumb_gradient_" + (new Date()).getTime();
-        b(z);
-        if (!r.gradient.offset) {
-            var x = o("linearGradient", {
-                id: t
-            });
-            z.appendChild(x)
-        } else {
-            var x = o("radialGradient", {
-                id: t
-            });
-            z.appendChild(x)
-        }
-        for (var w = 0; w < r.gradient.stops.length; w++) {
-            var u = w;
-            if (p.length == 8) {
-                u = p[4] < p[6] ? w : r.gradient.stops.length - 1 - w
+        , l = function (z, v, r, p) {
+            var t = "jsplumb_gradient_" + (new Date()).getTime();
+            b(z);
+            if (!r.gradient.offset) {
+                var x = o("linearGradient", {
+                    id: t
+                });
+                z.appendChild(x)
             } else {
-                u = p[4] < p[6] ? r.gradient.stops.length - 1 - w : w
+                var x = o("radialGradient", {
+                    id: t
+                });
+                z.appendChild(x)
             }
-            var y = a(r.gradient.stops[u][1], true);
-            var A = o("stop", {
-                offset: Math.floor(r.gradient.stops[w][0] * 100) + "%",
-                "stop-color": y
-            });
-            x.appendChild(A)
+            for (var w = 0; w < r.gradient.stops.length; w++) {
+                var u = w;
+                if (p.length == 8) {
+                    u = p[4] < p[6] ? w : r.gradient.stops.length - 1 - w
+                } else {
+                    u = p[4] < p[6] ? r.gradient.stops.length - 1 - w : w
+                }
+                var y = a(r.gradient.stops[u][1], true);
+                var A = o("stop", {
+                    offset: Math.floor(r.gradient.stops[w][0] * 100) + "%",
+                    "stop-color": y
+                });
+                x.appendChild(A)
+            }
+            var q = r.strokeStyle ? "stroke" : "fill";
+            v.setAttribute("style", q + ":url(#" + t + ")")
         }
-        var q = r.strokeStyle ? "stroke" : "fill";
-        v.setAttribute("style", q + ":url(#" + t + ")")
-    }
-      , f = function(t, v, s, u) {
-        if (s.gradient) {
-            l(t, v, s, u)
-        } else {
-            b(t);
-            v.setAttribute("style", "")
-        }
-        v.setAttribute("fill", s.fillStyle ? a(s.fillStyle, true) : "none");
-        v.setAttribute("stroke", s.strokeStyle ? a(s.strokeStyle, true) : "none");
-        if (s.lineWidth) {
-            v.setAttribute("stroke-width", s.lineWidth)
-        }
-        if (s["stroke-dasharray"]) {
-            v.setAttribute("stroke-dasharray", s["stroke-dasharray"])
-        }
-        if (s.dashstyle && s.lineWidth) {
-            var q = s.dashstyle.indexOf(",") == -1 ? " " : ","
-              , w = s.dashstyle.split(q)
-              , p = "";
-            w.forEach(function(x) {
-                p += (Math.floor(x * s.lineWidth) + q)
-            });
-            v.setAttribute("stroke-dasharray", p)
-        }
-        for (var r in i) {
-            if (s[r]) {
-                v.setAttribute(i[r], s[r])
+        , f = function (t, v, s, u) {
+            if (s.gradient) {
+                l(t, v, s, u)
+            } else {
+                b(t);
+                v.setAttribute("style", "")
+            }
+            v.setAttribute("fill", s.fillStyle ? a(s.fillStyle, true) : "none");
+            v.setAttribute("stroke", s.strokeStyle ? a(s.strokeStyle, true) : "none");
+            if (s.lineWidth) {
+                v.setAttribute("stroke-width", s.lineWidth)
+            }
+            if (s["stroke-dasharray"]) {
+                v.setAttribute("stroke-dasharray", s["stroke-dasharray"])
+            }
+            if (s.dashstyle && s.lineWidth) {
+                var q = s.dashstyle.indexOf(",") == -1 ? " " : ","
+                    , w = s.dashstyle.split(q)
+                    , p = "";
+                w.forEach(function (x) {
+                    p += (Math.floor(x * s.lineWidth) + q)
+                });
+                v.setAttribute("stroke-dasharray", p)
+            }
+            for (var r in i) {
+                if (s[r]) {
+                    v.setAttribute(i[r], s[r])
+                }
             }
         }
-    }
-      , g = function(s) {
-        var p = /([0-9].)(p[xt])\s(.*)/;
-        var q = s.match(p);
-        return {
-            size: q[1] + q[2],
-            font: q[3]
-        }
-    };
-    var k = function(p, t, u) {
+        , g = function (s) {
+            var p = /([0-9].)(p[xt])\s(.*)/;
+            var q = s.match(p);
+            return {
+                size: q[1] + q[2],
+                font: q[3]
+            }
+        };
+    var k = function (p, t, u) {
         var q = this;
         u = u || "all";
         jsPlumb.jsPlumbUIComponent.apply(this, t);
         q.canvas = null,
-        q.path = null,
-        q.svg = null;
-        this.setHover = function() {}
-        ;
+            q.path = null,
+            q.svg = null;
+        this.setHover = function () { }
+            ;
         q.canvas = document.createElement("div");
         q.canvas.style.position = "absolute";
         jsPlumb.sizeCanvas(q.canvas, 0, 0, 1, 1);
@@ -3494,15 +3494,15 @@
         jsPlumb.appendElement(q.canvas, t[0]["parent"]);
         q.canvas.appendChild(q.svg);
         var r = [q.canvas];
-        this.getDisplayElements = function() {
+        this.getDisplayElements = function () {
             return r
         }
-        ;
-        this.appendDisplayElement = function(v) {
+            ;
+        this.appendDisplayElement = function (v) {
             r.push(v)
         }
-        ;
-        this.paint = function(x, w, v) {
+            ;
+        this.paint = function (x, w, v) {
             if (w != null) {
                 jsPlumb.sizeCanvas(q.canvas, x[0], x[1], x[2], x[3]);
                 d(q.svg, {
@@ -3514,19 +3514,19 @@
             }
         }
     };
-    var e = function(q) {
+    var e = function (q) {
         var p = this;
         k.apply(this, [q._jsPlumb.connectorClass, arguments, "none"]);
-        this._paint = function(x, t) {
+        this._paint = function (x, t) {
             var w = p.getPath(x)
-              , r = {
-                d: w
-            }
-              , v = null;
+                , r = {
+                    d: w
+                }
+                , v = null;
             r["pointer-events"] = "all";
             if (t.outlineColor) {
                 var u = t.outlineWidth || 1
-                  , s = t.lineWidth + (2 * u);
+                    , s = t.lineWidth + (2 * u);
                 v = {
                     strokeStyle: a(t.outlineColor),
                     lineWidth: s
@@ -3550,27 +3550,27 @@
             f(p.svg, p.path, t, x)
         }
     };
-    jsPlumb.Connectors.svg.Bezier = function(p) {
+    jsPlumb.Connectors.svg.Bezier = function (p) {
         jsPlumb.Connectors.Bezier.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(q) {
+        this.getPath = function (q) {
             return "M " + q[4] + " " + q[5] + " C " + q[8] + " " + q[9] + " " + q[10] + " " + q[11] + " " + q[6] + " " + q[7]
         }
     }
-    ;
-    jsPlumb.Connectors.svg.Straight = function(p) {
+        ;
+    jsPlumb.Connectors.svg.Straight = function (p) {
         jsPlumb.Connectors.Straight.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(q) {
+        this.getPath = function (q) {
             return "M " + q[4] + " " + q[5] + " L " + q[6] + " " + q[7]
         }
     }
-    ;
-    jsPlumb.Connectors.svg.Flowchart = function() {
+        ;
+    jsPlumb.Connectors.svg.Flowchart = function () {
         var p = this;
         jsPlumb.Connectors.Flowchart.apply(this, arguments);
         e.apply(this, arguments);
-        this.getPath = function(r) {
+        this.getPath = function (r) {
             var s = "M " + r[4] + "," + r[5];
             for (var q = 0; q < r[8]; q++) {
                 s = s + " L " + r[9 + (q * 2)] + " " + r[10 + (q * 2)]
@@ -3579,11 +3579,11 @@
             return s
         }
     }
-    ;
-    var n = function(q) {
+        ;
+    var n = function (q) {
         var p = this;
         k.apply(this, [q._jsPlumb.endpointClass, arguments, "all"]);
-        this._paint = function(u, t) {
+        this._paint = function (u, t) {
             var r = jsPlumb.extend({}, t);
             if (r.outlineColor) {
                 r.strokeWidth = r.outlineWidth;
@@ -3598,10 +3598,10 @@
             m(p.node, u)
         }
     };
-    jsPlumb.Endpoints.svg.Dot = function() {
+    jsPlumb.Endpoints.svg.Dot = function () {
         jsPlumb.Endpoints.Dot.apply(this, arguments);
         n.apply(this, arguments);
-        this.makeNode = function(q, p) {
+        this.makeNode = function (q, p) {
             return o("circle", {
                 cx: q[2] / 2,
                 cy: q[3] / 2,
@@ -3609,27 +3609,27 @@
             })
         }
     }
-    ;
-    jsPlumb.Endpoints.svg.Rectangle = function() {
+        ;
+    jsPlumb.Endpoints.svg.Rectangle = function () {
         jsPlumb.Endpoints.Rectangle.apply(this, arguments);
         n.apply(this, arguments);
-        this.makeNode = function(q, p) {
+        this.makeNode = function (q, p) {
             return o("rect", {
                 width: q[2],
                 height: q[3]
             })
         }
     }
-    ;
+        ;
     jsPlumb.Endpoints.svg.Image = jsPlumb.Endpoints.Image;
     jsPlumb.Endpoints.svg.Blank = jsPlumb.Endpoints.Blank;
     jsPlumb.Overlays.svg.Label = jsPlumb.Overlays.Label;
-    var c = function(t, r) {
+    var c = function (t, r) {
         t.apply(this, r);
         jsPlumb.jsPlumbUIComponent.apply(this, r);
         var p = this
-          , s = null;
-        this.paint = function(v, x, u, y, w) {
+            , s = null;
+        this.paint = function (v, x, u, y, w) {
             if (s == null) {
                 s = o("path");
                 v.svg.appendChild(s);
@@ -3642,69 +3642,69 @@
                 fill: w ? w : null
             })
         }
-        ;
-        var q = function(u) {
+            ;
+        var q = function (u) {
             return "M" + u.hxy.x + "," + u.hxy.y + " L" + u.tail[0].x + "," + u.tail[0].y + " L" + u.cxy.x + "," + u.cxy.y + " L" + u.tail[1].x + "," + u.tail[1].y + " L" + u.hxy.x + "," + u.hxy.y
         }
     };
-    jsPlumb.Overlays.svg.Arrow = function() {
+    jsPlumb.Overlays.svg.Arrow = function () {
         c.apply(this, [jsPlumb.Overlays.Arrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.svg.PlainArrow = function() {
+        ;
+    jsPlumb.Overlays.svg.PlainArrow = function () {
         c.apply(this, [jsPlumb.Overlays.PlainArrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.svg.Diamond = function() {
+        ;
+    jsPlumb.Overlays.svg.Diamond = function () {
         c.apply(this, [jsPlumb.Overlays.Diamond, arguments])
     }
 }
 )();
-(function() {
+(function () {
     var o = null
-      , b = function(t, u) {
-        return jsPlumb.CurrentLibrary.getAttribute(s(t), u)
-    }
-      , c = function(u, v, t) {
-        jsPlumb.CurrentLibrary.setAttribute(s(u), v, t)
-    }
-      , q = function(u, t) {
-        jsPlumb.CurrentLibrary.addClass(s(u), t)
-    }
-      , f = function(u, t) {
-        return jsPlumb.CurrentLibrary.hasClass(s(u), t)
-    }
-      , h = function(u, t) {
-        jsPlumb.CurrentLibrary.removeClass(s(u), t)
-    }
-      , s = function(t) {
-        return jsPlumb.CurrentLibrary.getElementObject(t)
-    }
-      , m = function(t) {
-        return jsPlumb.CurrentLibrary.getOffset(s(t))
-    }
-      , a = function(t) {
-        return jsPlumb.CurrentLibrary.getSize(s(t))
-    }
-      , e = function(t) {
-        return jsPlumb.CurrentLibrary.getPageXY(t)
-    }
-      , i = function(t) {
-        return jsPlumb.CurrentLibrary.getClientXY(t)
-    }
-      , g = function(t, u) {
-        jsPlumb.CurrentLibrary.setOffset(t, u)
-    };
-    var n = function() {
+        , b = function (t, u) {
+            return jsPlumb.CurrentLibrary.getAttribute(s(t), u)
+        }
+        , c = function (u, v, t) {
+            jsPlumb.CurrentLibrary.setAttribute(s(u), v, t)
+        }
+        , q = function (u, t) {
+            jsPlumb.CurrentLibrary.addClass(s(u), t)
+        }
+        , f = function (u, t) {
+            return jsPlumb.CurrentLibrary.hasClass(s(u), t)
+        }
+        , h = function (u, t) {
+            jsPlumb.CurrentLibrary.removeClass(s(u), t)
+        }
+        , s = function (t) {
+            return jsPlumb.CurrentLibrary.getElementObject(t)
+        }
+        , m = function (t) {
+            return jsPlumb.CurrentLibrary.getOffset(s(t))
+        }
+        , a = function (t) {
+            return jsPlumb.CurrentLibrary.getSize(s(t))
+        }
+        , e = function (t) {
+            return jsPlumb.CurrentLibrary.getPageXY(t)
+        }
+        , i = function (t) {
+            return jsPlumb.CurrentLibrary.getClientXY(t)
+        }
+        , g = function (t, u) {
+            jsPlumb.CurrentLibrary.setOffset(t, u)
+        };
+    var n = function () {
         var v = this;
         v.overlayPlacements = [];
         jsPlumb.jsPlumbUIComponent.apply(this, arguments);
         jsPlumb.EventGenerator.apply(this, arguments);
-        this._over = function(C) {
+        this._over = function (C) {
             var E = m(s(v.canvas))
-              , G = e(C)
-              , z = G[0] - E.left
-              , F = G[1] - E.top;
+                , G = e(C)
+                , z = G[0] - E.left
+                , F = G[1] - E.top;
             if (z > 0 && F > 0 && z < v.canvas.width && F < v.canvas.height) {
                 for (var A = 0; A < v.overlayPlacements.length; A++) {
                     var B = v.overlayPlacements[A];
@@ -3717,19 +3717,19 @@
             }
             return false
         }
-        ;
+            ;
         var u = false;
         var t = false
-          , y = null
-          , x = false;
-        var w = function(A, z) {
+            , y = null
+            , x = false;
+        var w = function (A, z) {
             return A != null && f(A, z)
         };
-        this.mousemove = function(C) {
+        this.mousemove = function (C) {
             var E = e(C)
-              , B = i(C)
-              , A = document.elementFromPoint(B[0], B[1])
-              , D = w(A, "_jsPlumb_overlay");
+                , B = i(C)
+                , A = document.elementFromPoint(B[0], B[1])
+                , D = w(A, "_jsPlumb_overlay");
             var z = o == null && (w(A, "_jsPlumb_endpoint") || w(A, "_jsPlumb_connector"));
             if (!u && z && v._over(C)) {
                 u = true;
@@ -3743,35 +3743,35 @@
             }
             v.fire("mousemove", v, C)
         }
-        ;
-        this.click = function(z) {
+            ;
+        this.click = function (z) {
             if (u && v._over(z) && !x) {
                 v.fire("click", v, z)
             }
             x = false
         }
-        ;
-        this.dblclick = function(z) {
+            ;
+        this.dblclick = function (z) {
             if (u && v._over(z) && !x) {
                 v.fire("dblclick", v, z)
             }
             x = false
         }
-        ;
-        this.mousedown = function(z) {
+            ;
+        this.mousedown = function (z) {
             if (v._over(z) && !t) {
                 t = true;
                 y = m(s(v.canvas));
                 v.fire("mousedown", v, z)
             }
         }
-        ;
-        this.mouseup = function(z) {
+            ;
+        this.mouseup = function (z) {
             t = false;
             v.fire("mouseup", v, z)
         }
     };
-    var p = function(u) {
+    var p = function (u) {
         var t = document.createElement("canvas");
         jsPlumb.appendElement(t, u.parent);
         t.style.position = "absolute";
@@ -3781,9 +3781,9 @@
         u._jsPlumb.getId(t, u.uuid);
         return t
     };
-    var d = jsPlumb.CanvasConnector = function(x) {
+    var d = jsPlumb.CanvasConnector = function (x) {
         n.apply(this, arguments);
-        var t = function(B, z) {
+        var t = function (B, z) {
             u.ctx.save();
             jsPlumb.extend(u.ctx, z);
             if (z.gradient) {
@@ -3797,7 +3797,7 @@
             u.ctx.restore()
         };
         var u = this
-          , w = u._jsPlumb.connectorClass + " " + (x.cssClass || "");
+            , w = u._jsPlumb.connectorClass + " " + (x.cssClass || "");
         u.canvas = p({
             "class": w,
             _jsPlumb: u._jsPlumb,
@@ -3805,20 +3805,20 @@
         });
         u.ctx = u.canvas.getContext("2d");
         var v = [u.canvas];
-        this.getDisplayElements = function() {
+        this.getDisplayElements = function () {
             return v
         }
-        ;
-        this.appendDisplayElement = function(y) {
+            ;
+        this.appendDisplayElement = function (y) {
             v.push(y)
         }
-        ;
-        u.paint = function(C, z) {
+            ;
+        u.paint = function (C, z) {
             if (z != null) {
                 jsPlumb.sizeCanvas(u.canvas, C[0], C[1], C[2], C[3]);
                 if (z.outlineColor != null) {
                     var B = z.outlineWidth || 1
-                      , y = z.lineWidth + (2 * B);
+                        , y = z.lineWidth + (2 * B);
                     var A = {
                         strokeStyle: z.outlineColor,
                         lineWidth: y
@@ -3829,8 +3829,8 @@
             }
         }
     }
-    ;
-    var l = function(v) {
+        ;
+    var l = function (v) {
         var t = this;
         n.apply(this, arguments);
         var u = t._jsPlumb.endpointClass + " " + (v.cssClass || "");
@@ -3840,11 +3840,11 @@
             parent: v.parent
         });
         t.ctx = t.canvas.getContext("2d");
-        this.paint = function(B, y, w) {
+        this.paint = function (B, y, w) {
             jsPlumb.sizeCanvas(t.canvas, B[0], B[1], B[2], B[3]);
             if (y.outlineColor != null) {
                 var A = y.outlineWidth || 1
-                  , x = y.lineWidth + (2 * A);
+                    , x = y.lineWidth + (2 * A);
                 var z = {
                     strokeStyle: y.outlineColor,
                     lineWidth: x
@@ -3853,11 +3853,11 @@
             t._paint.apply(this, arguments)
         }
     };
-    jsPlumb.Endpoints.canvas.Dot = function(w) {
+    jsPlumb.Endpoints.canvas.Dot = function (w) {
         var v = this;
         jsPlumb.Endpoints.Dot.apply(this, arguments);
         l.apply(this, arguments);
-        var u = function(x) {
+        var u = function (x) {
             try {
                 return parseInt(x)
             } catch (y) {
@@ -3866,23 +3866,23 @@
                 }
             }
         };
-        var t = function(z) {
+        var t = function (z) {
             var x = v.defaultOffset
-              , y = v.defaultInnerRadius;
+                , y = v.defaultInnerRadius;
             z.offset && (x = u(z.offset));
             z.innerRadius && (y = u(z.innerRadius));
             return [x, y]
         };
-        this._paint = function(F, y, C) {
+        this._paint = function (F, y, C) {
             if (y != null) {
                 var G = v.canvas.getContext("2d")
-                  , z = C.getOrientation();
+                    , z = C.getOrientation();
                 jsPlumb.extend(G, y);
                 if (y.gradient) {
                     var A = t(y.gradient)
-                      , D = z[1] == 1 ? A[0] * -1 : A[0]
-                      , x = z[0] == 1 ? A[0] * -1 : A[0]
-                      , E = G.createRadialGradient(F[4], F[4], F[4], F[4] + x, F[4] + D, A[1]);
+                        , D = z[1] == 1 ? A[0] * -1 : A[0]
+                        , x = z[0] == 1 ? A[0] * -1 : A[0]
+                        , E = G.createRadialGradient(F[4], F[4], F[4], F[4] + x, F[4] + D, A[1]);
                     for (var B = 0; B < y.gradient.stops.length; B++) {
                         E.addColorStop(y.gradient.stops[B][0], y.gradient.stops[B][1])
                     }
@@ -3900,14 +3900,14 @@
             }
         }
     }
-    ;
-    jsPlumb.Endpoints.canvas.Rectangle = function(u) {
+        ;
+    jsPlumb.Endpoints.canvas.Rectangle = function (u) {
         var t = this;
         jsPlumb.Endpoints.Rectangle.apply(this, arguments);
         l.apply(this, arguments);
-        this._paint = function(C, w, A) {
+        this._paint = function (C, w, A) {
             var F = t.canvas.getContext("2d")
-              , y = A.getOrientation();
+                , y = A.getOrientation();
             jsPlumb.extend(F, w);
             if (w.gradient) {
                 var E = y[1] == 1 ? C[3] : y[1] == 0 ? C[3] / 2 : 0;
@@ -3931,20 +3931,20 @@
             }
         }
     }
-    ;
-    jsPlumb.Endpoints.canvas.Triangle = function(u) {
+        ;
+    jsPlumb.Endpoints.canvas.Triangle = function (u) {
         var t = this;
         jsPlumb.Endpoints.Triangle.apply(this, arguments);
         l.apply(this, arguments);
-        this._paint = function(D, v, B) {
+        this._paint = function (D, v, B) {
             var w = D[2]
-              , G = D[3]
-              , F = D[0]
-              , E = D[1];
+                , G = D[3]
+                , F = D[0]
+                , E = D[1];
             var H = t.canvas.getContext("2d");
             var C = 0
-              , A = 0
-              , z = 0;
+                , A = 0
+                , z = 0;
             if (orientation[0] == 1) {
                 C = w;
                 A = G;
@@ -3974,46 +3974,46 @@
             }
         }
     }
-    ;
+        ;
     jsPlumb.Endpoints.canvas.Image = jsPlumb.Endpoints.Image;
     jsPlumb.Endpoints.canvas.Blank = jsPlumb.Endpoints.Blank;
-    jsPlumb.Connectors.canvas.Bezier = function() {
+    jsPlumb.Connectors.canvas.Bezier = function () {
         var t = this;
         jsPlumb.Connectors.Bezier.apply(this, arguments);
         d.apply(this, arguments);
-        this._paint = function(u) {
+        this._paint = function (u) {
             t.ctx.beginPath();
             t.ctx.moveTo(u[4], u[5]);
             t.ctx.bezierCurveTo(u[8], u[9], u[10], u[11], u[6], u[7]);
             t.ctx.stroke()
         }
-        ;
-        this.createGradient = function(w, u, v) {
+            ;
+        this.createGradient = function (w, u, v) {
             return t.ctx.createLinearGradient(w[6], w[7], w[4], w[5])
         }
     }
-    ;
-    jsPlumb.Connectors.canvas.Straight = function() {
+        ;
+    jsPlumb.Connectors.canvas.Straight = function () {
         var t = this;
         jsPlumb.Connectors.Straight.apply(this, arguments);
         d.apply(this, arguments);
-        this._paint = function(u) {
+        this._paint = function (u) {
             t.ctx.beginPath();
             t.ctx.moveTo(u[4], u[5]);
             t.ctx.lineTo(u[6], u[7]);
             t.ctx.stroke()
         }
-        ;
-        this.createGradient = function(v, u) {
+            ;
+        this.createGradient = function (v, u) {
             return u.createLinearGradient(v[4], v[5], v[6], v[7])
         }
     }
-    ;
-    jsPlumb.Connectors.canvas.Flowchart = function() {
+        ;
+    jsPlumb.Connectors.canvas.Flowchart = function () {
         var t = this;
         jsPlumb.Connectors.Flowchart.apply(this, arguments);
         d.apply(this, arguments);
-        this._paint = function(v) {
+        this._paint = function (v) {
             t.ctx.beginPath();
             t.ctx.moveTo(v[4], v[5]);
             for (var u = 0; u < v[8]; u++) {
@@ -4022,20 +4022,20 @@
             t.ctx.lineTo(v[6], v[7]);
             t.ctx.stroke()
         }
-        ;
-        this.createGradient = function(v, u) {
+            ;
+        this.createGradient = function (v, u) {
             return u.createLinearGradient(v[4], v[5], v[6], v[7])
         }
     }
-    ;
+        ;
     jsPlumb.Overlays.canvas.Label = jsPlumb.Overlays.Label;
-    var k = function() {
+    var k = function () {
         jsPlumb.jsPlumbUIComponent.apply(this, arguments)
     };
-    var r = function(u, t) {
+    var r = function (u, t) {
         u.apply(this, t);
         k.apply(this, arguments);
-        this.paint = function(x, z, v, A, y) {
+        this.paint = function (x, z, v, A, y) {
             var w = x.ctx;
             w.lineWidth = v;
             w.beginPath();
@@ -4055,31 +4055,31 @@
             }
         }
     };
-    jsPlumb.Overlays.canvas.Arrow = function() {
+    jsPlumb.Overlays.canvas.Arrow = function () {
         r.apply(this, [jsPlumb.Overlays.Arrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.canvas.PlainArrow = function() {
+        ;
+    jsPlumb.Overlays.canvas.PlainArrow = function () {
         r.apply(this, [jsPlumb.Overlays.PlainArrow, arguments])
     }
-    ;
-    jsPlumb.Overlays.canvas.Diamond = function() {
+        ;
+    jsPlumb.Overlays.canvas.Diamond = function () {
         r.apply(this, [jsPlumb.Overlays.Diamond, arguments])
     }
 }
 )();
-(function(a) {
+(function (a) {
     jsPlumb.CurrentLibrary = {
-        addClass: function(c, b) {
+        addClass: function (c, b) {
             c.addClass(b)
         },
-        animate: function(d, c, b) {
+        animate: function (d, c, b) {
             d.animate(c, b)
         },
-        appendElement: function(c, b) {
+        appendElement: function (c, b) {
             jsPlumb.CurrentLibrary.getElementObject(b).append(c)
         },
-        bind: function(b, c, d) {
+        bind: function (b, c, d) {
             b = jsPlumb.CurrentLibrary.getElementObject(b);
             b.bind(c, d)
         },
@@ -4093,346 +4093,346 @@
             drop: "drop",
             complete: "complete"
         },
-        extend: function(c, b) {
+        extend: function (c, b) {
             return a.extend(c, b)
         },
-        getAttribute: function(b, c) {
+        getAttribute: function (b, c) {
             return b.attr(c)
         },
-        getClientXY: function(b) {
+        getClientXY: function (b) {
             return [b.clientX, b.clientY]
         },
-        getDocumentElement: function() {
+        getDocumentElement: function () {
             return document
         },
-        getDragObject: function(b) {
+        getDragObject: function (b) {
             return b[1].draggable
         },
-        getDragScope: function(b) {
+        getDragScope: function (b) {
             return b.draggable("option", "scope")
         },
-        getDropScope: function(b) {
+        getDropScope: function (b) {
             return b.droppable("option", "scope")
         },
-        getElementObject: function(b) {
+        getElementObject: function (b) {
             return typeof (b) == "string" ? a("#" + b) : a(b)
         },
-        getOffset: function(b) {
+        getOffset: function (b) {
             return b.offset()
         },
-        getPageXY: function(b) {
+        getPageXY: function (b) {
             return [b.pageX, b.pageY]
         },
-        getParent: function(b) {
+        getParent: function (b) {
             return jsPlumb.CurrentLibrary.getElementObject(b).parent()
         },
-        getScrollLeft: function(b) {
+        getScrollLeft: function (b) {
             return b.scrollLeft()
         },
-        getScrollTop: function(b) {
+        getScrollTop: function (b) {
             return b.scrollTop()
         },
-        getSize: function(b) {
+        getSize: function (b) {
             return [b.outerWidth(), b.outerHeight()]
         },
-        getUIPosition: function(c) {
+        getUIPosition: function (c) {
             var d = c[1]
-              , b = d.offset;
+                , b = d.offset;
             return b || d.absolutePosition
         },
-        hasClass: function(c, b) {
+        hasClass: function (c, b) {
             return c.hasClass(b)
         },
-        initDraggable: function(c, b) {
+        initDraggable: function (c, b) {
             b.helper = null;
             b.scope = b.scope || jsPlumb.Defaults.Scope;
             c.draggable(b)
         },
-        initDroppable: function(c, b) {
+        initDroppable: function (c, b) {
             b.scope = b.scope || jsPlumb.Defaults.Scope;
             c.droppable(b)
         },
-        isAlreadyDraggable: function(b) {
+        isAlreadyDraggable: function (b) {
             b = jsPlumb.CurrentLibrary.getElementObject(b);
             return b.hasClass("ui-draggable")
         },
-        isDragSupported: function(c, b) {
+        isDragSupported: function (c, b) {
             return c.draggable
         },
-        isDropSupported: function(c, b) {
+        isDropSupported: function (c, b) {
             return c.droppable
         },
-        removeClass: function(c, b) {
+        removeClass: function (c, b) {
             c.removeClass(b)
         },
-        removeElement: function(b, c) {
+        removeElement: function (b, c) {
             jsPlumb.CurrentLibrary.getElementObject(b).remove()
         },
-        setAttribute: function(c, d, b) {
+        setAttribute: function (c, d, b) {
             c.attr(d, b)
         },
-        setDraggable: function(c, b) {
+        setDraggable: function (c, b) {
             c.draggable("option", "disabled", !b)
         },
-        setDragScope: function(c, b) {
+        setDragScope: function (c, b) {
             c.draggable("option", "scope", b)
         },
-        setOffset: function(b, c) {
+        setOffset: function (b, c) {
             jsPlumb.CurrentLibrary.getElementObject(b).offset(c)
         }
     };
     a(document).ready(jsPlumb.init)
 }
 )(jQuery);
-(function() {
+(function () {
     if (typeof Math.sgn == "undefined") {
-        Math.sgn = function(l) {
+        Math.sgn = function (l) {
             return l == 0 ? 0 : l > 0 ? 1 : -1
         }
     }
     var b = {
-        subtract: function(m, l) {
+        subtract: function (m, l) {
             return {
                 x: m.x - l.x,
                 y: m.y - l.y
             }
         },
-        dotProduct: function(m, l) {
+        dotProduct: function (m, l) {
             return m.x * l.x + m.y * l.y
         },
-        square: function(l) {
+        square: function (l) {
             return Math.sqrt(l.x * l.x + l.y * l.y)
         },
-        scale: function(m, l) {
+        scale: function (m, l) {
             return {
                 x: m.x * l,
                 y: m.y * l
             }
         }
     }
-      , d = Math.pow(2, -65)
-      , h = function(y, x) {
-        for (var s = [], v = x.length - 1, r = 2 * v - 1, t = [], w = [], o = [], p = [], q = [[1, 0.6, 0.3, 0.1], [0.4, 0.6, 0.6, 0.4], [0.1, 0.3, 0.6, 1]], u = 0; u <= v; u++) {
-            t[u] = b.subtract(x[u], y)
-        }
-        for (u = 0; u <= v - 1; u++) {
-            w[u] = b.subtract(x[u + 1], x[u]);
-            w[u] = b.scale(w[u], 3)
-        }
-        for (u = 0; u <= v - 1; u++) {
-            for (var n = 0; n <= v; n++) {
-                o[u] || (o[u] = []);
-                o[u][n] = b.dotProduct(w[u], t[n])
+        , d = Math.pow(2, -65)
+        , h = function (y, x) {
+            for (var s = [], v = x.length - 1, r = 2 * v - 1, t = [], w = [], o = [], p = [], q = [[1, 0.6, 0.3, 0.1], [0.4, 0.6, 0.6, 0.4], [0.1, 0.3, 0.6, 1]], u = 0; u <= v; u++) {
+                t[u] = b.subtract(x[u], y)
             }
-        }
-        for (u = 0; u <= r; u++) {
-            p[u] || (p[u] = []);
-            p[u].y = 0;
-            p[u].x = parseFloat(u) / r
-        }
-        r = v - 1;
-        for (t = 0; t <= v + r; t++) {
-            w = Math.min(t, v);
-            for (u = Math.max(0, t - r); u <= w; u++) {
-                j = t - u;
-                p[u + j].y += o[j][u] * q[j][u]
+            for (u = 0; u <= v - 1; u++) {
+                w[u] = b.subtract(x[u + 1], x[u]);
+                w[u] = b.scale(w[u], 3)
             }
-        }
-        v = x.length - 1;
-        p = k(p, 2 * v - 1, s, 0);
-        r = b.subtract(y, x[0]);
-        o = b.square(r);
-        for (u = q = 0; u < p; u++) {
-            r = b.subtract(y, i(x, v, s[u], null, null));
+            for (u = 0; u <= v - 1; u++) {
+                for (var n = 0; n <= v; n++) {
+                    o[u] || (o[u] = []);
+                    o[u][n] = b.dotProduct(w[u], t[n])
+                }
+            }
+            for (u = 0; u <= r; u++) {
+                p[u] || (p[u] = []);
+                p[u].y = 0;
+                p[u].x = parseFloat(u) / r
+            }
+            r = v - 1;
+            for (t = 0; t <= v + r; t++) {
+                w = Math.min(t, v);
+                for (u = Math.max(0, t - r); u <= w; u++) {
+                    j = t - u;
+                    p[u + j].y += o[j][u] * q[j][u]
+                }
+            }
+            v = x.length - 1;
+            p = k(p, 2 * v - 1, s, 0);
+            r = b.subtract(y, x[0]);
+            o = b.square(r);
+            for (u = q = 0; u < p; u++) {
+                r = b.subtract(y, i(x, v, s[u], null, null));
+                r = b.square(r);
+                if (r < o) {
+                    o = r;
+                    q = s[u]
+                }
+            }
+            r = b.subtract(y, x[v]);
             r = b.square(r);
             if (r < o) {
                 o = r;
-                q = s[u]
+                q = 1
+            }
+            return {
+                location: q,
+                distance: o
             }
         }
-        r = b.subtract(y, x[v]);
-        r = b.square(r);
-        if (r < o) {
-            o = r;
-            q = 1
-        }
-        return {
-            location: q,
-            distance: o
-        }
-    }
-      , k = function(E, D, y, B) {
-        var x = [], z = [], C = [], u = [], v = 0, w, A;
-        A = Math.sgn(E[0].y);
-        for (var t = 1; t <= D; t++) {
-            w = Math.sgn(E[t].y);
-            w != A && v++;
-            A = w
-        }
-        switch (v) {
-        case 0:
-            return 0;
-        case 1:
-            if (B >= 64) {
-                y[0] = (E[0].x + E[D].x) / 2;
-                return 1
+        , k = function (E, D, y, B) {
+            var x = [], z = [], C = [], u = [], v = 0, w, A;
+            A = Math.sgn(E[0].y);
+            for (var t = 1; t <= D; t++) {
+                w = Math.sgn(E[t].y);
+                w != A && v++;
+                A = w
             }
-            var s, r, p;
-            v = E[0].y - E[D].y;
-            w = E[D].x - E[0].x;
-            A = E[0].x * E[D].y - E[D].x * E[0].y;
-            t = max_distance_below = 0;
-            for (r = 1; r < D; r++) {
-                p = v * E[r].x + w * E[r].y + A;
-                if (p > t) {
-                    t = p
-                } else {
-                    if (p < max_distance_below) {
-                        max_distance_below = p
+            switch (v) {
+                case 0:
+                    return 0;
+                case 1:
+                    if (B >= 64) {
+                        y[0] = (E[0].x + E[D].x) / 2;
+                        return 1
+                    }
+                    var s, r, p;
+                    v = E[0].y - E[D].y;
+                    w = E[D].x - E[0].x;
+                    A = E[0].x * E[D].y - E[D].x * E[0].y;
+                    t = max_distance_below = 0;
+                    for (r = 1; r < D; r++) {
+                        p = v * E[r].x + w * E[r].y + A;
+                        if (p > t) {
+                            t = p
+                        } else {
+                            if (p < max_distance_below) {
+                                max_distance_below = p
+                            }
+                        }
+                    }
+                    s = v;
+                    r = w;
+                    p = A - t;
+                    s = 0 * r - s * 1;
+                    s = 1 / s;
+                    t = (1 * p - r * 0) * s;
+                    s = v;
+                    r = w;
+                    p = A - max_distance_below;
+                    s = 0 * r - s * 1;
+                    s = 1 / s;
+                    v = (1 * p - r * 0) * s;
+                    if (Math.max(t, v) - Math.min(t, v) < d ? 1 : 0) {
+                        C = E[D].x - E[0].x;
+                        u = E[D].y - E[0].y;
+                        y[0] = 0 + 1 * (C * (E[0].y - 0) - u * (E[0].x - 0)) * (1 / (C * 0 - u * 1));
+                        return 1
+                    }
+            }
+            i(E, D, 0.5, x, z);
+            E = k(x, D, C, B + 1);
+            D = k(z, D, u, B + 1);
+            for (B = 0; B < E; B++) {
+                y[B] = C[B]
+            }
+            for (B = 0; B < D; B++) {
+                y[B + E] = u[B]
+            }
+            return E + D
+        }
+        , i = function (m, l, o, q, n) {
+            for (var p = [[]], r = 0; r <= l; r++) {
+                p[0][r] = m[r]
+            }
+            for (m = 1; m <= l; m++) {
+                for (r = 0; r <= l - m; r++) {
+                    p[m] || (p[m] = []);
+                    p[m][r] || (p[m][r] = {});
+                    p[m][r].x = (1 - o) * p[m - 1][r].x + o * p[m - 1][r + 1].x;
+                    p[m][r].y = (1 - o) * p[m - 1][r].y + o * p[m - 1][r + 1].y
+                }
+            }
+            if (q != null) {
+                for (r = 0; r <= l; r++) {
+                    q[r] = p[r][0]
+                }
+            }
+            if (n != null) {
+                for (r = 0; r <= l; r++) {
+                    n[r] = p[l - r][r]
+                }
+            }
+            return p[l][0]
+        }
+        , g = {}
+        , c = function (u) {
+            var t = g[u];
+            if (!t) {
+                t = [];
+                var p = function (l) {
+                    return function () {
+                        return l
                     }
                 }
-            }
-            s = v;
-            r = w;
-            p = A - t;
-            s = 0 * r - s * 1;
-            s = 1 / s;
-            t = (1 * p - r * 0) * s;
-            s = v;
-            r = w;
-            p = A - max_distance_below;
-            s = 0 * r - s * 1;
-            s = 1 / s;
-            v = (1 * p - r * 0) * s;
-            if (Math.max(t, v) - Math.min(t, v) < d ? 1 : 0) {
-                C = E[D].x - E[0].x;
-                u = E[D].y - E[0].y;
-                y[0] = 0 + 1 * (C * (E[0].y - 0) - u * (E[0].x - 0)) * (1 / (C * 0 - u * 1));
-                return 1
-            }
-        }
-        i(E, D, 0.5, x, z);
-        E = k(x, D, C, B + 1);
-        D = k(z, D, u, B + 1);
-        for (B = 0; B < E; B++) {
-            y[B] = C[B]
-        }
-        for (B = 0; B < D; B++) {
-            y[B + E] = u[B]
-        }
-        return E + D
-    }
-      , i = function(m, l, o, q, n) {
-        for (var p = [[]], r = 0; r <= l; r++) {
-            p[0][r] = m[r]
-        }
-        for (m = 1; m <= l; m++) {
-            for (r = 0; r <= l - m; r++) {
-                p[m] || (p[m] = []);
-                p[m][r] || (p[m][r] = {});
-                p[m][r].x = (1 - o) * p[m - 1][r].x + o * p[m - 1][r + 1].x;
-                p[m][r].y = (1 - o) * p[m - 1][r].y + o * p[m - 1][r + 1].y
-            }
-        }
-        if (q != null) {
-            for (r = 0; r <= l; r++) {
-                q[r] = p[r][0]
-            }
-        }
-        if (n != null) {
-            for (r = 0; r <= l; r++) {
-                n[r] = p[l - r][r]
-            }
-        }
-        return p[l][0]
-    }
-      , g = {}
-      , c = function(u) {
-        var t = g[u];
-        if (!t) {
-            t = [];
-            var p = function(l) {
-                return function() {
-                    return l
-                }
-            }
-              , r = function() {
-                return function(l) {
-                    return l
-                }
-            }
-              , o = function() {
-                return function(l) {
-                    return 1 - l
-                }
-            }
-              , q = function(l) {
-                return function(w) {
-                    for (var v = 1, x = 0; x < l.length; x++) {
-                        v *= l[x](w)
+                    , r = function () {
+                        return function (l) {
+                            return l
+                        }
                     }
-                    return v
+                    , o = function () {
+                        return function (l) {
+                            return 1 - l
+                        }
+                    }
+                    , q = function (l) {
+                        return function (w) {
+                            for (var v = 1, x = 0; x < l.length; x++) {
+                                v *= l[x](w)
+                            }
+                            return v
+                        }
+                    };
+                t.push(new function () {
+                    return function (l) {
+                        return Math.pow(l, u)
+                    }
                 }
-            };
-            t.push(new function() {
-                return function(l) {
-                    return Math.pow(l, u)
+                );
+                for (var s = 1; s < u; s++) {
+                    for (var m = [new p(u)], n = 0; n < u - s; n++) {
+                        m.push(new r)
+                    }
+                    for (n = 0; n < s; n++) {
+                        m.push(new o)
+                    }
+                    t.push(new q(m))
                 }
+                t.push(new function () {
+                    return function (l) {
+                        return Math.pow(1 - l, u)
+                    }
+                }
+                );
+                g[u] = t
             }
-            );
-            for (var s = 1; s < u; s++) {
-                for (var m = [new p(u)], n = 0; n < u - s; n++) {
-                    m.push(new r)
-                }
-                for (n = 0; n < s; n++) {
-                    m.push(new o)
-                }
-                t.push(new q(m))
+            return t
+        }
+        , a = function (m, l) {
+            for (var o = c(m.length - 1), q = 0, n = 0, p = 0; p < m.length; p++) {
+                q += m[p].x * o[p](l);
+                n += m[p].y * o[p](l)
             }
-            t.push(new function() {
-                return function(l) {
-                    return Math.pow(1 - l, u)
-                }
+            return {
+                x: q,
+                y: n
             }
-            );
-            g[u] = t
         }
-        return t
-    }
-      , a = function(m, l) {
-        for (var o = c(m.length - 1), q = 0, n = 0, p = 0; p < m.length; p++) {
-            q += m[p].x * o[p](l);
-            n += m[p].y * o[p](l)
+        , f = function (m, l, o) {
+            var q = a(m, l)
+                , n = 0;
+            l = l;
+            for (var p = o > 0 ? 1 : -1, r = null; n < Math.abs(o);) {
+                l += 0.005 * p;
+                r = a(m, l);
+                n += Math.sqrt(Math.pow(r.x - q.x, 2) + Math.pow(r.y - q.y, 2));
+                q = r
+            }
+            return {
+                point: r,
+                location: l
+            }
         }
-        return {
-            x: q,
-            y: n
-        }
-    }
-      , f = function(m, l, o) {
-        var q = a(m, l)
-          , n = 0;
-        l = l;
-        for (var p = o > 0 ? 1 : -1, r = null; n < Math.abs(o); ) {
-            l += 0.005 * p;
-            r = a(m, l);
-            n += Math.sqrt(Math.pow(r.x - q.x, 2) + Math.pow(r.y - q.y, 2));
-            q = r
-        }
-        return {
-            point: r,
-            location: l
-        }
-    }
-      , e = function(m, l) {
-        var n = a(m, l)
-          , o = a(m.slice(0, m.length - 1), l);
-        return Math.atan((o.y - n.y) / (o.x - n.x))
-    };
+        , e = function (m, l) {
+            var n = a(m, l)
+                , o = a(m.slice(0, m.length - 1), l);
+            return Math.atan((o.y - n.y) / (o.x - n.x))
+        };
     window.jsBezier = {
         distanceFromCurve: h,
         gradientAtPoint: e,
-        nearestPointOnCurve: function(m, l) {
+        nearestPointOnCurve: function (m, l) {
             var n = h(m, l);
             return {
                 point: i(l, l.length - 1, n.location, null, null),
@@ -4440,10 +4440,10 @@
             }
         },
         pointOnCurve: a,
-        pointAlongCurveFrom: function(m, l, n) {
+        pointAlongCurveFrom: function (m, l, n) {
             return f(m, l, n).point
         },
-        perpendicularToCurveAt: function(m, l, n, o) {
+        perpendicularToCurveAt: function (m, l, n, o) {
             o = o == null ? 0 : o;
             l = f(m, l, o);
             m = e(m, l.location);
