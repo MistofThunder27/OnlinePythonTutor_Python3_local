@@ -72,9 +72,7 @@ specially-encoded JSON format. The front-end then parses and visualizes
 that trace and allows the user to single-step forwards AND backwards
 through execution.
 
-The back-end includes main.py and other files in the back_end/
-sub-directory in this repository:
+The back-end includes main.py and m_pg_logger.py files:
 
-  main.py                       - start the local server
-  back_end/pg_logger.py         - the 'meat' of the back-end
-  back_end/process_requests.py  - functions handling post requests
+  main.py                       - manage the local server
+  m_pg_logger.py                - the 'meat' of the back-end
