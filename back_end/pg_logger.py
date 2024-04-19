@@ -15,11 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import bdb  # the KEY import here!
+import bdb
 import sys
 import io
 import inspect
-from back_end.pg_encode import encode
+import re
+
+typeRE = re.compile("<type '(.*)'>")
+classRE = re.compile("<class '(.*)'>")
 
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
@@ -35,6 +38,10 @@ class PGLogger(bdb.Bdb):
         self.trace = []  # each entry contains a dict with the information for a single executed line
         self.ignore_id = ignore_id  # don"t print out a custom ID for each object (for regression testing)
         self.max_executed_lines = max_executed_lines  # upper-bound of executed lines, to guard against infinite loops
+
+        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
+        self.real_to_small_IDs = {}
+        self.cur_small_id = 1
 
         self.script_lines = []
         self.visited_lines = set()
@@ -106,32 +113,29 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "return")
 
     def user_exception(self, frame, exc_info):
-        frame.f_locals["__exception__"] = exc_info[:2]
-        self.interaction(frame, "exception")
+        self.interaction(frame, "exception", exc_info[:2])
 
     # General interaction function
-    def interaction(self, frame, event_type):
+    def interaction(self, frame, event_type, exception_info=None):
         trace_entry = {
             "line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
             "scope_name": frame.f_code.co_name,
             "encoded_frames": [
-                ("global", {k: encode(v, set(), self.ignore_id) for k, v in frame.f_globals.items() if
+                ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
                 ],
             "stdout": frame.f_globals["__stdout__"].getvalue()
         }
 
+        # Added after as currently highlighted line has not been executed yet
+        self.visited_lines.add(frame.f_lineno)
+
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
 
         # if there's an exception, then record its info:
-        if event_type == "exception":
-            # always check in f_locals
-            exc = frame.f_locals["__exception__"]
-            trace_entry["exception_msg"] = f"{exc[0].__name__}: {exc[1]}"
-
-        # Added after as currently highlighted line has not been executed yet
-        self.visited_lines.add(frame.f_lineno)
+        if exception_info:
+            trace_entry["exception_msg"] = f"{exception_info[0].__name__}: {exception_info[-1]}"
 
         encoded_frames = []  # each element is a pair of (function name, ENCODED locals dict)
         # climb up until you find "<module>", which is (hopefully) the global scope
@@ -148,7 +152,7 @@ class PGLogger(bdb.Bdb):
                 cur_name = "unnamed function"
 
             encoded_frames.append(
-                (cur_name, {k: encode(v, set(), self.ignore_id) for k, v in cur_frame.f_locals.items() if
+                (cur_name, {k: self.encode(v) for k, v in cur_frame.f_locals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}})
             )
             cur_frame = cur_frame.f_back
@@ -162,6 +166,87 @@ class PGLogger(bdb.Bdb):
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
                                                 "infinite loop)"})
+
+    def encode(self, outer_data):
+        # Given an arbitrary piece of Python data, encode it in such a manner
+        # that it can be later encoded into JSON.
+        #
+        # We use this function to encode run-time traces of data structures
+        # to send to the front-end.
+        #
+        # Format:
+        #   * None, int, long, float, str, bool - unchanged
+        #     (json.dumps encodes these fine verbatim)
+        #   * list     - ["LIST", unique_id, elt1, elt2, elt3, ..., eltN]
+        #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
+        #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
+        #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
+        #   * instance - ["INSTANCE", class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+        #   * class    - ["CLASS", class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+        #   * circular reference - ["CIRCULAR_REF", unique_id]
+        #   * other    - [<type name>, unique_id, string representation of object]
+        #
+        # the unique_id is derived from id(), which allows us to explicitly
+        # capture aliasing of compound values
+
+        def recursive_encode(data, compound_obj_ids):
+            data_type = type(data)
+            # primitive type
+            if data is None or data_type in {int, float, str, bool}:
+                return data
+
+            # compound type
+            my_id = id(data)
+
+            if my_id in compound_obj_ids:
+                return ["CIRCULAR_REF", self.real_to_small_IDs[my_id]]
+
+            if my_id not in self.real_to_small_IDs:
+                self.real_to_small_IDs[my_id] = 99999 if self.ignore_id else self.cur_small_id
+                self.cur_small_id += 1
+
+            new_compound_obj_ids = compound_obj_ids.union({my_id})
+            my_small_id = self.real_to_small_IDs[my_id]
+
+            if data_type == list:
+                ret = ["LIST", my_small_id]
+                for e in data:
+                    ret.append(recursive_encode(e, new_compound_obj_ids))
+            elif data_type == tuple:
+                ret = ["TUPLE", my_small_id]
+                for e in data:
+                    ret.append(recursive_encode(e, new_compound_obj_ids))
+            elif data_type == set:
+                ret = ["SET", my_small_id]
+                for e in data:
+                    ret.append(recursive_encode(e, new_compound_obj_ids))
+            elif data_type == dict:
+                ret = ["DICT", my_small_id]
+                for k, v in data.items():
+                    ret.append([recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)])
+            elif not isinstance(data, type) or "__class__" in dir(data):
+                if not isinstance(data, type):
+                    ret = ["INSTANCE", data.__class__.__name__, my_small_id]
+                else:
+                    superclass_names = [e.__name__ for e in data.__bases__]
+                    ret = ["CLASS", data.__name__, my_small_id, superclass_names]
+
+                # traverse inside its __dict__ to grab attributes
+                # (filter out useless-seeming ones):
+                for k, v in data.__dict__.items():
+                    if k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}:
+                        ret.append([recursive_encode(k, new_compound_obj_ids),
+                                    recursive_encode(v, new_compound_obj_ids)])
+
+            else:
+                typeStr = str(data_type)
+                m = typeRE.match(typeStr)
+                assert m, data_type
+                ret = [m.group(1), my_small_id, str(data)]
+
+            return ret
+
+        return recursive_encode(outer_data, set())
 
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")

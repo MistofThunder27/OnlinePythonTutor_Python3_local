@@ -1,4 +1,4 @@
-Truncated original author message: -------------------------------------------------
+Truncated original author message: ---------------------------------------
 Online Python Tutor
 Copyright (C) 2010 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -26,10 +26,8 @@ so changes made will prioritise specific use cases over general ones.
 This repository was forked on Github from hcientist/OnlinePythonTutor
 This program remains under the GNU General Public License version 3
 
-Text bellow this line is to be updated:===================================
-======
-Introduction:
 
+Introduction:
 This program a web application running on a local server where you can
 type Python scripts directly into your web browser, execute those scripts,
 and single-step FORWARDS AND BACKWARDS through execution in order to view
@@ -77,9 +75,6 @@ through execution.
 The back-end includes main.py and other files in the back_end/
 sub-directory in this repository:
 
+  main.py                       - start the local server
   back_end/pg_logger.py         - the 'meat' of the back-end
-  back_end/pg_encoder.py        - encodes Python data into JSON
   back_end/process_requests.py  - functions handling post requests
-
-Due to the AJAX same-origin policy, the front-end and back-end must be
-deployed on the same server (unless you do some fancy proxy magic).
