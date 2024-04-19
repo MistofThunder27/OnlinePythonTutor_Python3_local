@@ -56,6 +56,7 @@ def process_post(parsed_post_dict):
         assert len(ret["tests"]) == len(ret["expects"])
         return ret
 
+    # =================================================================================
     user_script = parsed_post_dict["user_script"][0]
     changed_max_executed_lines = int(parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0])
 

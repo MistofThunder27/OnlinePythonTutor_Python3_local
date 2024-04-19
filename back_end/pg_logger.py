@@ -21,15 +21,14 @@ import io
 import inspect
 import re
 
-typeRE = re.compile("<type '(.*)'>")
-classRE = re.compile("<class '(.*)'>")
-
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
 
 MAX_EXECUTED_LINES = 200
+typeRE = re.compile("<type '(.*)'>")
+classRE = re.compile("<class '(.*)'>")
 
 
 class PGLogger(bdb.Bdb):
@@ -209,42 +208,33 @@ class PGLogger(bdb.Bdb):
             my_small_id = self.real_to_small_IDs[my_id]
 
             if data_type == list:
-                ret = ["LIST", my_small_id]
-                for e in data:
-                    ret.append(recursive_encode(e, new_compound_obj_ids))
-            elif data_type == tuple:
-                ret = ["TUPLE", my_small_id]
-                for e in data:
-                    ret.append(recursive_encode(e, new_compound_obj_ids))
-            elif data_type == set:
-                ret = ["SET", my_small_id]
-                for e in data:
-                    ret.append(recursive_encode(e, new_compound_obj_ids))
-            elif data_type == dict:
-                ret = ["DICT", my_small_id]
-                for k, v in data.items():
-                    ret.append([recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)])
-            elif not isinstance(data, type) or "__class__" in dir(data):
+                return ["LIST", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+            if data_type == tuple:
+                return ["TUPLE", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+            if data_type == set:
+                return ["SET", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+            if data_type == dict:
+                return ["DICT", my_small_id, *[
+                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    for k, v in data.items()
+                ]]
+            if not isinstance(data, type) or "__class__" in dir(data):
                 if not isinstance(data, type):
                     ret = ["INSTANCE", data.__class__.__name__, my_small_id]
                 else:
-                    superclass_names = [e.__name__ for e in data.__bases__]
-                    ret = ["CLASS", data.__name__, my_small_id, superclass_names]
+                    ret = ["CLASS", data.__name__, my_small_id, [e.__name__ for e in data.__bases__]]
 
                 # traverse inside its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
-                for k, v in data.__dict__.items():
-                    if k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}:
-                        ret.append([recursive_encode(k, new_compound_obj_ids),
-                                    recursive_encode(v, new_compound_obj_ids)])
+                ret.extend([
+                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    for k, v in data.__dict__.items() if
+                    k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}
+                ])
 
-            else:
-                typeStr = str(data_type)
-                m = typeRE.match(typeStr)
-                assert m, data_type
-                ret = [m.group(1), my_small_id, str(data)]
+                return ret
 
-            return ret
+            return [typeRE.match(str(data_type)).group(1), my_small_id, str(data)]
 
         return recursive_encode(outer_data, set())
 
