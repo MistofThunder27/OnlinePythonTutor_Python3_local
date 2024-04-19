@@ -87,9 +87,7 @@ def encode(data, compound_obj_ids, ignore_id=False):
     elif data_type == dict:
         ret = ["DICT", my_small_id]
         for k, v in data.items():
-            # don"t display some built-in locals ...
-            if k not in {"__module__", "__return__"}:
-                ret.append([encode(k, new_compound_obj_ids, ignore_id), encode(v, new_compound_obj_ids, ignore_id)])
+            ret.append([encode(k, new_compound_obj_ids, ignore_id), encode(v, new_compound_obj_ids, ignore_id)])
     elif not isinstance(data, type) or "__class__" in dir(data):
         if not isinstance(data, type):
             ret = ["INSTANCE", data.__class__.__name__, my_small_id]
