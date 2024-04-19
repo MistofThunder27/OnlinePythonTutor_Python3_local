@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 import json
 import os
 
-from m_pg_logger import PGLogger, MAX_EXECUTED_LINES
+from m_pg_logger import *
 
 # TODO class calls being functions
 # TODO nested function call highlighting when on multiple lines (it pops the last call on user line)

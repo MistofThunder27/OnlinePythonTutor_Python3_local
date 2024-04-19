@@ -253,17 +253,15 @@ class PGLogger(bdb.Bdb):
         except Exception as exc:
             import traceback; traceback.print_exc()
 
-            trace_entry = {"event": "uncaught_exception"}
+            trace_entry = {
+                "event": "uncaught_exception",
+                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
+            }
 
             if hasattr(exc, "lineno"):
                 trace_entry["line"] = exc.lineno
             if hasattr(exc, "offset"):
                 trace_entry["offset"] = exc.offset
-
-            if hasattr(exc, "msg"):
-                trace_entry["exception_msg"] = "Error: " + exc.msg
-            else:
-                trace_entry["exception_msg"] = "Unknown error"
 
             self.trace.append(trace_entry)
 
