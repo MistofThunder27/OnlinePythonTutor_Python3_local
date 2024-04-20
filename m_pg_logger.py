@@ -55,23 +55,27 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
 
+        line_no = calling_frame.f_lineno
+        for group in self.line_groups:
+            if line_no in group:
+                line_no = list(group)
+                break
+
         # relative positions
-        relative_start_position = start_offset
-        relative_end_position = end_offset
+        calling_function_lines = line_no
+        code_so_far = "\n".join(self.script_lines[calling_function_lines[0] - 1: start_line - 1])
+        relative_start_position = len(code_so_far) + start_offset
+        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
+        relative_end_position = len(code_so_far) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            calling_function_lines = self.trace[-1]["lines"]
-            code_so_far = "\n".join(self.script_lines[calling_function_lines[0] - 1: start_line])
-            relative_start_position += len(code_so_far)
-            code_so_far = "\n".join([code_so_far, *self.script_lines[start_line: end_line]])
-            relative_end_position += len(code_so_far)
-            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line: calling_function_lines[-1]]])
+            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: calling_function_lines[-1]]])
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
-                "code": code_so_far,
+                "code": code_so_far.strip("\n"),
+                "line_no": [calling_function_lines[0], calling_function_lines[-1]],
                 "true_positions": [
-                    [calling_function_lines[0], calling_function_lines[-1]],
                     [start_line, start_offset], [end_line, end_offset]
                 ],
                 "relative_positions": [relative_start_position, relative_end_position]
@@ -91,6 +95,8 @@ class PGLogger(bdb.Bdb):
 
     def user_line(self, frame):
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
+            if frame.f_lineno in self.calling_function_info[-1]["line_no"]:
+                return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
@@ -120,6 +126,8 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
+        print(event_type, self.calling_function_info)
+        print(self.relative_position_shifts)
         line_no = frame.f_lineno
         for group in self.line_groups:
             if line_no in group:
@@ -131,7 +139,7 @@ class PGLogger(bdb.Bdb):
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
-                ],
+            ],
             "stdout": frame.f_globals["__stdout__"].getvalue()
         }
 
@@ -329,7 +337,8 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
-            import traceback; traceback.print_exc()
+            import traceback;
+            traceback.print_exc()
 
             trace_entry = {
                 "event": "uncaught_exception",
@@ -363,6 +372,9 @@ class PGLogger(bdb.Bdb):
                 final_trace.append(entry)
 
             last_entry = entry
+
+        if "lines" in self.trace[-1]:
+            self.trace[-1]["visited_lines"] = list(visited_lines)
 
         final_trace.append(self.trace[-1])
         return final_trace

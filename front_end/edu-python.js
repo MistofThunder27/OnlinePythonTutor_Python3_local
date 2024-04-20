@@ -160,124 +160,125 @@ function updateOutput() {
     tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({ 'color': visitedLineColor, 'font-weight': 'bold' });
   });
 
-  for (var ind = 0; ind < curEntry.visited_lines[curEntry.visited_lines.length - 1]; ind++)
+  for (var ind = 0; ind < curEntry.visited_lines[curEntry.visited_lines.length - 1]; ind++) {
     var cell = tbl.find('td.cod:eq(' + ind + ')')
-  cell.html(cell.html()
+    cell.html(cell.html()
     .replace(/<br\/?>.*$/g, '')
     .replace(/<span.*?>(.*?)<\/span>/g, '$1')
     .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-  );
-};
-
-// Highlight and duplicate calling function:
-var caller_info = curEntry.caller_info
-if (caller_info) {
-  var { true_positions: [[startHighlight, endHighlight], [startLine, startIndex], [endLine, endIndex]],
-    code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
-
-  const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
-
-  var callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-
-  var cell, content;
-  if (startHighlight === endHighlight) {
-    cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-    content = cell.text();
-    cell.css('background-color', callingLineColor)
-      .html(
-        content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-        content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex) +
-        '<br/><span style="font-style: italic; color: green;">' + escapeHtml(evaluated_code.substring(0, relativeStart)) +
-        '<span style="background-color: orange;">' + escapeHtml(evaluated_code.substring(relativeStart, relativeEnd)) + '</span>' +
-        escapeHtml(evaluated_code.substring(relativeEnd)) + '</span>'
-      );
-  } else {
-    cell = tbl.find('td.cod:eq(' + (startHighlight - 1) + ')');
-    content = cell.text();
-    cell.css('background-color', callingLineColor)
-      .html(
-        content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-        content.substring(startIndex) + '</span>'
-      );
-
-    for (var line = startHighlight + 1; line <= endHighlight - 1; line++) {
-      cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
-      cell.css('background-color', callingLineColor)
-        .html('<span style="background-color: orange;">' + cell.text() + '</span>');
-    }
-
-    cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
-    content = cell.text()
-    cell.css('background-color', callingLineColor)
-      .html(
-        '<span style="background-color: orange;">' +
-        content.substring(start, endIndex) + '</span>' + content.substring(endIndex) +
-        '<br/><span style="font-style: italic; color: green;">' +
-        escapeHtml(evaluated_code.substring(0, relativeStart)) + '<span style="background-color: orange;">' +
-        escapeHtml(evaluated_code.substring(relativeStart, relativeEnd)) + '</span>' +
-        escapeHtml(evaluated_code.substring(relativeEnd)) + '</span>'
-      );
+    );
   }
-}
 
-// Highlight curLineGroup:
-// if instrLimitReached, then treat like a normal non-terminating line
-var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
-var col = hasError ? errorColor : (isTerminated ? lightBlue : lightLineColor)
-curEntry.lines.forEach(function (line) {
-  tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', col);
-});
+  // Highlight and duplicate calling function:
+  var caller_info = curEntry.caller_info
+  if (caller_info) {
+    var { true_positions: [[startLine, startIndex], [endLine, endIndex]], line_no: [startHighlight, endHighlight],
+      code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
 
-// render stdout:
-// keep original horizontal scroll level:
-var oldLeft = $("#pyStdout").scrollLeft();
-$("#pyStdout").val(curEntry.stdout);
-$("#pyStdout").scrollLeft(oldLeft);
-// scroll to bottom, tho:
-$("#pyStdout").scrollTop($("#pyStdout").attr('scrollHeight'));
-
-// finally, render all the data structures!!!
-$("#dataViz").empty(); // jQuery empty() is better than .html('')
-
-// organise frames based on settings
-var orderedFrames;
-if (stackGrowsDown) {
-  orderedFrames = curEntry.encoded_frames;
-} else {
-  orderedFrames = curEntry.encoded_frames.slice().reverse();
-}
-
-if (useJsPlumbRendering) {
-  renderDataStructuresVersion2(curEntry, orderedFrames);
-} else {
-  //render variables and values INLINE within each stack frame without any
-  // explicit representation of data structure aliasing.
-  $.each(orderedFrames, function (_, frame) {
-    $("#dataViz").append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + htmlspecialchars(frame[0]) + '</span> variables:</div>');
-
-    var encodedVars = Object.entries(frame[1]);
-    if (encodedVars.length > 0) {
-      $("#dataViz" + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
-      var tbl = $("#pyOutputPane table:last");
-
-      $.each(encodedVars, function (_, entry) {
-        var [varname, val] = entry;
-        tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
-        var curTr = tbl.find('tr:last');
-        if (varname == '__return__') {
-          curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
-        } else {
-          curTr.find("td.varname").html(varname);
-        }
-        renderData(val, curTr.find("td.val"), false);
-      });
-
-      tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
-      tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
-    } else {
-      $("#dataViz" + " .vizFrame:last").append('<i>none</i>');
+    var callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    for (var line = startHighlight; line <= endHighlight; line++) {
+      tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', callingLineColor);
     }
+
+    const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
+    var cell, content;
+    if (startLine === endLine) {
+      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+      content = cell.text();
+      cell.html(
+          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+          content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex)
+        );
+    } else {
+      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
+      content = cell.text();
+      cell.html(
+          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+          content.substring(startIndex) + '</span>'
+        );
+
+      for (var line = startLine + 1; line <= endLine - 1; line++) {
+        cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
+        cell.html('<span style="background-color: orange;">' + cell.text() + '</span>');
+      }
+
+      cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
+      content = cell.text()
+      cell.html(
+          '<span style="background-color: orange;">' +
+          content.substring(0, endIndex) + '</span>' + content.substring(endIndex) +
+          '<br/><span style="font-style: italic; color: green;">'
+        );
+    }
+
+    cell = tbl.find('td.cod:eq(' + (endHighlight - 1) + ')');
+    cell.html(cell.html() +
+        '<br/><span style="font-style: italic; color: green;">' +
+        escapeHtml(evaluated_code.substring(0, relativeStart)) +
+        '<span style="background-color: orange;">' +
+        escapeHtml(evaluated_code.substring(relativeStart, relativeEnd)) + '</span>' +
+        escapeHtml(evaluated_code.substring(relativeEnd)) + '</span>');
+  }
+
+  // Highlight curLineGroup:
+  // if instrLimitReached, then treat like a normal non-terminating line
+  var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
+  var col = hasError ? errorColor : (isTerminated ? lightBlue : lightLineColor)
+  curEntry.lines.forEach(function (line) {
+    tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', col);
   });
+
+  // render stdout:
+  // keep original horizontal scroll level:
+  var oldLeft = $("#pyStdout").scrollLeft();
+  $("#pyStdout").val(curEntry.stdout);
+  $("#pyStdout").scrollLeft(oldLeft);
+  // scroll to bottom, tho:
+  $("#pyStdout").scrollTop($("#pyStdout").attr('scrollHeight'));
+
+  // finally, render all the data structures!!!
+  $("#dataViz").empty(); // jQuery empty() is better than .html('')
+
+  // organise frames based on settings
+  var orderedFrames;
+  if (stackGrowsDown) {
+    orderedFrames = curEntry.encoded_frames;
+  } else {
+    orderedFrames = curEntry.encoded_frames.slice().reverse();
+  }
+
+  if (useJsPlumbRendering) {
+    renderDataStructuresVersion2(curEntry, orderedFrames);
+  } else {
+    //render variables and values INLINE within each stack frame without any
+    // explicit representation of data structure aliasing.
+    $.each(orderedFrames, function (_, frame) {
+      $("#dataViz").append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + htmlspecialchars(frame[0]) + '</span> variables:</div>');
+
+      var encodedVars = Object.entries(frame[1]);
+      if (encodedVars.length > 0) {
+        $("#dataViz" + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
+        var tbl = $("#pyOutputPane table:last");
+
+        $.each(encodedVars, function (_, entry) {
+          var [varname, val] = entry;
+          tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
+          var curTr = tbl.find('tr:last');
+          if (varname == '__return__') {
+            curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
+          } else {
+            curTr.find("td.varname").html(varname);
+          }
+          renderData(val, curTr.find("td.val"), false);
+        });
+
+        tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
+        tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
+      } else {
+        $("#dataViz" + " .vizFrame:last").append('<i>none</i>');
+      }
+    });
+  }
 }
 
 // The "2.0" version of renderDataStructures, which renders variables in
