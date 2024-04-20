@@ -233,7 +233,7 @@ class PGLogger(bdb.Bdb):
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")
 
-        def line_is_complete(s):
+        def line_is_complete(s):  # TODO: WIP
             # Initialize variables
             in_string = False
             in_triple_string = False
@@ -341,12 +341,13 @@ class PGLogger(bdb.Bdb):
 
         for entry in self.trace:
             entry["visited_lines"] = list(visited_lines)
-            for group in line_groups:
-                if entry["lines"] in group:
-                    entry["lines"] = list(group)
-                    # Added after assigning visited lines as currently highlighted line has not been executed yet
-                    visited_lines.update(set(group))
-                    break
+            if entry.get("lines", None):
+                for group in line_groups:
+                    if entry["lines"] in group:
+                        entry["lines"] = list(group)
+                        # Added after assigning visited lines as currently highlighted line has not been executed yet
+                        visited_lines.update(set(group))
+                        break
 
             # if the entries are different other than if we visited the current line, then add
             if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
