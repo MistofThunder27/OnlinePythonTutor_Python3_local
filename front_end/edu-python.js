@@ -158,17 +158,13 @@ function updateOutput() {
   tbl.find('td.lineNo').css({ 'color': '', 'font-weight': '' });
   curEntry.visited_lines.forEach(function (line) {
     tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({ 'color': visitedLineColor, 'font-weight': 'bold' });
-  });
-
-  // clean out any previous highlighting/duplication:
-  for (var i = 0; i < curTrace.length - 1; i++) {
-    var cell = tbl.find('td.cod:eq(' + (curTrace[i].line - 1) + ')')
+    var cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
     cell.html(cell.html()
       .replace(/<br\/?>.*$/g, '')
       .replace(/<span.*?>(.*?)<\/span>/g, '$1')
       .replace(/<span.*?>(.*?)<\/span>/g, '$1')
     );
-  }
+  });
 
   // Highlight and duplicate calling function:
   var caller_info = curEntry.caller_info
@@ -215,15 +211,13 @@ function updateOutput() {
     }
   }
 
-  // Highlight curLine:
-  var curLine = curEntry.line
-  if (hasError) {
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', errorColor);
-  } else {
-    // if instrLimitReached, then treat like a normal non-terminating line
-    var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', isTerminated ? lightBlue : lightLineColor);
-  }
+  // Highlight curLineGroup:
+  // if instrLimitReached, then treat like a normal non-terminating line
+  var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
+  var col = hasError ? errorColor : (isTerminated ? lightBlue : lightLineColor)
+  curEntry.lines.forEach(function (line) {
+  tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', col);
+  });
 
   // render stdout:
   // keep original horizontal scroll level:
@@ -443,7 +437,6 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
-  console.log(curEntry.encoded_frames.length)
   if (stackGrowsDown) {
     $('#stack_header' + (curEntry.encoded_frames.length - 1)).trigger('click');
   } else {

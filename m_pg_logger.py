@@ -114,7 +114,7 @@ class PGLogger(bdb.Bdb):
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
         trace_entry = {
-            "line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
+            "lines": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
             "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
@@ -238,6 +238,73 @@ class PGLogger(bdb.Bdb):
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")
 
+        def line_is_complete(s):  # TODO: WIP
+            in_string = False
+            in_triple_string = False
+            skip_char = False
+            in_comment = False
+            string_type = '"'
+            open_brackets = 0
+            open_square = 0
+            open_curly = 0
+
+            for i, char in enumerate(s):
+                if in_comment:
+                    if skip_char:
+                        if char == "n":
+                            in_comment = False
+                            skip_char = False
+                    elif char == "\\":
+                        skip_char = True
+                elif skip_char:
+                    skip_char = False
+                else:
+                    if not in_string:
+                        if char == "(":
+                            open_brackets += 1
+                        elif char == ")":
+                            open_brackets -= 1
+                        elif char == "[":
+                            open_square += 1
+                        elif char == "]":
+                            open_square -= 1
+                        elif char == "{":
+                            open_curly += 1
+                        elif char == "}":
+                            open_curly -= 1
+                        elif char == '"':
+                            string_type = '"'
+                            in_string = True
+                        elif char == "'":
+                            string_type = "'"
+                            in_string = True
+                        elif char == "#":
+                            in_comment = True
+
+                    else:
+                        if s[i] == string_type:
+                            if not in_triple_string:
+                                in_string = False
+                            else:
+                                if i > 1:
+                                    if s[i - 2] == s[i - 1] == s[i] == string_type:
+                                        in_string = False
+                                        in_triple_string = False
+
+            return (
+                    not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
+            )
+
+        line_groups = []
+        j = 1
+        place_holder = ""
+        for i, line in enumerate(self.script_lines, 1):
+            place_holder += f"\n{line}"
+            if line_is_complete(place_holder):
+                line_groups.append(range(j, i + 1))
+                place_holder = ""
+                j = i + 1
+
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
         sys.stdout = user_stdout
@@ -269,19 +336,12 @@ class PGLogger(bdb.Bdb):
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (self.max_executed_lines + 1)
 
-        # filter all entries after "return" from "<module>", since they
-        # seem extraneous:
-        res = []
-        for e in self.trace:
-            res.append(e)
-            if e["event"] == "return" and e["scope_name"] == "<module>":
-                break
+        # Post-processing
+        trace = self.trace
+        for entry in trace:
+            for group in line_groups:
+                if entry["lines"] in group:
+                    entry["lines"] = list(group)
+                    break
 
-        # another hack: if the SECOND to last entry is an "exception"
-        # and the last entry is return from <module>, then axe the last
-        # entry, for aesthetic reasons :)
-        if len(res) >= 2 and res[-2]["event"] == "exception" and \
-                res[-1]["event"] == "return" and res[-1]["scope_name"] == "<module>":
-            res.pop()
-
-        return res
+        return trace
