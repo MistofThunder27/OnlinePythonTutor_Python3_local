@@ -40,7 +40,6 @@ class PGLogger(bdb.Bdb):
         self.cur_small_id = 1
 
         self.script_lines = []
-        self.visited_lines = set()
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
 
@@ -114,17 +113,13 @@ class PGLogger(bdb.Bdb):
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
         trace_entry = {
-            "lines": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
-            "scope_name": frame.f_code.co_name,
+            "lines": frame.f_lineno, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
                 ],
             "stdout": frame.f_globals["__stdout__"].getvalue()
         }
-
-        # Added after as currently highlighted line has not been executed yet
-        self.visited_lines.add(frame.f_lineno)
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -337,11 +332,23 @@ class PGLogger(bdb.Bdb):
         assert len(self.trace) <= (self.max_executed_lines + 1)
 
         # Post-processing
-        trace = self.trace
-        for entry in trace:
+        final_trace = []
+        last_entry = {}
+        visited_lines = set()
+        for entry in self.trace:
+            entry["visited_lines"] = list(visited_lines)
             for group in line_groups:
                 if entry["lines"] in group:
                     entry["lines"] = list(group)
+                    # Added after assigning visited lines as currently highlighted line has not been executed yet
+                    visited_lines.update(set(group))
                     break
 
-        return trace
+            # if the entries are different other than if we visited the current line, then add
+            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
+                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
+                final_trace.append(entry)
+
+            last_entry = entry
+
+        return final_trace
