@@ -233,28 +233,32 @@ class PGLogger(bdb.Bdb):
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")
 
-        def line_is_complete(s):  # TODO: WIP
+        def line_is_complete(s):
+            # Initialize variables
             in_string = False
             in_triple_string = False
             skip_char = False
             in_comment = False
-            string_type = '"'
+            string_type = ''
             open_brackets = 0
             open_square = 0
             open_curly = 0
 
+            # Define valid string delimiters
+            string_delimiters = {'"', "'", "'''", '"""'}
+
+            # Iterate through each character in the string
             for i, char in enumerate(s):
                 if in_comment:
-                    if skip_char:
-                        if char == "n":
-                            in_comment = False
-                            skip_char = False
-                    elif char == "\\":
-                        skip_char = True
+                    # Check for newline to exit the comment
+                    if skip_char and char == "\n":
+                        in_comment = False
+                    skip_char = False
                 elif skip_char:
                     skip_char = False
                 else:
                     if not in_string:
+                        # Update bracket counts
                         if char == "(":
                             open_brackets += 1
                         elif char == ")":
@@ -267,28 +271,27 @@ class PGLogger(bdb.Bdb):
                             open_curly += 1
                         elif char == "}":
                             open_curly -= 1
-                        elif char == '"':
-                            string_type = '"'
+                        elif char in string_delimiters:
+                            # Enter string literal
                             in_string = True
-                        elif char == "'":
-                            string_type = "'"
-                            in_string = True
-                        elif char == "#":
-                            in_comment = True
-
+                            string_type = char
+                            if char * 3 in s[i:i + 3]:
+                                in_triple_string = True
                     else:
-                        if s[i] == string_type:
-                            if not in_triple_string:
+                        # Check for end of string literal
+                        if s[i:i + len(string_type)] == string_type:
+                            if not in_triple_string or (i > 1 and s[i - 2:i + 1] == string_type * 3):
                                 in_string = False
-                            else:
-                                if i > 1:
-                                    if s[i - 2] == s[i - 1] == s[i] == string_type:
-                                        in_string = False
-                                        in_triple_string = False
+                                in_triple_string = False
 
-            return (
-                    not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
-            )
+                    # Check for comment
+                    if char == "#":
+                        in_comment = True
+                    elif char == "\\":
+                        skip_char = True
+
+            # Check if the line is complete
+            return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
 
         line_groups = []
         j = 1
@@ -335,6 +338,7 @@ class PGLogger(bdb.Bdb):
         final_trace = []
         last_entry = {}
         visited_lines = set()
+
         for entry in self.trace:
             entry["visited_lines"] = list(visited_lines)
             for group in line_groups:
