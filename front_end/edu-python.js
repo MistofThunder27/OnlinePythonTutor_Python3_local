@@ -160,70 +160,73 @@ function updateOutput() {
     tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({ 'color': visitedLineColor, 'font-weight': 'bold' });
   });
 
-  // clean out any previous highlighting/duplication:
-  for (var i = 0; i < curTrace.length - 1; i++) {
-    var cell = tbl.find('td.cod:eq(' + (curTrace[i].line - 1) + ')')
+  for (var ind = 0; ind < curEntry.visited_lines[curEntry.visited_lines.length - 1]; ind++) {
+    var cell = tbl.find('td.cod:eq(' + ind + ')')
     cell.html(cell.html()
-      .replace(/<br\/?>.*$/g, '')
-      .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-      .replace(/<span.*?>(.*?)<\/span>/g, '$1')
+    .replace(/<br\/?>.*$/g, '')
+    .replace(/<span.*?>(.*?)<\/span>/g, '$1')
+    .replace(/<span.*?>(.*?)<\/span>/g, '$1')
     );
   }
 
   // Highlight and duplicate calling function:
   var caller_info = curEntry.caller_info
   if (caller_info) {
-    var { true_positions: [[startLine, startIndex], [endLine, endIndex]],
+    var { true_positions: [[startLine, startIndex], [endLine, endIndex]], line_no: Highlightlines,
       code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
 
-    function highlightCellContent(content, start, end) {
-      return content.substring(0, start) + '<span style="background-color: orange;">' +
-        content.substring(start, end) + '</span>' + content.substring(end);
-    }
+    var callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    Highlightlines.forEach(function (line) {
+      tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', callingLineColor);
+    });
 
-    function addEvaluatedCode(code, start, end) {
-      const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
-      return '<br/><span style="font-style: italic; color: green;">' + escapeHtml(code.substring(0, start)) +
-        '<span style="background-color: orange;">' + escapeHtml(code.substring(start, end)) + '</span>' +
-        escapeHtml(code.substring(end)) + '</span>';
-    }
-
-    callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-
-    var cell;
+    const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
+    var cell, content;
     if (startLine === endLine) {
       cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-      cell.css('background-color', callingLineColor)
-        .html(highlightCellContent(cell.text(), startIndex, endIndex) +
-          addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
+      content = cell.text();
+      cell.html(
+          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+          content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex)
+        );
     } else {
       cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-      var content = cell.text();
-      cell.css('background-color', callingLineColor)
-        .html(highlightCellContent(content, startIndex, content.length));
+      content = cell.text();
+      cell.html(
+          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
+          content.substring(startIndex) + '</span>'
+        );
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
         cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
-        cell.css('background-color', callingLineColor)
-          .html('<span style="background-color: orange;">' + cell.text() + '</span>');
+        cell.html('<span style="background-color: orange;">' + cell.text() + '</span>');
       }
 
       cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
-      cell.css('background-color', callingLineColor)
-        .html(highlightCellContent(cell.text(), 0, endIndex) +
-          addEvaluatedCode(evaluated_code, relativeStart, relativeEnd));
+      content = cell.text()
+      cell.html(
+          '<span style="background-color: orange;">' +
+          content.substring(0, endIndex) + '</span>' + content.substring(endIndex) +
+          '<br/><span style="font-style: italic; color: green;">'
+        );
     }
+
+    cell = tbl.find('td.cod:eq(' + (Highlightlines[Highlightlines.length - 1] - 1) + ')');
+    cell.html(cell.html() +
+        '<br/><span style="font-style: italic; color: green;">' +
+        escapeHtml(evaluated_code.substring(0, relativeStart)) +
+        '<span style="background-color: orange;">' +
+        escapeHtml(evaluated_code.substring(relativeStart, relativeEnd)) + '</span>' +
+        escapeHtml(evaluated_code.substring(relativeEnd)) + '</span>');
   }
 
-  // Highlight curLine:
-  var curLine = curEntry.line
-  if (hasError) {
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', errorColor);
-  } else {
-    // if instrLimitReached, then treat like a normal non-terminating line
-    var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
-    tbl.find('td.cod:eq(' + (curLine - 1) + ')').css('background-color', isTerminated ? lightBlue : lightLineColor);
-  }
+  // Highlight curLineGroup:
+  // if instrLimitReached, then treat like a normal non-terminating line
+  var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
+  var col = hasError ? errorColor : (isTerminated ? lightBlue : lightLineColor)
+  curEntry.lines.forEach(function (line) {
+    tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', col);
+  });
 
   // render stdout:
   // keep original horizontal scroll level:
@@ -443,7 +446,6 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
-  console.log(curEntry.encoded_frames.length)
   if (stackGrowsDown) {
     $('#stack_header' + (curEntry.encoded_frames.length - 1)).trigger('click');
   } else {

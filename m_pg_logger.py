@@ -39,8 +39,8 @@ class PGLogger(bdb.Bdb):
         self.real_to_small_IDs = {}
         self.cur_small_id = 1
 
+        self.line_groups = []
         self.script_lines = []
-        self.visited_lines = set()
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
 
@@ -55,22 +55,32 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
 
+        line_no = calling_frame.f_lineno
+        for group in self.line_groups:
+            if line_no in group:
+                line_no = list(group)
+                break
+
+        # relative positions
+        code_so_far = "\n".join(self.script_lines[line_no[0] - 1: start_line - 1])
+        relative_start_position = len(code_so_far) + start_offset
+        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
+        relative_end_position = len(code_so_far) + end_offset
+
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            # relative positions
-            full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
-            calling_code_snippet = full_calling_code[start_offset:
-                                                     (end_offset - len(self.script_lines[end_line - 1])) or None]
+            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
 
             self.calling_function_info.append({
-                "calling_frame_id": id(calling_frame), "code": full_calling_code,
-                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
-                "relative_positions": [start_offset, start_offset + len(calling_code_snippet)]
+                "calling_frame_id": id(calling_frame),
+                "code": code_so_far.strip("\n"),
+                "line_no": line_no,
+                "true_positions": [
+                    [start_line, start_offset], [end_line, end_offset]
+                ],
+                "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
         else:
-            # relative positions
-            relative_start_position = start_offset
-            relative_end_position = end_offset
             for pos, diff in self.relative_position_shifts[-1]:
                 if relative_start_position > pos:
                     relative_start_position -= diff
@@ -84,6 +94,8 @@ class PGLogger(bdb.Bdb):
 
     def user_line(self, frame):
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
+            if frame.f_lineno in self.calling_function_info[-1]["line_no"]:
+                return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
@@ -113,18 +125,20 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
+        line_no = frame.f_lineno
+        for group in self.line_groups:
+            if line_no in group:
+                line_no = list(group)
+                break
+
         trace_entry = {
-            "line": frame.f_lineno, "event": event_type, "visited_lines": list(self.visited_lines),
-            "scope_name": frame.f_code.co_name,
+            "lines": line_no, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
-                ],
+            ],
             "stdout": frame.f_globals["__stdout__"].getvalue()
         }
-
-        # Added after as currently highlighted line has not been executed yet
-        self.visited_lines.add(frame.f_lineno)
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -238,6 +252,75 @@ class PGLogger(bdb.Bdb):
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")
 
+        def line_is_complete(s):  # TODO: WIP
+            # Initialize variables
+            in_string = False
+            in_triple_string = False
+            skip_char = False
+            in_comment = False
+            string_type = ''
+            open_brackets = 0
+            open_square = 0
+            open_curly = 0
+
+            # Define valid string delimiters
+            string_delimiters = {'"', "'", "'''", '"""'}
+
+            # Iterate through each character in the string
+            for i, char in enumerate(s):
+                if in_comment:
+                    # Check for newline to exit the comment
+                    if skip_char and char == "\n":
+                        in_comment = False
+                    skip_char = False
+                elif skip_char:
+                    skip_char = False
+                else:
+                    if not in_string:
+                        # Update bracket counts
+                        if char == "(":
+                            open_brackets += 1
+                        elif char == ")":
+                            open_brackets -= 1
+                        elif char == "[":
+                            open_square += 1
+                        elif char == "]":
+                            open_square -= 1
+                        elif char == "{":
+                            open_curly += 1
+                        elif char == "}":
+                            open_curly -= 1
+                        elif char in string_delimiters:
+                            # Enter string literal
+                            in_string = True
+                            string_type = char
+                            if char * 3 in s[i:i + 3]:
+                                in_triple_string = True
+                    else:
+                        # Check for end of string literal
+                        if s[i:i + len(string_type)] == string_type:
+                            if not in_triple_string or (i > 1 and s[i - 2:i + 1] == string_type * 3):
+                                in_string = False
+                                in_triple_string = False
+
+                    # Check for comment
+                    if char == "#":
+                        in_comment = True
+                    elif char == "\\":
+                        skip_char = True
+
+            # Check if the line is complete
+            return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
+
+        j = 1
+        place_holder = ""
+        for i, line in enumerate(self.script_lines, 1):
+            place_holder += f"\n{line}"
+            if line_is_complete(place_holder):
+                self.line_groups.append(range(j, i + 1))
+                place_holder = ""
+                j = i + 1
+
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
         sys.stdout = user_stdout
@@ -251,7 +334,8 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
-            import traceback; traceback.print_exc()
+            import traceback;
+            traceback.print_exc()
 
             trace_entry = {
                 "event": "uncaught_exception",
@@ -269,19 +353,25 @@ class PGLogger(bdb.Bdb):
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (self.max_executed_lines + 1)
 
-        # filter all entries after "return" from "<module>", since they
-        # seem extraneous:
-        res = []
-        for e in self.trace:
-            res.append(e)
-            if e["event"] == "return" and e["scope_name"] == "<module>":
-                break
+        # Post-processing
+        final_trace = []
+        last_entry = {}
+        visited_lines = set()
 
-        # another hack: if the SECOND to last entry is an "exception"
-        # and the last entry is return from <module>, then axe the last
-        # entry, for aesthetic reasons :)
-        if len(res) >= 2 and res[-2]["event"] == "exception" and \
-                res[-1]["event"] == "return" and res[-1]["scope_name"] == "<module>":
-            res.pop()
+        for entry in self.trace[:-1]:
+            entry["visited_lines"] = list(visited_lines)
+            # added after assigning as currently highlighted line has not been processed yet
+            visited_lines.update(set(entry["lines"]))
 
-        return res
+            # if the entries are different other than if we visited the current line, then add
+            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
+                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
+                final_trace.append(entry)
+
+            last_entry = entry
+
+        if "lines" in self.trace[-1]:
+            self.trace[-1]["visited_lines"] = list(visited_lines)
+
+        final_trace.append(self.trace[-1])
+        return final_trace
