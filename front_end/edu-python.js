@@ -172,13 +172,13 @@ function updateOutput() {
   // Highlight and duplicate calling function:
   var caller_info = curEntry.caller_info
   if (caller_info) {
-    var { true_positions: [[startLine, startIndex], [endLine, endIndex]], line_no: [startHighlight, endHighlight],
+    var { true_positions: [[startLine, startIndex], [endLine, endIndex]], line_no: Highlightlines,
       code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
 
     var callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-    for (var line = startHighlight; line <= endHighlight; line++) {
+    Highlightlines.forEach(function (line) {
       tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', callingLineColor);
-    }
+    });
 
     const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
     var cell, content;
@@ -211,7 +211,7 @@ function updateOutput() {
         );
     }
 
-    cell = tbl.find('td.cod:eq(' + (endHighlight - 1) + ')');
+    cell = tbl.find('td.cod:eq(' + (Highlightlines[Highlightlines.length - 1] - 1) + ')');
     cell.html(cell.html() +
         '<br/><span style="font-style: italic; color: green;">' +
         escapeHtml(evaluated_code.substring(0, relativeStart)) +

@@ -62,19 +62,18 @@ class PGLogger(bdb.Bdb):
                 break
 
         # relative positions
-        calling_function_lines = line_no
-        code_so_far = "\n".join(self.script_lines[calling_function_lines[0] - 1: start_line - 1])
+        code_so_far = "\n".join(self.script_lines[line_no[0] - 1: start_line - 1])
         relative_start_position = len(code_so_far) + start_offset
         code_so_far = "\n".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
         relative_end_position = len(code_so_far) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: calling_function_lines[-1]]])
+            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
                 "code": code_so_far.strip("\n"),
-                "line_no": [calling_function_lines[0], calling_function_lines[-1]],
+                "line_no": line_no,
                 "true_positions": [
                     [start_line, start_offset], [end_line, end_offset]
                 ],
@@ -126,8 +125,6 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
-        print(event_type, self.calling_function_info)
-        print(self.relative_position_shifts)
         line_no = frame.f_lineno
         for group in self.line_groups:
             if line_no in group:
