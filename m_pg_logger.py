@@ -39,6 +39,7 @@ class PGLogger(bdb.Bdb):
         self.real_to_small_IDs = {}
         self.cur_small_id = 1
 
+        self.line_groups = []
         self.script_lines = []
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
@@ -54,22 +55,29 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
 
+        # relative positions
+        relative_start_position = start_offset
+        relative_end_position = end_offset
+
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            # relative positions
-            full_calling_code = "\n".join(self.script_lines[start_line - 1: end_line])
-            calling_code_snippet = full_calling_code[start_offset:
-                                                     (end_offset - len(self.script_lines[end_line - 1])) or None]
+            calling_function_lines = self.trace[-1]["lines"]
+            code_so_far = "\n".join(self.script_lines[calling_function_lines[0] - 1: start_line])
+            relative_start_position += len(code_so_far)
+            code_so_far = "\n".join([code_so_far, *self.script_lines[start_line: end_line]])
+            relative_end_position += len(code_so_far)
+            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line: calling_function_lines[-1]]])
 
             self.calling_function_info.append({
-                "calling_frame_id": id(calling_frame), "code": full_calling_code,
-                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
-                "relative_positions": [start_offset, start_offset + len(calling_code_snippet)]
+                "calling_frame_id": id(calling_frame),
+                "code": code_so_far,
+                "true_positions": [
+                    [calling_function_lines[0], calling_function_lines[-1]],
+                    [start_line, start_offset], [end_line, end_offset]
+                ],
+                "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
         else:
-            # relative positions
-            relative_start_position = start_offset
-            relative_end_position = end_offset
             for pos, diff in self.relative_position_shifts[-1]:
                 if relative_start_position > pos:
                     relative_start_position -= diff
@@ -112,8 +120,14 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
+        line_no = frame.f_lineno
+        for group in self.line_groups:
+            if line_no in group:
+                line_no = list(group)
+                break
+
         trace_entry = {
-            "lines": frame.f_lineno, "event": event_type, "scope_name": frame.f_code.co_name,
+            "lines": line_no, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
@@ -293,13 +307,12 @@ class PGLogger(bdb.Bdb):
             # Check if the line is complete
             return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
 
-        line_groups = []
         j = 1
         place_holder = ""
         for i, line in enumerate(self.script_lines, 1):
             place_holder += f"\n{line}"
             if line_is_complete(place_holder):
-                line_groups.append(range(j, i + 1))
+                self.line_groups.append(range(j, i + 1))
                 place_holder = ""
                 j = i + 1
 
@@ -339,15 +352,10 @@ class PGLogger(bdb.Bdb):
         last_entry = {}
         visited_lines = set()
 
-        for entry in self.trace:
+        for entry in self.trace[:-1]:
             entry["visited_lines"] = list(visited_lines)
-            if entry.get("lines", None):
-                for group in line_groups:
-                    if entry["lines"] in group:
-                        entry["lines"] = list(group)
-                        # Added after assigning visited lines as currently highlighted line has not been executed yet
-                        visited_lines.update(set(group))
-                        break
+            # added after assigning as currently highlighted line has not been processed yet
+            visited_lines.update(set(entry["lines"]))
 
             # if the entries are different other than if we visited the current line, then add
             if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
@@ -356,4 +364,5 @@ class PGLogger(bdb.Bdb):
 
             last_entry = entry
 
+        final_trace.append(self.trace[-1])
         return final_trace
