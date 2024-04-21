@@ -334,8 +334,7 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
-            import traceback;
-            traceback.print_exc()
+            import traceback; traceback.print_exc()
 
             trace_entry = {
                 "event": "uncaught_exception",
