@@ -31,7 +31,8 @@ class LocalServer(BaseHTTPRequestHandler):
         try:
             file_path = os.path.join(os.getcwd(), path[1:])
             if os.path.exists(file_path):
-                file_type = content_type_mapping.get(os.path.splitext(path)[1], "")
+                file_type = content_type_mapping.get(
+                    os.path.splitext(path)[1], "")
                 self.send_response(200)
                 if file_type:
                     self.send_header("Content-type", file_type)
@@ -117,13 +118,15 @@ def process_post(parsed_post_dict):
 
     # =================================================================================
     user_script = parsed_post_dict["user_script"][0]
-    changed_max_executed_lines = int(parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0])
+    changed_max_executed_lines = int(parsed_post_dict.get(
+        "max_instructions", [MAX_EXECUTED_LINES])[0])
 
     if request == "execute":
         return PGLogger(changed_max_executed_lines).runscript(user_script)
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_trace_final_entry = PGLogger(ignore_id=True).runscript(parsed_post_dict["expect_script"][0])[-1]
+    expect_trace_final_entry = PGLogger(ignore_id=True).runscript(
+        parsed_post_dict["expect_script"][0])[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
@@ -132,7 +135,8 @@ def process_post(parsed_post_dict):
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    vars_to_compare = list(expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
+    vars_to_compare = list(
+        expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
@@ -140,7 +144,8 @@ def process_post(parsed_post_dict):
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
            'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
 
-    user_trace = PGLogger(changed_max_executed_lines, True).runscript(user_script)
+    user_trace = PGLogger(changed_max_executed_lines,
+                          True).runscript(user_script)
 
     # Grab the 'inputs' by finding all global vars that are in scope
     # prior to making the first function call.
@@ -164,7 +169,8 @@ def process_post(parsed_post_dict):
                 ret['passed_test'] = True
 
     else:
-        ret.update({'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
+        ret.update(
+            {'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
 
     return ret
 

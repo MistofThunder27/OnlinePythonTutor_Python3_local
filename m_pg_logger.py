@@ -1,17 +1,17 @@
 # Online Python Tutor
 # Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 # https://github.com/pgbovine/OnlinePythonTutor/
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -32,8 +32,10 @@ class PGLogger(bdb.Bdb):
     def __init__(self, max_executed_lines=MAX_EXECUTED_LINES, ignore_id=False):
         bdb.Bdb.__init__(self)
         self.trace = []  # each entry contains a dict with the information for a single executed line
-        self.ignore_id = ignore_id  # don"t print out a custom ID for each object (for regression testing)
-        self.max_executed_lines = max_executed_lines  # upper-bound of executed lines, to guard against infinite loops
+        # don"t print out a custom ID for each object (for regression testing)
+        self.ignore_id = ignore_id
+        # upper-bound of executed lines, to guard against infinite loops
+        self.max_executed_lines = max_executed_lines
 
         # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
         self.real_to_small_IDs = {}
@@ -62,21 +64,22 @@ class PGLogger(bdb.Bdb):
                 break
 
         # relative positions
-        code_so_far = "\n".join(self.script_lines[line_no[0] - 1: start_line - 1])
+        code_so_far = "\n".join(
+            self.script_lines[line_no[0] - 1: start_line - 1])
         relative_start_position = len(code_so_far) + start_offset
-        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
+        code_so_far = "\n".join(
+            [code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
         relative_end_position = len(code_so_far) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
+            code_so_far = "\n".join(
+                [code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
                 "code": code_so_far.strip("\n"),
                 "line_no": line_no,
-                "true_positions": [
-                    [start_line, start_offset], [end_line, end_offset]
-                ],
+                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
@@ -112,10 +115,13 @@ class PGLogger(bdb.Bdb):
             [pos_start, pos_end] = last_caller["relative_positions"]
             ret = str(return_value)
 
-            last_caller["code"] = code.replace(code[pos_start: pos_end], ret, 1)
-            last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
+            last_caller["code"] = code.replace(
+                code[pos_start: pos_end], ret, 1)
+            last_caller["relative_positions"] = [
+                pos_start, pos_start + len(ret)]
 
-            self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(ret)])
+            self.relative_position_shifts[-1].append(
+                [pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
@@ -145,9 +151,11 @@ class PGLogger(bdb.Bdb):
 
         # if there's an exception, then record its info:
         if exception_info:
-            trace_entry["exception_msg"] = f"{exception_info[0].__name__}: {exception_info[-1]}"
+            trace_entry["exception_msg"] = f"{
+                exception_info[0].__name__}: {exception_info[-1]}"
 
-        encoded_frames = []  # each element is a pair of (function name, ENCODED locals dict)
+        # each element is a pair of (function name, ENCODED locals dict)
+        encoded_frames = []
         # climb up until you find "<module>", which is (hopefully) the global scope
         cur_frame = frame
         while True:
@@ -175,7 +183,7 @@ class PGLogger(bdb.Bdb):
             self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
-                                                "infinite loop)"})
+                               "infinite loop)"})
 
     def encode(self, outer_data):
         # Given an arbitrary piece of Python data, encode it in such a manner
@@ -226,21 +234,25 @@ class PGLogger(bdb.Bdb):
                 return ["SET", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
             if data_type == dict:
                 return ["DICT", my_small_id, *[
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    [recursive_encode(k, new_compound_obj_ids),
+                     recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.items()
                 ]]
             if not isinstance(data, type) or "__class__" in dir(data):
                 if not isinstance(data, type):
                     ret = ["INSTANCE", data.__class__.__name__, my_small_id]
                 else:
-                    ret = ["CLASS", data.__name__, my_small_id, [e.__name__ for e in data.__bases__]]
+                    ret = ["CLASS", data.__name__, my_small_id,
+                           [e.__name__ for e in data.__bases__]]
 
                 # traverse inside its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
                 ret.extend([
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    [recursive_encode(k, new_compound_obj_ids),
+                     recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.__dict__.items() if
-                    k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}
+                    k not in {"__doc__", "__module__",
+                              "__return__", "__dict__", "__weakref__"}
                 ])
 
                 return ret
@@ -334,7 +346,8 @@ class PGLogger(bdb.Bdb):
         try:
             self.run(script_str, user_globals, user_globals)
         except Exception as exc:
-            import traceback; traceback.print_exc()
+            import traceback
+            traceback.print_exc()
 
             trace_entry = {
                 "event": "uncaught_exception",

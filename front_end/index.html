@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<!--
+  <!--
 Online Python Tutor
 Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -20,43 +19,46 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
  -->
 
-<head>
-    <title>Online Python Tutor: Learn and practice Python programming in your web browser</title>
+  <head>
+    <title>
+      Online Python Tutor: Learn and practice Python programming in your web
+      browser
+    </title>
 
     <script type="text/javascript" src="front_end/jquery.min.js"></script>
     <script type="text/javascript" src="front_end/jquery.corner.js"></script>
     <script type="text/javascript">
-        $(document).ready(function() {
-            // for rounded corners
-            $(".activityPane").corner('15px');
-        });
+      $(document).ready(function () {
+        // for rounded corners
+        $(".activityPane").corner("15px");
+      });
     </script>
 
-    <link rel="stylesheet" href="front_end/edu-python-title.css"/>
-</head>
+    <link rel="stylesheet" href="front_end/edu-python-title.css" />
+  </head>
 
-<body>
-<div class="titlePane" style="text-align: center;">
-    <h1>Online Python Tutor</h1>
-    <h2>Learn and practice Python programming in your web browser</h2>
-</div>
+  <body>
+    <div class="titlePane" style="text-align: center">
+      <h1>Online Python Tutor</h1>
+      <h2>Learn and practice Python programming in your web browser</h2>
+    </div>
 
-<div class="mainBodyPane">
-    <div class="activityPane" id="learnPane">
+    <div class="mainBodyPane">
+      <div class="activityPane" id="learnPane">
         <h1>Learn</h1>
         <h2>Python by writing code and visualizing execution</h2>
 
         <p>
-            This free educational application allows teachers and students to
-            write Python scripts directly in the web browser, execute those scripts,
-            single-step <b>forwards and backwards</b> through execution, and view
-            the run-time state of all data structures.
+          This free educational application allows teachers and students to
+          write Python scripts directly in the web browser, execute those
+          scripts, single-step <b>forwards and backwards</b> through execution,
+          and view the run-time state of all data structures.
         </p>
 
         <p>
-            Rather than displaying a bland text-based console, the Online Python
-            Tutor provides a rich visualization of variables, heap objects, and
-            stack frames.  For example, the following code:
+          Rather than displaying a bland text-based console, the Online Python
+          Tutor provides a rich visualization of variables, heap objects, and
+          stack frames. For example, the following code:
         </p>
 
         <pre>
@@ -65,109 +67,173 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
             z = ["Alice", "Bob", "Charlie"]
         </pre>
 
-        <p>will be visualized as the following HTML diagram, which properly shows aliasing relationships:</p>
+        <p>
+          will be visualized as the following HTML diagram, which properly shows
+          aliasing relationships:
+        </p>
 
-        <div style="text-align: center;">
-            <img src="front_end/alias-screenshot.png"/>
-            <h3><a href="front_end/tutor.html">Go play with the Online Python Tutor!</a></h3>
+        <div style="text-align: center">
+          <img src="front_end/alias-screenshot.png" />
+          <h3>
+            <a href="front_end/tutor.html"
+              >Go play with the Online Python Tutor!</a
+            >
+          </h3>
         </div>
-    </div>
+      </div>
 
-    <div class="activityPane" id="solvePane">
+      <div class="activityPane" id="solvePane">
         <h1>Solve</h1>
         <h2>programming problems by writing Python code</h2>
 
-        <p>The Online Python Tutor also allows students to practice solving
-            programming problems like those they would receive for class assignments
-            or technical job interviews.</p>
+        <p>
+          The Online Python Tutor also allows students to practice solving
+          programming problems like those they would receive for class
+          assignments or technical job interviews.
+        </p>
 
-        <p>It provides web-based interfaces for writing solution and test code,
-            executing on a series of graded test inputs, and showing what tests
-            passed and failed.</p>
+        <p>
+          It provides web-based interfaces for writing solution and test code,
+          executing on a series of graded test inputs, and showing what tests
+          passed and failed.
+        </p>
 
-        <div style="text-align: center;">
-            <img src="front_end/grading-375.png"/>
+        <div style="text-align: center">
+          <img src="front_end/grading-375.png" />
         </div>
 
-        <p>The above screenshot shows passed and failed tests.  The user can
-            click on the "Debug me" button besides one of the sad faces to debug why
-            the program failed on a particular test.</p>
+        <p>
+          The above screenshot shows passed and failed tests. The user can click
+          on the "Debug me" button besides one of the sad faces to debug why the
+          program failed on a particular test.
+        </p>
 
         <p>Here are some sample practice problems:</p>
 
         <ul>
-            <li><a href="front_end/question.html?two-sum">Two-sum</a></li>
-            <li><a href="front_end/question.html?reverse">Reverse list</a></li>
-            <li><a href="front_end/question.html?remove-dups">Remove duplicate characters</a></li>
+          <li><a href="front_end/question.html?two-sum">Two-sum</a></li>
+          <li><a href="front_end/question.html?reverse">Reverse list</a></li>
+          <li>
+            <a href="front_end/question.html?remove-dups"
+              >Remove duplicate characters</a
+            >
+          </li>
         </ul>
-    </div>
+      </div>
 
-    <div class="activityPane" id="debugPane">
+      <div class="activityPane" id="debugPane">
         <h1>Debug</h1>
         <h2>existing programs that almost work properly</h2>
 
-        <p>Using the Online Python Tutor's bidirectional single-stepping and
-            data structure visualization capabilities, students can practice
-            debugging, an important skill which is rarely covered in web-based
-            programming problems.</p>
+        <p>
+          Using the Online Python Tutor's bidirectional single-stepping and data
+          structure visualization capabilities, students can practice debugging,
+          an important skill which is rarely covered in web-based programming
+          problems.
+        </p>
 
-        <p>They can work on problems like, <i>"Change at most 2 lines of code to
-            make this almost-correct Python program work properly."</i> Here are
-            some sample debugging problems:</p>
+        <p>
+          They can work on problems like,
+          <i
+            >"Change at most 2 lines of code to make this almost-correct Python
+            program work properly."</i
+          >
+          Here are some sample debugging problems:
+        </p>
 
         <ul>
-            <li><a href="front_end/question.html?debug-ireverse">In-place reverse</a></li>
-            <li><a href="front_end/question.html?debug-bsearch">Binary search</a></li>
-            <li><a href="front_end/question.html?debug-mergesort">Mergesort</a></li>
+          <li>
+            <a href="front_end/question.html?debug-ireverse"
+              >In-place reverse</a
+            >
+          </li>
+          <li>
+            <a href="front_end/question.html?debug-bsearch">Binary search</a>
+          </li>
+          <li>
+            <a href="front_end/question.html?debug-mergesort">Mergesort</a>
+          </li>
         </ul>
-    </div>
+      </div>
 
-    <div class="activityPane" id="optimizePane">
+      <div class="activityPane" id="optimizePane">
         <h1>Optimize</h1>
         <h2>existing programs to run using fewer instructions</h2>
 
-        <p>Students can practice refactoring already-correct programs to run
-            faster and execute fewer instructions.</p>
+        <p>
+          Students can practice refactoring already-correct programs to run
+          faster and execute fewer instructions.
+        </p>
 
-        <p>They can work on problems like, <i>"Optimize this program so that it
-            terminates correctly after running less than 50 lines of Python
-            code."</i> Here are some sample optimization problems:</p>
+        <p>
+          They can work on problems like,
+          <i
+            >"Optimize this program so that it terminates correctly after
+            running less than 50 lines of Python code."</i
+          >
+          Here are some sample optimization problems:
+        </p>
 
         <ul>
-            <li><a href="front_end/question.html?optimize-sum">Greatest sum</a></li>
-            <li><a href="front_end/question.html?optimize-find-dups">Find duplicates</a></li>
-            <li><a href="front_end/question.html?optimize-search">List search</a></li>
+          <li>
+            <a href="front_end/question.html?optimize-sum">Greatest sum</a>
+          </li>
+          <li>
+            <a href="front_end/question.html?optimize-find-dups"
+              >Find duplicates</a
+            >
+          </li>
+          <li>
+            <a href="front_end/question.html?optimize-search">List search</a>
+          </li>
         </ul>
-    </div>
+      </div>
 
-    <div class="activityPane" id="createPane">
+      <div class="activityPane" id="createPane">
         <h1>Create</h1>
         <h2>new practice problems in plain text format</h2>
 
-        <p>Teachers can easily create new practice problems by writing them in a
-            lightweight plain text format.  For example,
-            <a href="front_end/questions/reverse.txt">reverse.txt</a> provides the specification
-            for the <a href="front_end/question.html?reverse">Reverse list</a> problem.</p>
+        <p>
+          Teachers can easily create new practice problems by writing them in a
+          lightweight plain text format. For example,
+          <a href="front_end/questions/reverse.txt">reverse.txt</a> provides the
+          specification for the
+          <a href="front_end/question.html?reverse">Reverse list</a> problem.
+        </p>
 
-        <p>The problem specification format allows constraints like <i>"code
-            diffs must be less than N lines"</i> (used for debugging problems) and
-            <i>"tests must terminate in at most M executed Python lines"</i> (used
-            for optimization problems).</p>
+        <p>
+          The problem specification format allows constraints like
+          <i>"code diffs must be less than N lines"</i> (used for debugging
+          problems) and
+          <i>"tests must terminate in at most M executed Python lines"</i> (used
+          for optimization problems).
+        </p>
 
-        <p>I plan to add support for semantic constraints like <i>"don't allow
-            the program to create any auxiliary data structures"</i>, which could be
-            used for problems like <i>"merge these two lists in-place without
-            creating any new temporary lists"</i>.</p>
+        <p>
+          I plan to add support for semantic constraints like
+          <i
+            >"don't allow the program to create any auxiliary data
+            structures"</i
+          >, which could be used for problems like
+          <i
+            >"merge these two lists in-place without creating any new temporary
+            lists"</i
+          >.
+        </p>
+      </div>
     </div>
-</div>
 
-<div id="footer">
-    <p>The original application was created by Philip Guo,
-        a Stanford Computer Science Ph.D. student and Python enthusiast.</p>
+    <div id="footer">
+      <p>
+        The original application was created by Philip Guo, a Stanford Computer
+        Science Ph.D. student and Python enthusiast.
+      </p>
 
-    <p>
-        Copyright &copy; 2010-2011 <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>.  All rights reserved.
-    </p>
-
-</div>
-</body>
+      <p>
+        Copyright &copy; 2010-2011
+        <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>. All rights
+        reserved.
+      </p>
+    </div>
+  </body>
+</html>

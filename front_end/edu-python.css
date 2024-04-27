@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-
 /*
 Color scheme ideas: 
 
@@ -58,7 +57,6 @@ Complementary Color:
 
 */
 
-
 body {
   background-color: white;
   font-family: verdana, arial, helvetica, sans-serif;
@@ -66,15 +64,15 @@ body {
 }
 
 a {
-  color: #3D58A2;
+  color: #3d58a2;
 }
 
 a:visited {
-  color: #3D58A2;
+  color: #3d58a2;
 }
 
 a:hover {
-  color: #3D58A2;
+  color: #3d58a2;
 }
 
 span {
@@ -156,8 +154,8 @@ table#pyCodeOutput td {
 }
 
 table#pyCodeOutput .lineNo {
-  background-color: #FFFFFF;
-  color: #AAAAAA;
+  background-color: #ffffff;
+  color: #aaaaaa;
   margin: 0;
   padding: 0.2em;
   padding-right: 0.5em;
@@ -180,12 +178,11 @@ div#editCodeLinkDiv {
 }
 
 #editCodeLinkOnError {
-  color: #142B69;
+  color: #142b69;
 }
 
-
 #errorOutput {
-  background-color: #F87D76;
+  background-color: #f87d76;
   font-size: 12pt;
   padding: 2px;
   line-height: 1.5em;
@@ -201,7 +198,6 @@ button.medBtn {
   font-size: 12pt;
   padding: 3px;
 }
-
 
 /* VCR control buttons for stepping through execution */
 
@@ -222,13 +218,11 @@ button.medBtn {
   font-family: Andale mono, monospace;
 }
 
-
 .vizFrame {
   margin-bottom: 20px;
   padding-left: 8px;
   border-left: 2px solid #cccccc;
 }
-
 
 /* Python data value rendering */
 
@@ -236,23 +230,25 @@ button.medBtn {
   color: #555555;
 }
 
-.numberObj {}
+.numberObj {
+}
 
-.boolObj {}
+.boolObj {
+}
 
 .stringObj {
   /* don't add a color since strings need to be rendered against various backgrounds */
   font-family: Andale mono, monospace;
 }
 
-.keyObj {}
+.keyObj {
+}
 
 .customObj {
   font-family: Andale mono, monospace;
   /*font-style: italic;*/
   font-size: 10pt;
 }
-
 
 .retval,
 .returnWarning {
@@ -264,10 +260,9 @@ button.medBtn {
   color: #9d1e18;
 }
 
-
 table.listTbl {
   border: 0px solid black;
-  background-color: #F5F798;
+  background-color: #f5f798;
 }
 
 table.tupleTbl {
@@ -312,7 +307,7 @@ table.setTbl {
   border: 1px solid black;
   /*background-color: #F4F776;*/
   /*slightly brighter than #F5F798 */
-  background-color: #F5F798;
+  background-color: #f5f798;
   border-spacing: 0px;
   text-align: center;
 }
@@ -320,7 +315,6 @@ table.setTbl {
 table.setTbl td.setElt {
   padding: 8px;
 }
-
 
 table.dictTbl {
   border-collapse: collapse;
@@ -332,14 +326,13 @@ table.dictTbl tr.dictEntry {
 }
 
 table.dictTbl td.dictKey {
-  background-color: #41507A;
+  background-color: #41507a;
 }
 
 table.dictTbl,
 table.dictTbl td.dictVal {
-  background-color: #899CD1;
+  background-color: #899cd1;
 }
-
 
 table.classTbl {
   background-color: #dddddd;
@@ -359,7 +352,6 @@ table.classTbl td.classVal {
   background-color: #ffffff;
 }
 
-
 table.instTbl {
   border-collapse: collapse;
   border-spacing: 2px;
@@ -370,13 +362,13 @@ table.instTbl tr.instEntry {
 }
 
 table.instTbl td.instKey {
-  background-color: #41507A;
+  background-color: #41507a;
   color: #ffffff;
 }
 
 table.instTbl,
 table.instTbl td.instVal {
-  background-color: #FFFFDD;
+  background-color: #ffffdd;
   /* must match color of table.instTbl */
 }
 
@@ -401,9 +393,6 @@ table.instTbl td.instVal {
   padding-left: 8px;
   vertical-align: center;
 }
-
-
-
 
 .typeLabel {
   font-size: 8pt;
@@ -431,7 +420,6 @@ td.dictKey .typeLabel {
   margin: auto;
 }
 
-
 /* new stuff added for Online Python Tutor "2.0" release */
 
 div#stack {
@@ -458,7 +446,7 @@ div.selectedStackFrame {
 }
 
 div.topStackFrame {
-  border-left: 1px solid #F15149;
+  border-left: 1px solid #f15149;
 }
 
 div.stackFrameHeader {
@@ -471,7 +459,7 @@ div.stackFrameHeader {
 div.inactiveStackFrameHeader {
   /* simulate a hyperlink */
   text-decoration: underline;
-  color: #3D58A2;
+  color: #3d58a2;
   cursor: pointer;
 }
 
@@ -492,7 +480,8 @@ td.stackFrameValue {
   padding-bottom: 3px;
 }
 
-.stackFrameVarTable tr {}
+.stackFrameVarTable tr {
+}
 
 .stackFrameVarTable {
   text-align: right;
@@ -529,7 +518,6 @@ div#heapHeader {
   color: #333333;
   font-size: 10pt;
 }
-
 
 /* styles for Online Python Tutor questions site */
 
