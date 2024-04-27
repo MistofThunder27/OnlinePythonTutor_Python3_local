@@ -445,10 +445,6 @@ div.selectedStackFrame {
   background-color: #dddddd;
 }
 
-div.topStackFrame {
-  border-left: 1px solid #f15149;
-}
-
 div.stackFrameHeader {
   font-family: Andale mono, monospace;
   font-size: 10pt;

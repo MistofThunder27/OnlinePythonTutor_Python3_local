@@ -23,11 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 var appMode = "edit"; // 'edit', 'visualize', or 'grade' (only for question.html)
 
-// set to true to use jsPlumb library to render connections between
-// stack and heap objects
-var useJsPlumbRendering = true;
-// if true, then render the stack as growing downwards
-var stackGrowsDown = true;
+var inlineRendering;
+var stackGrowsUp;
 
 /* colors - see edu-python.css */
 var lightLineColor = "#FFE536";
@@ -78,7 +75,7 @@ function htmlspecialchars(str) {
 function processTrace(traceData) {
   curTrace = traceData;
   curInstr = 0;
-  document.getElementById("pyStdout").value = ""; // delete any old output
+  document.getElementById("pyStdout").value = ""; // devare any old output
 
   if (curTrace.length > 0) {
     var lastEntry = curTrace[curTrace.length - 1];
@@ -101,8 +98,8 @@ function updateOutput() {
     return;
   }
 
-  useJsPlumbRendering = !document.getElementById("classicModeCheckbox").checked;
-  stackGrowsDown = !document.getElementById("stackGrowthSelector").checked;
+  inlineRendering = document.getElementById("classicModeCheckbox").checked;
+  stackGrowsUp = document.getElementById("stackGrowthSelector").checked;
   var curEntry = curTrace[curInstr];
 
   // render VCR controls:
@@ -209,8 +206,7 @@ function updateOutput() {
         '<span style="background-color: orange;">' +
         content.substring(0, endIndex) +
         "</span>" +
-        content.substring(endIndex) +
-        '<br/><span style="font-style: italic; color: green;">';
+        content.substring(endIndex);
     }
 
     cell.innerHTML =
@@ -244,38 +240,34 @@ function updateOutput() {
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
-  document.getElementById("dataViz").innerHTML = ""; // Clear the content
+  var dataViz = document.getElementById("dataViz");
+  dataViz.innerHTML = ""; // Clear the content
 
   // organise frames based on settings
-  var orderedFrames = curEntry.encoded_frames;
-  if (!stackGrowsDown) {
+  var orderedFrames = curEntry.encoded_frames.slice();
+  if (stackGrowsUp) {
     orderedFrames = orderedFrames.reverse();
   }
 
-  if (useJsPlumbRendering) {
-    renderDataStructuresVersion2(curEntry, orderedFrames);
-  } else {
-    //render variables and values INLINE within each stack frame without any
-    // explicit representation of data structure aliasing.`
-    const dataViz = document.getElementById("dataViz");
+  if (inlineRendering) {
     orderedFrames.forEach((frame) => {
-      const vizFrame = document.createElement("div");
+      var vizFrame = document.createElement("div");
       vizFrame.className = "vizFrame";
       vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlspecialchars(
         frame[0]
       )}</span> variables:`;
       dataViz.appendChild(vizFrame);
 
-      const encodedVars = Object.entries(frame[1]);
+      var encodedVars = Object.entries(frame[1]);
       if (encodedVars.length > 0) {
-        const frameDataViz = document.createElement("table");
+        var frameDataViz = document.createElement("table");
         frameDataViz.className = "frameDataViz";
         vizFrame.appendChild(document.createElement("br"));
         vizFrame.appendChild(frameDataViz);
 
         encodedVars.forEach((entry) => {
-          const [varname, val] = entry;
-          const tr = document.createElement("tr");
+          var [varname, val] = entry;
+          var tr = document.createElement("tr");
           tr.innerHTML = `<td>${
             varname === "__return__"
               ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
@@ -285,13 +277,15 @@ function updateOutput() {
           renderData(val, tr.querySelector("td:last-child"), false);
         });
 
-        const lastRow = frameDataViz.lastElementChild;
+        var lastRow = frameDataViz.lastElementChild;
         lastRow.querySelector("td:first-child").style.borderBottom = "0px";
         lastRow.querySelector("td:last-child").style.borderBottom = "0px";
       } else {
         vizFrame.innerHTML += "<i>none</i>";
       }
     });
+  } else {
+    renderDataStructuresVersion2(curEntry, orderedFrames);
   }
 }
 
@@ -329,7 +323,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   stackHeapTable.id = "stackHeapTable";
   stackHeapTable.appendChild(tr);
 
-  const dataViz = document.getElementById("dataViz");
+  var dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = "";
   dataViz.appendChild(stackHeapTable);
 
@@ -341,7 +335,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   orderedFrames.forEach((frame, i) => {
     var stackDiv = document.createElement("div");
     var divID = "stack" + i;
-    stackDiv.className = i == 0 ? "stackFrame topStackFrame" : "stackFrame";
+    stackDiv.className = "stackFrame";
     stackDiv.id = divID;
     document.getElementById("stack").appendChild(stackDiv);
 
@@ -359,8 +353,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
       stackDiv.appendChild(table);
 
       encodedVars.forEach(function (entry) {
-        var varname = entry[0];
-        var val = entry[1];
+        var [varname, val] = entry;
 
         var tr = document.createElement("tr");
         // special treatment for displaying return value and indicating
@@ -377,11 +370,9 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
         }
         table.appendChild(tr);
 
-        var curTr = table.lastElementChild;
-
         // render primitives inline and compound types on the heap
-        if (isPrimitiveType(val)) {
-          renderData(val, curTr.querySelector("td.stackFrameValue"), false);
+        if (val == null || typeof val != "object") {
+          renderData(val, tr.querySelector("td.stackFrameValue"), false);
         } else {
           // add a stub so that we can connect it with a connector later.
           // IE needs this div to be NON-EMPTY in order to properly
@@ -399,7 +390,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           var divElement = document.createElement("div");
           divElement.id = varDivID;
           divElement.innerHTML = "&nbsp;";
-          curTr.querySelector("td.stackFrameValue").appendChild(divElement);
+          tr.querySelector("td.stackFrameValue").appendChild(divElement);
 
           if (connectionEndpointIDs[varDivID] === undefined) {
             var heapObjID = "heap_object_" + getObjectID(val);
@@ -419,16 +410,16 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // e.g., if a list L appears as a global variable and as a local in a
   // function, we want to render L when rendering the global frame.
 
-  let alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
+  var alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
   curEntry.encoded_frames.forEach((frame) => {
     Object.entries(frame[1]).forEach((entry) => {
-      let val = entry[1];
+      var val = entry[1];
       // primitive types are already rendered in the stack
-      if (!isPrimitiveType(val)) {
-        let objectID = getObjectID(val);
+      if (typeof obj == "object" && obj != null) {
+        var objectID = getObjectID(val);
 
         if (alreadyRenderedObjectIDs[objectID] === undefined) {
-          let heapObjID = "heap_object_" + objectID;
+          var heapObjID = "heap_object_" + objectID;
           dataViz.querySelector("#heap").innerHTML += '<div class="heapObject" id="' + heapObjID + '"></div>';
           renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
 
@@ -446,44 +437,39 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // add an on-click listener to all stack frame headers
   document.querySelectorAll(".stackFrameHeader").forEach((header) => {
     header.addEventListener("click", function () {
-      let enclosingStackFrame = this.parentNode;
-      let enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
+      var enclosingStackFrame = this.parentNode;
+      var enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
 
-      let allConnections = jsPlumb.getConnections();
-      console.log(enclosingStackFrame);
-      console.log(allConnections);
-      allConnections.forEach((c) => {
-        console.log(c.source);
-        console.log(c.source.parentNode);
-        console.log(c.source.parentNode.parentNode);
-        console.log(c.source.parentNode.parentNode.parentNode);
-        console.log(c.source.parentNode.parentNode.parentNode.parentNode);
-
-        let stackFrameDiv = c.source.parentNode.parentNode.parentNode.parentNode;
+      var allConnections = jsPlumb.getConnections();
+      allConnections.forEach((connection) => {
+        var element = connection.source;
+        while (element.attr("class") != "stackFrame") {
+          element = element.parent();
+        }
 
         // if this connector starts in the selected stack frame ...
-        if (stackFrameDiv.getAttribute("id") == enclosingStackFrameID) {
+        if (element.attr("id") == enclosingStackFrameID) {
           // then HIGHLIGHT IT!
-          c.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
-          c.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
-          c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
+          connection.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
+          connection.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
+          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
 
           // ... and move it to the VERY FRONT
-          c.canvas.style.zIndex = 1000;
+          connection.canvas.style.zIndex = 1000;
         } else {
           // else unhighlight it
-          c.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
-          c.endpoints[0].setPaintStyle({ fillStyle: lightGray });
-          c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
-          c.canvas.style.zIndex = 0;
+          connection.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
+          connection.endpoints[0].setPaintStyle({ fillStyle: lightGray });
+          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
+          connection.canvas.style.zIndex = 0;
         }
       });
 
       // clear everything, then just activate $(this) one ...
-      document.querySelectorAll(".stackFrame").forEach(function (frame) {
+      document.querySelectorAll(".stackFrame").forEach((frame) => {
         frame.classList.remove("selectedStackFrame");
       });
-      document.querySelectorAll(".stackFrameHeader").forEach(function (header) {
+      document.querySelectorAll(".stackFrameHeader").forEach((header) => {
         header.classList.add("inactiveStackFrameHeader");
       });
 
@@ -494,21 +480,16 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
-  if (stackGrowsDown) {
-    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
-  } else {
+  if (stackGrowsUp) {
     document.getElementById("stack_header0").click();
+  } else {
+    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
   }
-}
-
-function isPrimitiveType(obj) {
-  var typ = typeof obj;
-  return obj == null || typ != "object";
 }
 
 function getObjectID(obj) {
   // pre-condition
-  assert(!isPrimitiveType(obj));
+  assert(typeof obj == "object" && obj != null);
   assert(Array.isArray(obj));
 
   if (obj[0] == "INSTANCE" || obj[0] == "CLASS") {
@@ -578,8 +559,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
           jDomElt.innerHTML += '<div class="typeLabel">empty tuple' + idStr + "</div>";
         } else {
           jDomElt.innerHTML += '<div class="typeLabel">tuple' + idStr + ":</div>";
-          jDomElt.innerHTML += '<table class="tupleTbl"><tr></tr><tr></tr></table>';
-          var tbl = jDomElt.querySelector(".tupleTbl");
+          jDomElt.innerHTML += '<table class="tupvarbl"><tr></tr><tr></tr></table>';
+          var tbl = jDomElt.querySelector(".tupvarbl");
           var headerTr = tbl.querySelector("tr:first-child");
           var contentTr = tbl.querySelector("tr:last-child");
           obj.forEach(function (val, ind) {
@@ -727,7 +708,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
           jDomElt.appendChild(typeLabelDiv);
 
           var table = document.createElement("table");
-          table.className = "tupleTbl";
+          table.className = "tupvarbl";
           var row = document.createElement("tr");
           var cell = document.createElement("td");
           cell.className = "tupleElt";
@@ -741,26 +722,22 @@ function renderData(obj, jDomElt, ignoreIDs) {
   }
 }
 
-String.prototype.rtrim = function () {
-  return this.replace(/\s*$/g, "");
-};
-
 function renderPyCodeOutput(codeStr) {
   var tbl = document.getElementById("pyCodeOutput");
   tbl.innerHTML = ""; // Clear table content
-  var lines = codeStr.trimRight().split("\n");
 
-  var lineNo = 1;
-  lines.forEach((cod) => {
-    // Create table row
-    var newRow = document.createElement("tr");
-    newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
-    newRow.querySelector(".lineNo").textContent = lineNo;
-    newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod);
+  codeStr
+    .trimRight()
+    .split("\n")
+    .forEach((cod, i) => {
+      // Create table row
+      var newRow = document.createElement("tr");
+      newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
+      newRow.querySelector(".lineNo").textContent = i + 1;
+      newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod);
 
-    tbl.appendChild(newRow);
-    lineNo += 1;
-  });
+      tbl.appendChild(newRow);
+    });
 }
 
 // initialization function that should be called when the page is loaded
