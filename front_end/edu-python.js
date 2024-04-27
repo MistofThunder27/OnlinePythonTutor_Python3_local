@@ -88,9 +88,7 @@ function processTrace(traceData) {
 
     if (instrLimitReached) {
       curTrace.pop(); // kill last entry which only has the error message
-      document.getElementById("errorOutput").innerHTML = htmlspecialchars(
-        lastEntry.exception_msg
-      );
+      document.getElementById("errorOutput").innerHTML = htmlspecialchars(lastEntry.exception_msg);
       document.getElementById("errorOutput").style.display = "block";
     }
   }
@@ -127,16 +125,12 @@ function updateOutput() {
       : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
   jmpFirstInstrButton.disabled = jmpStepBackButton.disabled = curInstr === 0;
-  jmpLastInstrButton.disabled = jmpStepFwdButton.disabled =
-    curInstr === totalInstrs - 1;
+  jmpLastInstrButton.disabled = jmpStepFwdButton.disabled = curInstr === totalInstrs - 1;
 
   // render error (if applicable):
   var errorOutput = document.getElementById("errorOutput");
   var hasError;
-  if (
-    curEntry.event === "exception" ||
-    curEntry.event === "uncaught_exception"
-  ) {
+  if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
     assert(curEntry.exception_msg);
     errorOutput.innerHTML = htmlspecialchars(curEntry.exception_msg);
     errorOutput.style.display = "block";
@@ -165,7 +159,7 @@ function updateOutput() {
 
   // Set visited lines
   curEntry.visited_lines.forEach((line) => {
-    var lineNoCell = tbl.querySelector("td.lineNo:nth-child(" + line + ")");
+    var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
     lineNoCell.style.color = visitedLineColor;
     lineNoCell.style.fontWeight = "bold";
   });
@@ -181,17 +175,13 @@ function updateOutput() {
     } = caller_info;
 
     callinglines.forEach((line) => {
-      tbl.querySelector(
-        "td.lineNo:nth-child(" + line + ")"
-      ).style.backgroundColor =
-        curEntry.encoded_frames.length % 2 == 1
-          ? callingLineColor1
-          : callingLineColor2;
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
+        curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     });
 
     var cell, content;
     if (startLine === endLine) {
-      cell = tbl.querySelector("td.cod:nth-child(" + startLine + ")");
+      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -200,7 +190,7 @@ function updateOutput() {
         "</span>" +
         content.substring(endIndex);
     } else {
-      cell = tbl.querySelector("td.cod:nth-child(" + startLine + ")");
+      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -209,14 +199,11 @@ function updateOutput() {
         "</span>";
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
-        cell = tbl.querySelector("td.cod:nth-child(" + line + ")");
-        cell.innerHTML =
-          '<span style="background-color: orange;">' +
-          cell.textContent +
-          "</span>";
+        cell = tbl.querySelectorAll("td.cod")[line - 1];
+        cell.innerHTML = '<span style="background-color: orange;">' + cell.textContent + "</span>";
       }
 
-      cell = tbl.querySelector("td.cod:nth-child(" + endLine + ")");
+      cell = tbl.querySelectorAll("td.cod")[endLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         '<span style="background-color: orange;">' +
@@ -239,12 +226,11 @@ function updateOutput() {
 
   // Highlight curLineGroup:
   curEntry.lines.forEach((line) => {
-    tbl.querySelector("td.cod:nth-child(" + line + ")").style.backgroundColor =
-      hasError
-        ? errorColor
-        : !instrLimitReached && curInstr === totalInstrs - 1
-        ? terminatingColor
-        : lightLineColor;
+    tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
+      ? errorColor
+      : !instrLimitReached && curInstr === totalInstrs - 1
+      ? terminatingColor
+      : lightLineColor;
   });
 
   // render stdout:
@@ -261,18 +247,16 @@ function updateOutput() {
   document.getElementById("dataViz").innerHTML = ""; // Clear the content
 
   // organise frames based on settings
-  var orderedFrames;
-  if (stackGrowsDown) {
-    orderedFrames = curEntry.encoded_frames;
-  } else {
-    orderedFrames = curEntry.encoded_frames.slice().reverse();
+  var orderedFrames = curEntry.encoded_frames;
+  if (!stackGrowsDown) {
+    orderedFrames = orderedFrames.reverse();
   }
 
   if (useJsPlumbRendering) {
     renderDataStructuresVersion2(curEntry, orderedFrames);
   } else {
     //render variables and values INLINE within each stack frame without any
-    // explicit representation of data structure aliasing.
+    // explicit representation of data structure aliasing.`
     const dataViz = document.getElementById("dataViz");
     orderedFrames.forEach((frame) => {
       const vizFrame = document.createElement("div");
@@ -319,7 +303,7 @@ function updateOutput() {
 function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // before we wipe out the old state of the visualization, CLEAR all
   // the click listeners first
-  document.querySelectorAll(".stackFrameHeader").forEach(function (header) {
+  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
     header.removeEventListener("click", handleClick);
   });
 
@@ -329,73 +313,69 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
-  var stackHeapTable = document.createElement("table");
-  stackHeapTable.id = "stackHeapTable";
-  var tr = document.createElement("tr");
   var stack_td = document.createElement("td");
   stack_td.id = "stack_td";
   stack_td.innerHTML = '<div id="stack"></div>';
+
   var heap_td = document.createElement("td");
   heap_td.id = "heap_td";
   heap_td.innerHTML = '<div id="heap"></div>';
+
+  var tr = document.createElement("tr");
   tr.appendChild(stack_td);
   tr.appendChild(heap_td);
+
+  var stackHeapTable = document.createElement("table");
+  stackHeapTable.id = "stackHeapTable";
   stackHeapTable.appendChild(tr);
-  document.getElementById("dataViz").innerHTML = "";
-  document.getElementById("dataViz").appendChild(stackHeapTable);
+
+  const dataViz = document.getElementById("dataViz");
+  dataViz.innerHTML = "";
+  dataViz.appendChild(stackHeapTable);
 
   // Key:   CSS ID of the div element representing the variable
   // Value: CSS ID of the div element representing the value rendered in the heap
   var connectionEndpointIDs = {};
 
   // first render the vars
-  orderedFrames.forEach(function (frame, i) {
-    var divClass = i == 0 ? "stackFrame topStackFrame" : "stackFrame";
-    var divID = "stack" + i;
+  orderedFrames.forEach((frame, i) => {
     var stackDiv = document.createElement("div");
-    stackDiv.className = divClass;
+    var divID = "stack" + i;
+    stackDiv.className = i == 0 ? "stackFrame topStackFrame" : "stackFrame";
     stackDiv.id = divID;
     document.getElementById("stack").appendChild(stackDiv);
 
-    var headerDivID = "stack_header" + i;
     var headerDiv = document.createElement("div");
-    headerDiv.id = headerDivID;
+    headerDiv.id = "stack_header" + i;
     headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
     headerDiv.innerHTML = htmlspecialchars(frame[0]);
-    document.getElementById(divID).appendChild(headerDiv);
+    stackDiv.appendChild(headerDiv);
 
     var encodedVars = Object.entries(frame[1]);
     if (encodedVars.length > 0) {
-      var tableID = divID + "_table";
       var table = document.createElement("table");
       table.className = "stackFrameVarTable";
-      table.id = tableID;
-      document.getElementById(divID).appendChild(table);
+      table.id = divID + "_table";
+      stackDiv.appendChild(table);
 
       encodedVars.forEach(function (entry) {
         var varname = entry[0];
         var val = entry[1];
 
+        var tr = document.createElement("tr");
         // special treatment for displaying return value and indicating
         // that the function is about to return to its caller
         if (varname == "__return__") {
           assert(curEntry.event == "return"); // sanity check
-          var tr = document.createElement("tr");
-          tr.innerHTML =
-            '<td colspan="2" class="returnWarning">About to return to caller</td>';
+          tr.innerHTML = '<td colspan="2" class="returnWarning">About to return to caller</td>';
           table.appendChild(tr);
           tr = document.createElement("tr");
           tr.innerHTML =
             '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
-          table.appendChild(tr);
         } else {
-          var tr = document.createElement("tr");
-          tr.innerHTML =
-            '<td class="stackFrameVar">' +
-            varname +
-            '</td><td class="stackFrameValue"></td>';
-          table.appendChild(tr);
+          tr.innerHTML = '<td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td>';
         }
+        table.appendChild(tr);
 
         var curTr = table.lastElementChild;
 
@@ -415,28 +395,23 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
           //
           // TODO: what other characters are illegal???
-          var lbRE = new RegExp("\\[|{|\\(|<", "g");
-          var rbRE = new RegExp("\\]|}|\\)|>", "g");
+          var varDivID = divID + "__" + varname.replace(/[\[{|(<>]/g, "LeftB_").replace(/[\]}|)<>]/g, "_RightB");
+          var divElement = document.createElement("div");
+          divElement.id = varDivID;
+          divElement.innerHTML = "&nbsp;";
+          curTr.querySelector("td.stackFrameValue").appendChild(divElement);
 
-          var varDivID =
-            divID +
-            "__" +
-            varname.replace(lbRE, "LeftB_").replace(rbRE, "_RightB");
-          curTr
-            .find("td.stackFrameValue")
-            .append('<div id="' + varDivID + '">&nbsp;</div>');
-
-          assert(connectionEndpointIDs[varDivID] === undefined);
-          var heapObjID = "heap_object_" + getObjectID(val);
-          connectionEndpointIDs[varDivID] = heapObjID;
+          if (connectionEndpointIDs[varDivID] === undefined) {
+            var heapObjID = "heap_object_" + getObjectID(val);
+            connectionEndpointIDs[varDivID] = heapObjID;
+          }
         }
       });
     }
   });
 
   // then render the heap
-  document.getElementById("dataViz").querySelector("#heap").innerHTML +=
-    '<div id="heapHeader">Heap</div>';
+  dataViz.querySelector("#heap").innerHTML += '<div id="heapHeader">Heap</div>';
 
   // if there are multiple aliases to the same object, we want to render
   // the one deepest in the stack, so that we can hopefully prevent
@@ -445,8 +420,8 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // function, we want to render L when rendering the global frame.
 
   let alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
-  curEntry.encoded_frames.forEach(function (frame) {
-    Object.entries(frame[1]).forEach(function (entry) {
+  curEntry.encoded_frames.forEach((frame) => {
+    Object.entries(frame[1]).forEach((entry) => {
       let val = entry[1];
       // primitive types are already rendered in the stack
       if (!isPrimitiveType(val)) {
@@ -454,15 +429,8 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
         if (alreadyRenderedObjectIDs[objectID] === undefined) {
           let heapObjID = "heap_object_" + objectID;
-          document.getElementById("dataViz").querySelector("#heap").innerHTML +=
-            '<div class="heapObject" id="' + heapObjID + '"></div>';
-          renderData(
-            val,
-            document
-              .getElementById("dataViz")
-              .querySelector("#heap #" + heapObjID),
-            false
-          );
+          dataViz.querySelector("#heap").innerHTML += '<div class="heapObject" id="' + heapObjID + '"></div>';
+          renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
 
           alreadyRenderedObjectIDs[objectID] = 1;
         }
@@ -471,21 +439,27 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   });
 
   // finally connect stack variables to heap objects via connectors
-  for (let varID in connectionEndpointIDs) {
-    let valueID = connectionEndpointIDs[varID];
-    jsPlumb.connect({ source: varID, target: valueID });
-  }
+  Object.entries(connectionEndpointIDs).forEach((entry) => {
+    jsPlumb.connect({ source: entry[0], target: entry[1] });
+  });
 
   // add an on-click listener to all stack frame headers
-  document.querySelectorAll(".stackFrameHeader").forEach(function (header) {
+  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
     header.addEventListener("click", function () {
       let enclosingStackFrame = this.parentNode;
       let enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
 
       let allConnections = jsPlumb.getConnections();
-      allConnections.forEach(function (c) {
-        let stackFrameDiv =
-          c.source.parentNode.parentNode.parentNode.parentNode.parentNode;
+      console.log(enclosingStackFrame);
+      console.log(allConnections);
+      allConnections.forEach((c) => {
+        console.log(c.source);
+        console.log(c.source.parentNode);
+        console.log(c.source.parentNode.parentNode);
+        console.log(c.source.parentNode.parentNode.parentNode);
+        console.log(c.source.parentNode.parentNode.parentNode.parentNode);
+
+        let stackFrameDiv = c.source.parentNode.parentNode.parentNode.parentNode;
 
         // if this connector starts in the selected stack frame ...
         if (stackFrameDiv.getAttribute("id") == enclosingStackFrameID) {
@@ -521,9 +495,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
   if (stackGrowsDown) {
-    document
-      .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
-      .click();
+    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
   } else {
     document.getElementById("stack_header0").click();
   }
@@ -554,14 +526,14 @@ function renderData(obj, jDomElt, ignoreIDs) {
   var typ = typeof obj;
 
   if (obj == null) {
-    jDomElt.append('<span class="nullObj">None</span>');
+    jDomElt.innerHTML += '<span class="nullObj">None</span>';
   } else if (typ == "number") {
-    jDomElt.append('<span class="numberObj">' + obj + "</span>");
+    jDomElt.innerHTML += '<span class="numberObj">' + obj + "</span>";
   } else if (typ == "boolean") {
     if (obj) {
-      jDomElt.append('<span class="boolObj">True</span>');
+      jDomElt.innerHTML += '<span class="boolObj">True</span>';
     } else {
-      jDomElt.append('<span class="boolObj">False</span>');
+      jDomElt.innerHTML += '<span class="boolObj">False</span>';
     }
   } else if (typ == "string") {
     // escape using htmlspecialchars to prevent HTML/script injection
@@ -571,219 +543,201 @@ function renderData(obj, jDomElt, ignoreIDs) {
     literalStr = literalStr.replace(new RegExp('"', "g"), '\\"'); // replace ALL
     literalStr = '"' + literalStr + '"';
 
-    jDomElt.append('<span class="stringObj">' + literalStr + "</span>");
+    jDomElt.innerHTML += '<span class="stringObj">' + literalStr + "</span>";
   } else if (typ == "object") {
-    assert($.isArray(obj));
-
-    var idStr = "";
-    if (!ignoreIDs) {
-      idStr = " (id=" + getObjectID(obj) + ")";
-    }
-
-    if (obj[0] == "LIST") {
-      assert(obj.length >= 2);
-      if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty list' + idStr + "</div>");
-      } else {
-        jDomElt.append('<div class="typeLabel">list' + idStr + ":</div>");
-
-        jDomElt.append('<table class="listTbl"><tr></tr><tr></tr></table>');
-        var tbl = jDomElt.children("table");
-        var headerTr = tbl.find("tr:first");
-        var contentTr = tbl.find("tr:last");
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'LIST' tag and ID entry
-
-          // add a new column and then pass in that newly-added column
-          // as jDomElt to the recursive call to child:
-          headerTr.append('<td class="listHeader"></td>');
-          headerTr.find("td:last").append(ind - 2);
-
-          contentTr.append('<td class="listElt"></td>');
-          renderData(val, contentTr.find("td:last"), ignoreIDs);
-        });
+    if (Array.isArray(obj)) {
+      var idStr = "";
+      if (!ignoreIDs) {
+        idStr = " (id=" + getObjectID(obj) + ")";
       }
-    } else if (obj[0] == "TUPLE") {
-      assert(obj.length >= 2);
-      if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty tuple' + idStr + "</div>");
-      } else {
-        jDomElt.append('<div class="typeLabel">tuple' + idStr + ":</div>");
-        jDomElt.append('<table class="tupleTbl"><tr></tr><tr></tr></table>');
-        var tbl = jDomElt.children("table");
-        var headerTr = tbl.find("tr:first");
-        var contentTr = tbl.find("tr:last");
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'TUPLE' tag and ID entry
 
-          // add a new column and then pass in that newly-added column
-          // as jDomElt to the recursive call to child:
-          headerTr.append('<td class="tupleHeader"></td>');
-          headerTr.find("td:last").append(ind - 2);
+      if (obj[0] == "LIST") {
+        assert(obj.length >= 2);
+        if (obj.length == 2) {
+          jDomElt.innerHTML += '<div class="typeLabel">empty list' + idStr + "</div>";
+        } else {
+          jDomElt.innerHTML += '<div class="typeLabel">list' + idStr + ":</div>";
 
-          contentTr.append('<td class="tupleElt"></td>');
-          renderData(val, contentTr.find("td:last"), ignoreIDs);
-        });
-      }
-    } else if (obj[0] == "SET") {
-      assert(obj.length >= 2);
-      if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty set' + idStr + "</div>");
-      } else {
-        jDomElt.append('<div class="typeLabel">set' + idStr + ":</div>");
-        jDomElt.append('<table class="setTbl"></table>');
-        var tbl = jDomElt.children("table");
-        // create an R x C matrix:
-        var numElts = obj.length - 2;
-        // gives roughly a 3x5 rectangular ratio, square is too, err,
-        // 'square' and boring
-        var numRows = Math.round(Math.sqrt(numElts));
-        if (numRows > 3) {
-          numRows -= 1;
+          jDomElt.innerHTML += '<table class="listTbl"><tr></tr><tr></tr></table>';
+          var tbl = jDomElt.querySelector(".listTbl");
+          var headerTr = tbl.querySelector("tr:first-child");
+          var contentTr = tbl.querySelector("tr:last-child");
+          obj.forEach(function (val, ind) {
+            if (ind < 2) return; // skip 'LIST' tag and ID entry
+
+            // add a new column and then pass in that newly-added column
+            // as jDomElt to the recursive call to child:
+            headerTr.innerHTML += '<td class="listHeader">' + (ind - 2) + "</td>";
+            contentTr.innerHTML += '<td class="listElt"></td>';
+            renderData(val, contentTr.querySelector("td:last-child"), ignoreIDs);
+          });
         }
+      } else if (obj[0] == "TUPLE") {
+        assert(obj.length >= 2);
+        if (obj.length == 2) {
+          jDomElt.innerHTML += '<div class="typeLabel">empty tuple' + idStr + "</div>";
+        } else {
+          jDomElt.innerHTML += '<div class="typeLabel">tuple' + idStr + ":</div>";
+          jDomElt.innerHTML += '<table class="tupleTbl"><tr></tr><tr></tr></table>';
+          var tbl = jDomElt.querySelector(".tupleTbl");
+          var headerTr = tbl.querySelector("tr:first-child");
+          var contentTr = tbl.querySelector("tr:last-child");
+          obj.forEach(function (val, ind) {
+            if (ind < 2) return; // skip 'TUPLE' tag and ID entry
 
-        var numCols = Math.round(numElts / numRows);
-        // round up if not a perfect multiple:
-        if (numElts % numRows) {
-          numCols += 1;
+            // add a new column and then pass in that newly-added column
+            // as jDomElt to the recursive call to child:
+            headerTr.innerHTML += '<td class="tupleHeader">' + (ind - 2) + "</td>";
+            contentTr.innerHTML += '<td class="tupleElt"></td>';
+            renderData(val, contentTr.querySelector("td:last-child"), ignoreIDs);
+          });
         }
-
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'SET' tag and ID entry
-
-          if ((ind - 2) % numCols == 0) {
-            tbl.append("<tr></tr>");
+      } else if (obj[0] == "SET") {
+        assert(obj.length >= 2);
+        if (obj.length == 2) {
+          jDomElt.innerHTML += '<div class="typeLabel">empty set' + idStr + "</div>";
+        } else {
+          jDomElt.innerHTML += '<div class="typeLabel">set' + idStr + ":</div>";
+          jDomElt.innerHTML += '<table class="setTbl"></table>';
+          var tbl = jDomElt.querySelector(".setTbl");
+          // create an R x C matrix:
+          var numElts = obj.length - 2;
+          // gives roughly a 3x5 rectangular ratio, square is too, err,
+          // 'square' and boring
+          var numRows = Math.round(Math.sqrt(numElts));
+          if (numRows > 3) {
+            numRows -= 1;
           }
 
-          var curTr = tbl.find("tr:last");
-          curTr.append('<td class="setElt"></td>');
-          renderData(val, curTr.find("td:last"), ignoreIDs);
-        });
-      }
-    } else if (obj[0] == "DICT") {
-      assert(obj.length >= 2);
-      if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty dict' + idStr + "</div>");
+          var numCols = Math.round(numElts / numRows);
+          // round up if not a perfect multiple:
+          if (numElts % numRows) {
+            numCols += 1;
+          }
+
+          obj.forEach(function (val, ind) {
+            if (ind < 2) return; // skip 'SET' tag and ID entry
+
+            if ((ind - 2) % numCols == 0) {
+              tbl.innerHTML += "<tr></tr>";
+            }
+
+            var curTr = tbl.querySelector("tr:last-child");
+            curTr.innerHTML += '<td class="setElt"></td>';
+            renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
+          });
+        }
+      } else if (obj[0] == "DICT") {
+        assert(obj.length >= 2);
+        if (obj.length == 2) {
+          jDomElt.innerHTML += '<div class="typeLabel">empty dict' + idStr + "</div>";
+        } else {
+          jDomElt.innerHTML += '<div class="typeLabel">dict' + idStr + ":</div>";
+          jDomElt.innerHTML += '<table class="dictTbl"></table>';
+          var tbl = jDomElt.querySelector(".dictTbl");
+          obj.forEach(function (kvPair, ind) {
+            if (ind < 2) return; // skip 'DICT' tag and ID entry
+
+            tbl.innerHTML += '<tr class="dictEntry"><td class="dictKey"></td><td class="dictVal"></td></tr>';
+            var newRow = tbl.querySelector("tr:last-child");
+            var keyTd = newRow.querySelector("td:first-child");
+            var valTd = newRow.querySelector("td:last-child");
+            renderData(kvPair[0], keyTd, ignoreIDs);
+            renderData(kvPair[1], valTd, ignoreIDs);
+          });
+        }
+      } else if (obj[0] == "INSTANCE") {
+        assert(obj.length >= 3);
+        jDomElt.innerHTML += '<div class="typeLabel">' + obj[1] + " instance" + idStr + "</div>";
+
+        if (obj.length > 3) {
+          jDomElt.innerHTML += '<table class="instTbl"></table>';
+          var tbl = jDomElt.querySelector(".instTbl");
+          obj.forEach(function (kvPair, ind) {
+            if (ind < 3) return; // skip type tag, class name, and ID entry
+
+            tbl.innerHTML += '<tr class="instEntry"><td class="instKey"></td><td class="instVal"></td></tr>';
+            var newRow = tbl.querySelector("tr:last-child");
+            var keyTd = newRow.querySelector("td:first-child");
+            var valTd = newRow.querySelector("td:last-child");
+
+            // the keys should always be strings, so render them directly (and without quotes):
+            assert(typeof kvPair[0] == "string");
+            var attrnameStr = htmlspecialchars(kvPair[0]);
+            keyTd.innerHTML += '<span class="keyObj">' + attrnameStr + "</span>";
+
+            // values can be arbitrary objects, so recurse:
+            renderData(kvPair[1], valTd, ignoreIDs);
+          });
+        }
+      } else if (obj[0] == "CLASS") {
+        assert(obj.length >= 4);
+        var superclassStr = "";
+        if (obj[3].length > 0) {
+          superclassStr += "[extends " + obj[3].join(",") + "] ";
+        }
+
+        jDomElt.innerHTML += '<div class="typeLabel">' + obj[1] + " class " + superclassStr + idStr + "</div>";
+
+        if (obj.length > 4) {
+          jDomElt.innerHTML += '<table class="classTbl"></table>';
+          var tbl = jDomElt.querySelector(".classTbl");
+          obj.forEach(function (kvPair, ind) {
+            if (ind < 4) return; // skip type tag, class name, ID, and superclasses entries
+
+            tbl.innerHTML += '<tr class="classEntry"><td class="classKey"></td><td class="classVal"></td></tr>';
+            var newRow = tbl.querySelector("tr:last-child");
+            var keyTd = newRow.querySelector("td:first-child");
+            var valTd = newRow.querySelector("td:last-child");
+
+            // the keys should always be strings, so render them directly (and without quotes):
+            assert(typeof kvPair[0] == "string");
+            var attrnameStr = htmlspecialchars(kvPair[0]);
+            keyTd.innerHTML += '<span class="keyObj">' + attrnameStr + "</span>";
+
+            // values can be arbitrary objects, so recurse:
+            renderData(kvPair[1], valTd, ignoreIDs);
+          });
+        }
+      } else if (obj[0] == "CIRCULAR_REF") {
+        assert(obj.length == 2);
+        jDomElt.innerHTML += '<div class="circRefLabel">circular reference to id=' + obj[1] + "</div>";
       } else {
-        jDomElt.append('<div class="typeLabel">dict' + idStr + ":</div>");
-        jDomElt.append('<table class="dictTbl"></table>');
-        var tbl = jDomElt.children("table");
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 2) return; // skip 'DICT' tag and ID entry
+        // render custom data type
+        assert(obj.length == 3);
+        var typeName = obj[0];
+        var id = obj[1];
+        var strRepr = obj[2];
 
-          tbl.append(
-            '<tr class="dictEntry"><td class="dictKey"></td><td class="dictVal"></td></tr>'
-          );
-          var newRow = tbl.find("tr:last");
-          var keyTd = newRow.find("td:first");
-          var valTd = newRow.find("td:last");
-          renderData(kvPair[0], keyTd, ignoreIDs);
-          renderData(kvPair[1], valTd, ignoreIDs);
-        });
-      }
-    } else if (obj[0] == "INSTANCE") {
-      assert(obj.length >= 3);
-      jDomElt.append(
-        '<div class="typeLabel">' + obj[1] + " instance" + idStr + "</div>"
-      );
+        // if obj[2] is like '<generator object <genexpr> at 0x84760>',
+        // then display an abbreviated version rather than the gory details
+        noStrReprRE = /<.* at 0x.*>/;
+        if (noStrReprRE.test(strRepr)) {
+          var customObjSpan = document.createElement("span");
+          customObjSpan.className = "customObj";
+          customObjSpan.textContent = typeName + idStr;
+          jDomElt.appendChild(customObjSpan);
+        } else {
+          strRepr = htmlspecialchars(strRepr); // escape strings!
 
-      if (obj.length > 3) {
-        jDomElt.append('<table class="instTbl"></table>');
-        var tbl = jDomElt.children("table");
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 3) return; // skip type tag, class name, and ID entry
+          // warning: we're overloading tuple elts for custom data types
+          var typeLabelDiv = document.createElement("div");
+          typeLabelDiv.className = "typeLabel";
+          typeLabelDiv.textContent = typeName + idStr + ":";
+          jDomElt.appendChild(typeLabelDiv);
 
-          tbl.append(
-            '<tr class="instEntry"><td class="instKey"></td><td class="instVal"></td></tr>'
-          );
-          var newRow = tbl.find("tr:last");
-          var keyTd = newRow.find("td:first");
-          var valTd = newRow.find("td:last");
-
-          // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.append('<span class="keyObj">' + attrnameStr + "</span>");
-
-          // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
-        });
-      }
-    } else if (obj[0] == "CLASS") {
-      assert(obj.length >= 4);
-      var superclassStr = "";
-      if (obj[3].length > 0) {
-        superclassStr += "[extends " + obj[3].join(",") + "] ";
-      }
-
-      jDomElt.append(
-        '<div class="typeLabel">' +
-          obj[1] +
-          " class " +
-          superclassStr +
-          idStr +
-          "</div>"
-      );
-
-      if (obj.length > 4) {
-        jDomElt.append('<table class="classTbl"></table>');
-        var tbl = jDomElt.children("table");
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 4) return; // skip type tag, class name, ID, and superclasses entries
-
-          tbl.append(
-            '<tr class="classEntry"><td class="classKey"></td><td class="classVal"></td></tr>'
-          );
-          var newRow = tbl.find("tr:last");
-          var keyTd = newRow.find("td:first");
-          var valTd = newRow.find("td:last");
-
-          // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.append('<span class="keyObj">' + attrnameStr + "</span>");
-
-          // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
-        });
-      }
-    } else if (obj[0] == "CIRCULAR_REF") {
-      assert(obj.length == 2);
-      jDomElt.append(
-        '<div class="circRefLabel">circular reference to id=' +
-          obj[1] +
-          "</div>"
-      );
-    } else {
-      // render custom data type
-      assert(obj.length == 3);
-      typeName = obj[0];
-      id = obj[1];
-      strRepr = obj[2];
-
-      // if obj[2] is like '<generator object <genexpr> at 0x84760>',
-      // then display an abbreviated version rather than the gory details
-      noStrReprRE = /<.* at 0x.*>/;
-      if (noStrReprRE.test(strRepr)) {
-        jDomElt.append(
-          '<span class="customObj">' + typeName + idStr + "</span>"
-        );
-      } else {
-        strRepr = htmlspecialchars(strRepr); // escape strings!
-
-        // warning: we're overloading tuple elts for custom data types
-        jDomElt.append(
-          '<div class="typeLabel">' + typeName + idStr + ":</div>"
-        );
-        jDomElt.append(
-          '<table class="tupleTbl"><tr><td class="tupleElt">' +
-            strRepr +
-            "</td></tr></table>"
-        );
+          var table = document.createElement("table");
+          table.className = "tupleTbl";
+          var row = document.createElement("tr");
+          var cell = document.createElement("td");
+          cell.className = "tupleElt";
+          cell.textContent = strRepr;
+          row.appendChild(cell);
+          table.appendChild(row);
+          jDomElt.appendChild(table);
+        }
       }
     }
-  } else {
-    alert("Error: renderData FAIL!");
   }
 }
 
@@ -796,32 +750,30 @@ function renderPyCodeOutput(codeStr) {
   tbl.innerHTML = ""; // Clear table content
   var lines = codeStr.trimRight().split("\n");
 
-  lines.forEach(function (cod, i) {
-    var lineNo = i + 1;
-    var htmlCod = htmlspecialchars(cod);
+  var lineNo = 1;
+  lines.forEach((cod) => {
+    // Create table row
+    var newRow = document.createElement("tr");
+    newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
+    newRow.querySelector(".lineNo").textContent = lineNo;
+    newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod);
 
-    tbl.innerHTML += '<tr><td class="lineNo"></td><td class="cod"></td></tr>';
-    var curRow = tbl.querySelector("tr:last-child");
-    curRow.querySelector("td.lineNo").textContent = lineNo;
-    curRow.querySelector("td.cod").innerHTML = htmlCod;
+    tbl.appendChild(newRow);
+    lineNo += 1;
   });
 }
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
-  document
-    .getElementById("jmpFirstInstr")
-    .addEventListener("click", function () {
-      curInstr = 0;
-      updateOutput();
-    });
+  document.getElementById("jmpFirstInstr").addEventListener("click", function () {
+    curInstr = 0;
+    updateOutput();
+  });
 
-  document
-    .getElementById("jmpLastInstr")
-    .addEventListener("click", function () {
-      curInstr = curTrace.length - 1;
-      updateOutput();
-    });
+  document.getElementById("jmpLastInstr").addEventListener("click", function () {
+    curInstr = curTrace.length - 1;
+    updateOutput();
+  });
 
   document.getElementById("jmpStepBack").addEventListener("click", function () {
     if (curInstr > 0) {
@@ -852,9 +804,7 @@ function eduPythonCommonInit() {
   jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
 
   // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [
-    ["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }],
-  ];
+  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]];
 
   jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
   jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
@@ -888,21 +838,17 @@ function eduPythonCommonInit() {
     }
   });
 
-  document
-    .getElementById("stackGrowthSelector")
-    .addEventListener("click", function () {
-      if (appMode == "visualize") {
-        updateOutput();
-      }
-    });
+  document.getElementById("stackGrowthSelector").addEventListener("click", function () {
+    if (appMode == "visualize") {
+      updateOutput();
+    }
+  });
 
-  document
-    .getElementById("classicModeCheckbox")
-    .addEventListener("click", function () {
-      if (appMode == "visualize") {
-        updateOutput();
-      }
-    });
+  document.getElementById("classicModeCheckbox").addEventListener("click", function () {
+    if (appMode == "visualize") {
+      updateOutput();
+    }
+  });
 
   // log a generic AJAX error handler
   document.addEventListener("ajaxError", function () {

@@ -79,8 +79,7 @@
 
   // private function for debugging
   function debug($obj) {
-    if (window.console && window.console.log)
-      window.console.log("textarea count: " + $obj.size());
+    if (window.console && window.console.log) window.console.log("textarea count: " + $obj.size());
   }
 
   function process_keypress(o, shft, options) {
@@ -112,33 +111,22 @@
         //if ("\t" == o.value.substring(ss-options.tabString.length, ss)) {
         // modified by pgbovine:
         if ("    " == o.value.substring(ss - options.tabString.length, ss)) {
-          o.value =
-            o.value.substring(0, ss - options.tabString.length) +
-            o.value.substring(ss); // put it back together omitting one character to the left
+          o.value = o.value.substring(0, ss - options.tabString.length) + o.value.substring(ss); // put it back together omitting one character to the left
           o.focus();
-          o.setSelectionRange(
-            ss - options.tabString.length,
-            ss - options.tabString.length
-          );
+          o.setSelectionRange(ss - options.tabString.length, ss - options.tabString.length);
         }
         // then check to the right of the caret
         else if ("\t" == o.value.substring(ss, ss + options.tabString.length)) {
-          o.value =
-            o.value.substring(0, ss) +
-            o.value.substring(ss + options.tabString.length); // put it back together omitting one character to the right
+          o.value = o.value.substring(0, ss) + o.value.substring(ss + options.tabString.length); // put it back together omitting one character to the right
           o.focus();
           o.setSelectionRange(ss, ss);
         }
       }
       // TAB
       else {
-        o.value =
-          o.value.substring(0, ss) + options.tabString + o.value.substring(ss);
+        o.value = o.value.substring(0, ss) + options.tabString + o.value.substring(ss);
         o.focus();
-        o.setSelectionRange(
-          ss + options.tabString.length,
-          ss + options.tabString.length
-        );
+        o.setSelectionRange(ss + options.tabString.length, ss + options.tabString.length);
       }
     }
     // selections will always add/remove tabs from the start of the line
@@ -154,10 +142,7 @@
         indices.push({
           start: sl,
           end: el,
-          selected:
-            (sl <= ss && el > ss) ||
-            (el >= es && sl < es) ||
-            (sl > ss && el < es),
+          selected: (sl <= ss && el > ss) || (el >= es && sl < es) || (sl > ss && el < es),
         });
         sl = el + 1; // for "\n"
       }
@@ -168,35 +153,20 @@
         if (indices[i].selected) {
           var pos = indices[i].start + modifier; // adjust for tabs already inserted/removed
           // SHIFT+TAB
-          if (
-            shft &&
-            options.tabString ==
-              o.value.substring(pos, pos + options.tabString.length)
-          ) {
+          if (shft && options.tabString == o.value.substring(pos, pos + options.tabString.length)) {
             // only SHIFT+TAB if there's a tab at the start of the line
-            o.value =
-              o.value.substring(0, pos) +
-              o.value.substring(pos + options.tabString.length); // omit the tabstring to the right
+            o.value = o.value.substring(0, pos) + o.value.substring(pos + options.tabString.length); // omit the tabstring to the right
             modifier -= options.tabString.length;
           }
           // TAB
           else if (!shft) {
-            o.value =
-              o.value.substring(0, pos) +
-              options.tabString +
-              o.value.substring(pos); // insert the tabstring
+            o.value = o.value.substring(0, pos) + options.tabString + o.value.substring(pos); // insert the tabstring
             modifier += options.tabString.length;
           }
         }
       }
       o.focus();
-      var ns =
-        ss +
-        (modifier > 0
-          ? options.tabString.length
-          : modifier < 0
-          ? -options.tabString.length
-          : 0);
+      var ns = ss + (modifier > 0 ? options.tabString.length : modifier < 0 ? -options.tabString.length : 0);
       var ne = es + modifier;
       o.setSelectionRange(ns, ne);
     }
@@ -255,75 +225,32 @@
         var end_text = end_range.text; // we can accurately calculate distance to the end because we're not worried about MSIE trimming a \r\n
 
         var check_html = $(o).html();
-        $("#r3").text(
-          before_len +
-            " + " +
-            selection_len +
-            " + " +
-            after_text.length +
-            " = " +
-            check_html.length
-        );
+        $("#r3").text(before_len + " + " + selection_len + " + " + after_text.length + " = " + check_html.length);
         if (before_len + end_text.length < check_html.length) {
           before_arr.push("");
           before_len += 2; // for the \r\n that was trimmed
-          if (
-            shft &&
-            options.tabString ==
-              selection_arr[0].substring(0, options.tabString.length)
-          )
-            selection_arr[0] = selection_arr[0].substring(
-              options.tabString.length
-            );
-          else if (!shft)
-            selection_arr[0] = options.tabString + selection_arr[0];
+          if (shft && options.tabString == selection_arr[0].substring(0, options.tabString.length))
+            selection_arr[0] = selection_arr[0].substring(options.tabString.length);
+          else if (!shft) selection_arr[0] = options.tabString + selection_arr[0];
         } else {
-          if (
-            shft &&
-            options.tabString ==
-              before_arr[before_arr.length - 1].substring(
-                0,
-                options.tabString.length
-              )
-          )
-            before_arr[before_arr.length - 1] = before_arr[
-              before_arr.length - 1
-            ].substring(options.tabString.length);
-          else if (!shft)
-            before_arr[before_arr.length - 1] =
-              options.tabString + before_arr[before_arr.length - 1];
+          if (shft && options.tabString == before_arr[before_arr.length - 1].substring(0, options.tabString.length))
+            before_arr[before_arr.length - 1] = before_arr[before_arr.length - 1].substring(options.tabString.length);
+          else if (!shft) before_arr[before_arr.length - 1] = options.tabString + before_arr[before_arr.length - 1];
         }
 
         for (var i = 1; i < selection_arr.length; i++) {
-          if (
-            shft &&
-            options.tabString ==
-              selection_arr[i].substring(0, options.tabString.length)
-          )
-            selection_arr[i] = selection_arr[i].substring(
-              options.tabString.length
-            );
-          else if (!shft)
-            selection_arr[i] = options.tabString + selection_arr[i];
+          if (shft && options.tabString == selection_arr[i].substring(0, options.tabString.length))
+            selection_arr[i] = selection_arr[i].substring(options.tabString.length);
+          else if (!shft) selection_arr[i] = options.tabString + selection_arr[i];
         }
 
         if (1 == before_arr.length && 0 == before_len) {
-          if (
-            shft &&
-            options.tabString ==
-              selection_arr[0].substring(0, options.tabString.length)
-          )
-            selection_arr[0] = selection_arr[0].substring(
-              options.tabString.length
-            );
-          else if (!shft)
-            selection_arr[0] = options.tabString + selection_arr[0];
+          if (shft && options.tabString == selection_arr[0].substring(0, options.tabString.length))
+            selection_arr[0] = selection_arr[0].substring(options.tabString.length);
+          else if (!shft) selection_arr[0] = options.tabString + selection_arr[0];
         }
 
-        if (
-          before_len + selection_len + after_text.length <
-          check_html.length
-        ) {
+        if (before_len + selection_len + after_text.length < check_html.length) {
           selection_arr.push("");
           selection_len += 2; // for the \r\n that was trimmed
         }

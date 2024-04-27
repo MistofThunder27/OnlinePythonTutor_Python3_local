@@ -1,11 +1,7 @@
 (function () {
   var r = !!document.createElement("canvas").getContext;
   var d =
-    !!window.SVGAngle ||
-    document.implementation.hasFeature(
-      "http://www.w3.org/TR/SVG11/feature#BasicStructure",
-      "1.1"
-    );
+    !!window.SVGAngle || document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1");
   var a = !(r | d);
   var l = function (y, z, w, C) {
     var B = function (E, D) {
@@ -118,9 +114,7 @@
       x.constructor.apply(B, w);
       return B;
     };
-    (this.overlayPlacements = []),
-      (this.paintStyle = null),
-      (this.hoverPaintStyle = null);
+    (this.overlayPlacements = []), (this.paintStyle = null), (this.hoverPaintStyle = null);
     var A = function () {
       if (x.paintStyle && x.hoverPaintStyle) {
         var B = {};
@@ -163,15 +157,7 @@
     };
     this.attachListeners = function (G, H) {
       var E = i.CurrentLibrary,
-        C = [
-          "click",
-          "dblclick",
-          "mouseenter",
-          "mouseout",
-          "mousemove",
-          "mousedown",
-          "mouseup",
-        ],
+        C = ["click", "dblclick", "mouseenter", "mouseout", "mousemove", "mousedown", "mouseup"],
         F = {
           mouseout: "mouseexit",
         },
@@ -366,10 +352,7 @@
       O = function (aB, aA, az) {
         var ax = aA == null ? Y : aA;
         if (ax) {
-          if (
-            i.CurrentLibrary.isDragSupported(aB) &&
-            !i.CurrentLibrary.isAlreadyDraggable(aB)
-          ) {
+          if (i.CurrentLibrary.isDragSupported(aB) && !i.CurrentLibrary.isAlreadyDraggable(aB)) {
             var ay = az || D.Defaults.DragOptions || i.Defaults.DragOptions;
             ay = i.extend({}, ay);
             var aD = i.CurrentLibrary.dragEvents.drag;
@@ -618,8 +601,7 @@
       var ay = i.extend({}, aJ);
       i.extend(ay, aA);
       ay.endpoint = ay.endpoint || D.Defaults.Endpoint || i.Defaults.Endpoint;
-      ay.paintStyle =
-        ay.paintStyle || D.Defaults.EndpointStyle || i.Defaults.EndpointStyle;
+      ay.paintStyle = ay.paintStyle || D.Defaults.EndpointStyle || i.Defaults.EndpointStyle;
       az = w(az);
       var aB = [],
         aE = az.length && az.constructor != String ? az : [az];
@@ -715,22 +697,13 @@
         if (ay) {
           az("endpoint", "endpoints", "endpoint", ay);
           az("endpointStyle", "endpointStyles", "paintStyle", ay);
-          az(
-            "endpointHoverStyle",
-            "endpointHoverStyles",
-            "hoverPaintStyle",
-            ay
-          );
+          az("endpointHoverStyle", "endpointHoverStyles", "hoverPaintStyle", ay);
         }
       }
       if (ax.dynamicAnchors) {
         var aE = ax.dynamicAnchors.constructor == Array;
-        var aF = aE
-          ? new ab(i.makeAnchors(ax.dynamicAnchors))
-          : new ab(i.makeAnchors(ax.dynamicAnchors.source));
-        var aC = aE
-          ? new ab(i.makeAnchors(ax.dynamicAnchors))
-          : new ab(i.makeAnchors(ax.dynamicAnchors.target));
+        var aF = aE ? new ab(i.makeAnchors(ax.dynamicAnchors)) : new ab(i.makeAnchors(ax.dynamicAnchors.source));
+        var aC = aE ? new ab(i.makeAnchors(ax.dynamicAnchors)) : new ab(i.makeAnchors(ax.dynamicAnchors.target));
         ax.anchors = [aF, aC];
       }
       var aD = au(ax);
@@ -803,10 +776,7 @@
         var aE = u(aB),
           aA = aw(aE);
         U(az, function (aG) {
-          if (
-            (aG.sourceId == az && aG.targetId == aA) ||
-            (aG.targetId == az && aG.sourceId == aA)
-          ) {
+          if ((aG.sourceId == az && aG.targetId == aA) || (aG.targetId == az && aG.sourceId == aA)) {
             Q(aG.connector.getDisplayElements(), aG.parent);
             aG.endpoints[0].removeConnection(aG);
             aG.endpoints[1].removeConnection(aG);
@@ -819,9 +789,7 @@
             arguments[0].endpoints[0].detachFrom(arguments[0].endpoints[1]);
           } else {
             if (arguments[0].connection) {
-              arguments[0].connection.endpoints[0].detachFrom(
-                arguments[0].connection.endpoints[1]
-              );
+              arguments[0].connection.endpoints[0].detachFrom(arguments[0].connection.endpoints[1]);
             } else {
               var ay = i.extend({}, ax);
               if (ay.uuids) {
@@ -833,10 +801,7 @@
                   var aD = aw(ay.source);
                   var aC = aw(ay.target);
                   U(aD, function (aG) {
-                    if (
-                      (aG.sourceId == aD && aG.targetId == aC) ||
-                      (aG.targetId == aD && aG.sourceId == aC)
-                    ) {
+                    if ((aG.sourceId == aD && aG.targetId == aC) || (aG.targetId == aD && aG.sourceId == aC)) {
                       Q(aG.connector.getDisplayElements(), aG.parent);
                       aG.endpoints[0].removeConnection(aG);
                       aG.endpoints[1].removeConnection(aG);
@@ -1185,9 +1150,7 @@
         return;
       }
       if (ax !== i.CANVAS && ax !== i.SVG && ax !== i.VML) {
-        throw new Error(
-          "render mode must be one of jsPlumb.CANVAS, jsPlumb.SVG or jsPlumb.VML"
-        );
+        throw new Error("render mode must be one of jsPlumb.CANVAS, jsPlumb.SVG or jsPlumb.VML");
       }
       if (ax === i.CANVAS && r) {
         aa = i.CANVAS;
@@ -1267,10 +1230,7 @@
         if (aF && aF === az.timestamp) {
           return ax;
         }
-        ax = [
-          aG[0] + az.x * aC[0] + az.offsets[0],
-          aG[1] + az.y * aC[1] + az.offsets[1],
-        ];
+        ax = [aG[0] + az.x * aC[0] + az.offsets[0], aG[1] + az.y * aC[1] + az.offsets[1]];
         if (aE.canvas && aE.canvas.offsetParent) {
           var aD =
             aE.canvas.offsetParent.tagName.toLowerCase() === "body"
@@ -1453,18 +1413,13 @@
       }
       this.sourceId = c(this.source, "id");
       this.targetId = c(this.target, "id");
-      this.endpointsOnTop =
-        aR.endpointsOnTop != null ? aR.endpointsOnTop : true;
+      this.endpointsOnTop = aR.endpointsOnTop != null ? aR.endpointsOnTop : true;
       this.getAttachedElements = function () {
         return aG.endpoints;
       };
       this.savePosition = function () {
-        srcWhenMouseDown = i.CurrentLibrary.getOffset(
-          i.CurrentLibrary.getElementObject(aG.source)
-        );
-        targetWhenMouseDown = i.CurrentLibrary.getOffset(
-          i.CurrentLibrary.getElementObject(aG.target)
-        );
+        srcWhenMouseDown = i.CurrentLibrary.getOffset(i.CurrentLibrary.getElementObject(aG.source));
+        targetWhenMouseDown = i.CurrentLibrary.getOffset(i.CurrentLibrary.getElementObject(aG.target));
       };
       this.scope = aR.scope;
       this.endpoints = [];
@@ -1550,25 +1505,11 @@
           return aY;
         }
       };
-      var aI = aM(
-        aR.sourceEndpoint,
-        0,
-        aR,
-        aG.source,
-        aR.paintStyle,
-        aR.hoverPaintStyle
-      );
+      var aI = aM(aR.sourceEndpoint, 0, aR, aG.source, aR.paintStyle, aR.hoverPaintStyle);
       if (aI) {
         S(ah, this.sourceId, aI);
       }
-      var aH = aM(
-        aR.targetEndpoint,
-        1,
-        aR,
-        aG.target,
-        aR.paintStyle,
-        aR.hoverPaintStyle
-      );
+      var aH = aM(aR.targetEndpoint, 1, aR, aG.target, aR.paintStyle, aR.hoverPaintStyle);
       if (aH) {
         S(ah, this.targetId, aH);
       }
@@ -1738,8 +1679,7 @@
           aG.removeOverlay(arguments[aS]);
         }
       };
-      this.labelStyle =
-        aR.labelStyle || D.Defaults.LabelStyle || i.Defaults.LabelStyle;
+      this.labelStyle = aR.labelStyle || D.Defaults.LabelStyle || i.Defaults.LabelStyle;
       this.label = aR.label;
       if (this.label) {
         this.overlays.push(
@@ -1833,11 +1773,7 @@
         for (var aX = 0; aX < aG.overlays.length; aX++) {
           var aS = aG.overlays[aX];
           if (aS.isVisible) {
-            aG.overlayPlacements[aX] = aS.draw(
-              aG.connector,
-              aG.paintStyleInUse,
-              aZ
-            );
+            aG.overlayPlacements[aX] = aS.draw(aG.connector, aG.paintStyleInUse, aZ);
           }
         }
       };
@@ -1894,8 +1830,7 @@
           ? i.makeAnchor(aY.anchors)
           : i.makeAnchor("TopCenter");
       }
-      var aL =
-          aY.endpoint || D.Defaults.Endpoint || i.Defaults.Endpoint || "Dot",
+      var aL = aY.endpoint || D.Defaults.Endpoint || i.Defaults.Endpoint || "Dot",
         aF = {
           _jsPlumb: aN._jsPlumb,
           parent: aY.parent,
@@ -1936,17 +1871,9 @@
           aN.fire("mouseexit", aN, a0);
         }
       });
-      this.setPaintStyle(
-        aY.paintStyle ||
-          aY.style ||
-          D.Defaults.EndpointStyle ||
-          i.Defaults.EndpointStyle,
-        true
-      );
+      this.setPaintStyle(aY.paintStyle || aY.style || D.Defaults.EndpointStyle || i.Defaults.EndpointStyle, true);
       this.setHoverPaintStyle(
-        aY.hoverPaintStyle ||
-          D.Defaults.EndpointHoverStyle ||
-          i.Defaults.EndpointHoverStyle,
+        aY.hoverPaintStyle || D.Defaults.EndpointHoverStyle || i.Defaults.EndpointHoverStyle,
         true
       );
       this.paintStyleInUse = this.paintStyle;
@@ -1990,10 +1917,7 @@
           if (!a2) {
             var a1 = a0.endpoints[0] == aN ? a0.endpoints[1] : a0.endpoints[0];
             a1.detach(a0, true);
-            if (
-              a0.endpointToDeleteOnDetach &&
-              a0.endpointToDeleteOnDetach.connections.length == 0
-            ) {
+            if (a0.endpointToDeleteOnDetach && a0.endpointToDeleteOnDetach.connections.length == 0) {
               i.deleteEndpoint(a0.endpointToDeleteOnDetach);
             }
           }
@@ -2012,10 +1936,7 @@
       this.detachFrom = function (a0) {
         var a1 = [];
         for (var aZ = 0; aZ < aN.connections.length; aZ++) {
-          if (
-            aN.connections[aZ].endpoints[1] == a0 ||
-            aN.connections[aZ].endpoints[0] == a0
-          ) {
+          if (aN.connections[aZ].endpoints[1] == a0 || aN.connections[aZ].endpoints[0] == a0) {
             a1.push(aN.connections[aZ]);
           }
         }
@@ -2060,9 +1981,7 @@
         return aW != null;
       };
       this.connectorSelector = function () {
-        return aN.connections.length < aT || aT == -1
-          ? null
-          : aN.connections[0];
+        return aN.connections.length < aT || aT == -1 ? null : aN.connections[0];
       };
       this.isFull = function () {
         return !(aN.isFloating() || aT < 1 || aN.connections.length < aT);
@@ -2078,10 +1997,7 @@
         var aZ = 0;
         if (a0 != null) {
           for (var a1 = 0; a1 < aN.connections.length; a1++) {
-            if (
-              aN.connections[a1].sourceId == a0 ||
-              aN.connections[a1].targetId == a0
-            ) {
+            if (aN.connections[a1].sourceId == a0 || aN.connections[a1].targetId == a0) {
               aZ = a1;
               break;
             }
@@ -2127,12 +2043,7 @@
             }
             a5 = aN.anchor.compute(a0);
           }
-          var a7 = aL.compute(
-            a5,
-            aN.anchor.getOrientation(),
-            aN.paintStyleInUse,
-            a3 || aN.paintStyleInUse
-          );
+          var a7 = aL.compute(a5, aN.anchor.getOrientation(), aN.paintStyleInUse, a3 || aN.paintStyleInUse);
           aL.paint(a7, aN.paintStyleInUse, aN.anchor);
           aN.timestamp = a6;
         }
@@ -2296,8 +2207,7 @@
       }
       var aD = function (a2) {
         if (aY.isTarget && i.CurrentLibrary.isDropSupported(aM)) {
-          var aZ =
-            aY.dropOptions || D.Defaults.DropOptions || i.Defaults.DropOptions;
+          var aZ = aY.dropOptions || D.Defaults.DropOptions || i.Defaults.DropOptions;
           aZ = i.extend({}, aZ);
           aZ.scope = aZ.scope || aN.scope;
           var a5 = null;
@@ -2313,14 +2223,9 @@
               i.CurrentLibrary.setDragScope(be, bd);
             }
             var ba = Z[a6];
-            var bb =
-                ba.floatingAnchorIndex == null ? 1 : ba.floatingAnchorIndex,
+            var bb = ba.floatingAnchorIndex == null ? 1 : ba.floatingAnchorIndex,
               bc = bb == 0 ? 1 : 0;
-            if (
-              !aN.isFull() &&
-              !(bb == 0 && !aN.isSource) &&
-              !(bb == 1 && !aN.isTarget)
-            ) {
+            if (!aN.isFull() && !(bb == 0 && !aN.isSource) && !(bb == 1 && !aN.isTarget)) {
               if (bb == 0) {
                 ba.source = aM;
                 ba.sourceId = aE;
@@ -2345,10 +2250,8 @@
                   target: bb == 1 ? a9 : ba.target,
                   sourceId: bb == 0 ? a7 : ba.sourceId,
                   targetId: bb == 1 ? a7 : ba.targetId,
-                  sourceEndpoint:
-                    bb == 0 ? ba.suspendedEndpoint : ba.endpoints[0],
-                  targetEndpoint:
-                    bb == 1 ? ba.suspendedEndpoint : ba.endpoints[1],
+                  sourceEndpoint: bb == 0 ? ba.suspendedEndpoint : ba.endpoints[0],
+                  targetEndpoint: bb == 1 ? ba.suspendedEndpoint : ba.endpoints[1],
                   connection: ba,
                 });
               }
@@ -2372,8 +2275,7 @@
             var a9 = c(u(a7), "dragId");
             var a8 = Z[a9];
             if (a8 != null) {
-              var a6 =
-                a8.floatingAnchorIndex == null ? 1 : a8.floatingAnchorIndex;
+              var a6 = a8.floatingAnchorIndex == null ? 1 : a8.floatingAnchorIndex;
               a8.endpoints[a6].anchor.over(aN.anchor);
             }
           });
@@ -2382,8 +2284,7 @@
               a9 = c(u(a7), "dragId"),
               a8 = Z[a9];
             if (a8 != null) {
-              var a6 =
-                a8.floatingAnchorIndex == null ? 1 : a8.floatingAnchorIndex;
+              var a6 = a8.floatingAnchorIndex == null ? 1 : a8.floatingAnchorIndex;
               a8.endpoints[a6].anchor.out();
             }
           });
@@ -2415,12 +2316,7 @@
   i.Anchors.TopLeft = m(0, 0, 0, -1);
   i.Anchors.BottomLeft = m(0, 1, 0, 1);
   i.Defaults.DynamicAnchors = function () {
-    return i.makeAnchors([
-      "TopCenter",
-      "RightMiddle",
-      "BottomCenter",
-      "LeftMiddle",
-    ]);
+    return i.makeAnchors(["TopCenter", "RightMiddle", "BottomCenter", "LeftMiddle"]);
   };
   i.Anchors.AutoDefault = function () {
     return i.makeDynamicAnchor(i.Defaults.DynamicAnchors());
@@ -2429,12 +2325,7 @@
 (function () {
   jsPlumb.DOMElementComponent = function (b) {
     jsPlumb.jsPlumbUIComponent.apply(this, arguments);
-    this.mousemove =
-      this.dblclick =
-      this.click =
-      this.mousedown =
-      this.mouseup =
-        function (c) {};
+    this.mousemove = this.dblclick = this.click = this.mousedown = this.mouseup = function (c) {};
   };
   jsPlumb.Connectors.Straight = function () {
     this.type = "Straight";
@@ -2799,18 +2690,8 @@
         t = h[w.index],
         r = i[w.index];
       var x = {
-        x:
-          r == Infinity
-            ? u[2]
-            : u[2] > u[0]
-            ? u[0] + (1 - y) * t - z
-            : u[2] + y * t + z,
-        y:
-          r == 0
-            ? u[3]
-            : u[3] > u[1]
-            ? u[1] + (1 - y) * t - z
-            : u[3] + y * t + z,
+        x: r == Infinity ? u[2] : u[2] > u[0] ? u[0] + (1 - y) * t - z : u[2] + y * t + z,
+        y: r == 0 ? u[3] : u[3] > u[1] ? u[1] + (1 - y) * t - z : u[3] + y * t + z,
         segmentInfo: w,
       };
       return x;
@@ -2875,12 +2756,7 @@
     this.compute = function (h, f, i, g) {
       b.anchorPoint = h;
       if (b.ready) {
-        return [
-          h[0] - b.img.width / 2,
-          h[1] - b.img.height / 2,
-          b.img.width,
-          b.img.height,
-        ];
+        return [h[0] - b.img.width / 2, h[1] - b.img.height / 2, b.img.width, b.img.height];
       } else {
         return [0, 0, 0, 0];
       }
@@ -3099,13 +2975,7 @@
       b.style.padding = l.labelStyle.padding;
     }
     var g =
-      e._jsPlumb.overlayClass +
-      " " +
-      (l.labelStyle.cssClass
-        ? l.labelStyle.cssClass
-        : e.cssClass
-        ? e.cssClass
-        : "");
+      e._jsPlumb.overlayClass + " " + (l.labelStyle.cssClass ? l.labelStyle.cssClass : e.cssClass ? e.cssClass : "");
     b.className = g;
     jsPlumb.appendElement(b, e.connection.parent);
     jsPlumb.getId(b);
@@ -3169,39 +3039,12 @@
     miterlimit: "miterlimit",
   };
   if (document.createStyleSheet) {
-    document
-      .createStyleSheet()
-      .addRule(".jsplumb_vml", "behavior:url(#default#VML);position:absolute;");
-    document
-      .createStyleSheet()
-      .addRule(
-        "jsplumb\\:textbox",
-        "behavior:url(#default#VML);position:absolute;"
-      );
-    document
-      .createStyleSheet()
-      .addRule(
-        "jsplumb\\:oval",
-        "behavior:url(#default#VML);position:absolute;"
-      );
-    document
-      .createStyleSheet()
-      .addRule(
-        "jsplumb\\:rect",
-        "behavior:url(#default#VML);position:absolute;"
-      );
-    document
-      .createStyleSheet()
-      .addRule(
-        "jsplumb\\:stroke",
-        "behavior:url(#default#VML);position:absolute;"
-      );
-    document
-      .createStyleSheet()
-      .addRule(
-        "jsplumb\\:shape",
-        "behavior:url(#default#VML);position:absolute;"
-      );
+    document.createStyleSheet().addRule(".jsplumb_vml", "behavior:url(#default#VML);position:absolute;");
+    document.createStyleSheet().addRule("jsplumb\\:textbox", "behavior:url(#default#VML);position:absolute;");
+    document.createStyleSheet().addRule("jsplumb\\:oval", "behavior:url(#default#VML);position:absolute;");
+    document.createStyleSheet().addRule("jsplumb\\:rect", "behavior:url(#default#VML);position:absolute;");
+    document.createStyleSheet().addRule("jsplumb\\:stroke", "behavior:url(#default#VML);position:absolute;");
+    document.createStyleSheet().addRule("jsplumb\\:shape", "behavior:url(#default#VML);position:absolute;");
     document.namespaces.add("jsplumb", "urn:schemas-microsoft-com:vml");
   }
   var c = 1000,
@@ -3401,9 +3244,7 @@
     jsPlumb.Connectors.Straight.apply(this, arguments);
     e.apply(this, arguments);
     this.getPath = function (n) {
-      return (
-        "m" + g(n[4]) + "," + g(n[5]) + " l" + g(n[6]) + "," + g(n[7]) + " e"
-      );
+      return "m" + g(n[4]) + "," + g(n[5]) + " l" + g(n[6]) + "," + g(n[7]) + " e";
     };
   };
   jsPlumb.Connectors.vml.Flowchart = function () {
@@ -3554,10 +3395,7 @@
     },
     b = function (q) {
       for (var p = 0; p < q.childNodes.length; p++) {
-        if (
-          q.childNodes[p].tagName == "linearGradient" ||
-          q.childNodes[p].tagName == "radialGradient"
-        ) {
+        if (q.childNodes[p].tagName == "linearGradient" || q.childNodes[p].tagName == "radialGradient") {
           q.removeChild(q.childNodes[p]);
         }
       }
@@ -3709,24 +3547,7 @@
     jsPlumb.Connectors.Bezier.apply(this, arguments);
     e.apply(this, arguments);
     this.getPath = function (q) {
-      return (
-        "M " +
-        q[4] +
-        " " +
-        q[5] +
-        " C " +
-        q[8] +
-        " " +
-        q[9] +
-        " " +
-        q[10] +
-        " " +
-        q[11] +
-        " " +
-        q[6] +
-        " " +
-        q[7]
-      );
+      return "M " + q[4] + " " + q[5] + " C " + q[8] + " " + q[9] + " " + q[10] + " " + q[11] + " " + q[6] + " " + q[7];
     };
   };
   jsPlumb.Connectors.svg.Straight = function (p) {
@@ -3896,12 +3717,8 @@
             return true;
           }
         }
-        var D = v.canvas
-          .getContext("2d")
-          .getImageData(parseInt(z), parseInt(F), 1, 1);
-        return (
-          D.data[0] != 0 || D.data[1] != 0 || D.data[2] != 0 || D.data[3] != 0
-        );
+        var D = v.canvas.getContext("2d").getImageData(parseInt(z), parseInt(F), 1, 1);
+        return D.data[0] != 0 || D.data[1] != 0 || D.data[2] != 0 || D.data[3] != 0;
       }
       return false;
     };
@@ -3917,8 +3734,7 @@
         B = i(C),
         A = document.elementFromPoint(B[0], B[1]),
         D = w(A, "_jsPlumb_overlay");
-      var z =
-        o == null && (w(A, "_jsPlumb_endpoint") || w(A, "_jsPlumb_connector"));
+      var z = o == null && (w(A, "_jsPlumb_endpoint") || w(A, "_jsPlumb_connector"));
       if (!u && z && v._over(C)) {
         u = true;
         v.fire("mouseenter", v, C);
@@ -4063,14 +3879,7 @@
           var A = t(y.gradient),
             D = z[1] == 1 ? A[0] * -1 : A[0],
             x = z[0] == 1 ? A[0] * -1 : A[0],
-            E = G.createRadialGradient(
-              F[4],
-              F[4],
-              F[4],
-              F[4] + x,
-              F[4] + D,
-              A[1]
-            );
+            E = G.createRadialGradient(F[4], F[4], F[4], F[4] + x, F[4] + D, A[1]);
           for (var B = 0; B < y.gradient.stops.length; B++) {
             E.addColorStop(y.gradient.stops[B][0], y.gradient.stops[B][1]);
           }
@@ -4504,9 +4313,7 @@
           if (Math.max(t, v) - Math.min(t, v) < d ? 1 : 0) {
             C = E[D].x - E[0].x;
             u = E[D].y - E[0].y;
-            y[0] =
-              0 +
-              1 * (C * (E[0].y - 0) - u * (E[0].x - 0)) * (1 / (C * 0 - u * 1));
+            y[0] = 0 + 1 * (C * (E[0].y - 0) - u * (E[0].x - 0)) * (1 / (C * 0 - u * 1));
             return 1;
           }
       }

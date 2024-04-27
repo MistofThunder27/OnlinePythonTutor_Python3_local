@@ -19,10 +19,7 @@
           position: "absolute",
           top: -10000,
           left: -10000,
-          width:
-            $(this).width() -
-            parseInt($this.css("paddingLeft")) -
-            parseInt($this.css("paddingRight")),
+          width: $(this).width() - parseInt($this.css("paddingLeft")) - parseInt($this.css("paddingRight")),
           fontSize: $this.css("fontSize"),
           fontFamily: $this.css("fontFamily"),
           lineHeight: $this.css("lineHeight"),

@@ -21,12 +21,9 @@
   var style = document.createElement("div").style,
     moz = style["MozBorderRadius"] !== undefined,
     webkit = style["WebkitBorderRadius"] !== undefined,
-    radius =
-      style["borderRadius"] !== undefined ||
-      style["BorderRadius"] !== undefined,
+    radius = style["borderRadius"] !== undefined || style["BorderRadius"] !== undefined,
     mode = document.documentMode || 0,
-    noBottomFold =
-      $.browser.msie && (($.browser.version < 8 && !mode) || mode < 8),
+    noBottomFold = $.browser.msie && (($.browser.version < 8 && !mode) || mode < 8),
     expr =
       $.browser.msie &&
       (function () {
@@ -128,9 +125,7 @@
     return this.each(function (index) {
       var $this = $(this),
         // meta values override options
-        o = [$this.attr($.fn.corner.defaults.metaAttr) || "", options || ""]
-          .join(" ")
-          .toLowerCase(),
+        o = [$this.attr($.fn.corner.defaults.metaAttr) || "", options || ""].join(" ").toLowerCase(),
         keep = /keep/.test(o), // keep borders?
         cc = (o.match(/cc:(#[0-9a-f]+)/) || [])[1], // corner color
         sc = (o.match(/sc:(#[0-9a-f]+)/) || [])[1], // strip color
@@ -162,24 +157,13 @@
         common,
         $horz;
 
-      if (!opts.TL && !opts.TR && !opts.BL && !opts.BR)
-        opts = { TL: 1, TR: 1, BL: 1, BR: 1 };
+      if (!opts.TL && !opts.TR && !opts.BL && !opts.BR) opts = { TL: 1, TR: 1, BL: 1, BR: 1 };
 
       // support native rounding
-      if (
-        $.fn.corner.defaults.useNative &&
-        fx == "round" &&
-        (radius || moz || webkit) &&
-        !cc &&
-        !sc
-      ) {
+      if ($.fn.corner.defaults.useNative && fx == "round" && (radius || moz || webkit) && !cc && !sc) {
         if (opts.TL)
           $this.css(
-            radius
-              ? "border-top-left-radius"
-              : moz
-              ? "-moz-border-radius-topleft"
-              : "-webkit-border-top-left-radius",
+            radius ? "border-top-left-radius" : moz ? "-moz-border-radius-topleft" : "-webkit-border-top-left-radius",
             width + "px"
           );
         if (opts.TR)
@@ -239,10 +223,7 @@
         // only add stips if needed
         if ((bot && (opts.BL || opts.BR)) || (!bot && (opts.TL || opts.TR))) {
           strip.style.borderStyle =
-            "none " +
-            (opts[j + "R"] ? "solid" : "none") +
-            " none " +
-            (opts[j + "L"] ? "solid" : "none");
+            "none " + (opts[j + "R"] ? "solid" : "none") + " none " + (opts[j + "L"] ? "solid" : "none");
           d = document.createElement("div");
           $(d).addClass("jquery-corner");
           ds = d.style;
@@ -250,58 +231,32 @@
           bot ? this.appendChild(d) : this.insertBefore(d, this.firstChild);
 
           if (bot && cssHeight != "auto") {
-            if ($.css(this, "position") == "static")
-              this.style.position = "relative";
+            if ($.css(this, "position") == "static") this.style.position = "relative";
             ds.position = "absolute";
             ds.bottom = ds.left = ds.padding = ds.margin = "0";
             if (expr) ds.setExpression("width", "this.parentNode.offsetWidth");
             else ds.width = "100%";
           } else if (!bot && $.browser.msie) {
-            if ($.css(this, "position") == "static")
-              this.style.position = "relative";
+            if ($.css(this, "position") == "static") this.style.position = "relative";
             ds.position = "absolute";
             ds.top = ds.left = ds.right = ds.padding = ds.margin = "0";
 
             // fix ie6 problem when blocked element has a border width
             if (expr) {
               bw = sz(this, "borderLeftWidth") + sz(this, "borderRightWidth");
-              ds.setExpression(
-                "width",
-                "this.parentNode.offsetWidth - " + bw + '+ "px"'
-              );
+              ds.setExpression("width", "this.parentNode.offsetWidth - " + bw + '+ "px"');
             } else ds.width = "100%";
           } else {
             ds.position = "relative";
             ds.margin = !bot
-              ? "-" +
-                pad.T +
-                "px -" +
-                pad.R +
-                "px " +
-                (pad.T - width) +
-                "px -" +
-                pad.L +
-                "px"
-              : pad.B -
-                width +
-                "px -" +
-                pad.R +
-                "px -" +
-                pad.B +
-                "px -" +
-                pad.L +
-                "px";
+              ? "-" + pad.T + "px -" + pad.R + "px " + (pad.T - width) + "px -" + pad.L + "px"
+              : pad.B - width + "px -" + pad.R + "px -" + pad.B + "px -" + pad.L + "px";
           }
 
           for (i = 0; i < width; i++) {
             w = Math.max(0, getWidth(fx, i, width));
             e = strip.cloneNode(false);
-            e.style.borderWidth =
-              "0 " +
-              (opts[j + "R"] ? w : 0) +
-              "px 0 " +
-              (opts[j + "L"] ? w : 0) +
-              "px";
+            e.style.borderWidth = "0 " + (opts[j + "R"] ? w : 0) + "px 0 " + (opts[j + "L"] ? w : 0) + "px";
             bot ? d.appendChild(e) : d.insertBefore(e, d.firstChild);
           }
 
@@ -366,14 +321,7 @@
 
   $.fn.uncorner = function () {
     if (radius || moz || webkit)
-      this.css(
-        radius
-          ? "border-radius"
-          : moz
-          ? "-moz-border-radius"
-          : "-webkit-border-radius",
-        0
-      );
+      this.css(radius ? "border-radius" : moz ? "-moz-border-radius" : "-webkit-border-radius", 0);
     $("div.jquery-corner", this).remove();
     return this;
   };

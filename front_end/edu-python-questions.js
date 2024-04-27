@@ -93,10 +93,7 @@ $(document).ready(function () {
       // don't let the user submit answer when there's an error
       for (var i = 0; i < curTrace.length; i++) {
         var curEntry = curTrace[i];
-        if (
-          curEntry.event == "exception" ||
-          curEntry.event == "uncaught_exception"
-        ) {
+        if (curEntry.event == "exception" || curEntry.event == "uncaught_exception") {
           $("#submitBtn").attr("disabled", true);
           break;
         }
@@ -135,9 +132,7 @@ $(document).ready(function () {
 // concatenate solution code and test code:
 function concatSolnTestCode(solnCode, testCode) {
   // use rtrim to get rid of trailing whitespace and newlines
-  return (
-    solnCode.rtrim() + "\n\n# Everything below here is test code\n" + testCode
-  );
+  return solnCode.rtrim() + "\n\n# Everything below here is test code\n" + testCode;
 }
 
 function genDebugLinkHandler(failingTestIndex) {
@@ -226,10 +221,7 @@ function finishQuestionsInit(questionsDat) {
     $("#executeBtn").attr("disabled", true);
     $("#pyOutputPane").hide();
 
-    var submittedCode = concatSolnTestCode(
-      $("#actualCodeInput").val(),
-      $("#testCodeInput").val()
-    );
+    var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), $("#testCodeInput").val());
 
     var postParams = { user_script: submittedCode, request: "execute" };
     if (questionsDat.max_instructions) {
@@ -261,10 +253,7 @@ function finishQuestionsInit(questionsDat) {
     // remember that these results come in asynchronously and probably
     // out-of-order, so code very carefully here!!!
     for (var i = 0; i < tests.length; i++) {
-      var submittedCode = concatSolnTestCode(
-        $("#actualCodeInput").val(),
-        tests[i]
-      );
+      var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), tests[i]);
 
       var postParams = {
         request: "run test",
@@ -310,19 +299,13 @@ function gradeSubmission() {
   for (var i = 0; i < tests.length; i++) {
     var res = testResults[i];
 
-    $("#gradeMatrix tbody#gradeMatrixTbody").append(
-      '<tr class="gradeMatrixRow"></tr>'
-    );
+    $("#gradeMatrix tbody#gradeMatrixTbody").append('<tr class="gradeMatrixRow"></tr>');
 
-    $("#gradeMatrix tr.gradeMatrixRow:last").append(
-      '<td class="testInputCell"></td>'
-    );
+    $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="testInputCell"></td>');
 
     // input_val could be null if there's a REALLY bad error :(
     if (res.input_globals) {
-      var curCell = $(
-        "#gradeMatrix tr.gradeMatrixRow:last td.testInputCell:last"
-      );
+      var curCell = $("#gradeMatrix tr.gradeMatrixRow:last td.testInputCell:last");
 
       curCell.append('<table class="testInputTable"></table>');
 
@@ -330,98 +313,55 @@ function gradeSubmission() {
       for (k in res.input_globals) {
         var v = res.input_globals[k];
         if (isPrimitiveType(v) || v[0] != "function") {
-          curCell
-            .find("table.testInputTable")
-            .append('<tr class="testInputVarRow"></tr>');
+          curCell.find("table.testInputTable").append('<tr class="testInputVarRow"></tr>');
 
           curCell
             .find("table.testInputTable tr.testInputVarRow:last")
             .append('<td class="testInputVarnameCell">' + k + ":</td>");
 
-          curCell
-            .find("table.testInputTable tr.testInputVarRow:last")
-            .append('<td class="testInputValCell"></td>');
-          renderData(
-            v,
-            curCell.find("table.testInputTable td.testInputValCell:last"),
-            true /* ignoreIDs */
-          );
+          curCell.find("table.testInputTable tr.testInputVarRow:last").append('<td class="testInputValCell"></td>');
+          renderData(v, curCell.find("table.testInputTable td.testInputValCell:last"), true /* ignoreIDs */);
         }
       }
     }
 
     if (res.status == "error") {
       $("#gradeMatrix tr.gradeMatrixRow:last").append(
-        '<td class="testOutputCell"><span style="color: ' +
-          darkRed +
-          '">' +
-          res.error_msg +
-          "</span></td>"
+        '<td class="testOutputCell"><span style="color: ' + darkRed + '">' + res.error_msg + "</span></td>"
       );
     } else {
       assert(res.status == "ok");
-      $("#gradeMatrix tr.gradeMatrixRow:last").append(
-        '<td class="testOutputCell"></td>'
-      );
+      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="testOutputCell"></td>');
 
-      var curCell = $(
-        "#gradeMatrix tr.gradeMatrixRow:last td.testOutputCell:last"
-      );
+      var curCell = $("#gradeMatrix tr.gradeMatrixRow:last td.testOutputCell:last");
       curCell.append('<table><tr class="testOutputVarRow"></tr></table>');
 
       curCell
         .find("tr.testOutputVarRow:last")
-        .append(
-          '<td class="testOutputVarnameCell">' +
-            res.output_var_to_compare +
-            ":</td>"
-        );
+        .append('<td class="testOutputVarnameCell">' + res.output_var_to_compare + ":</td>");
 
-      curCell
-        .find("tr.testOutputVarRow:last")
-        .append('<td class="testOutputValCell"></td>');
-      renderData(
-        res.test_val,
-        curCell.find("td.testOutputValCell:last"),
-        true /* ignoreIDs */
-      );
+      curCell.find("tr.testOutputVarRow:last").append('<td class="testOutputValCell"></td>');
+      renderData(res.test_val, curCell.find("td.testOutputValCell:last"), true /* ignoreIDs */);
     }
 
     if (res.passed_test) {
-      var happyFaceImg =
-        '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
-      $("#gradeMatrix tr.gradeMatrixRow:last").append(
-        '<td class="statusCell">' + happyFaceImg + "</td>"
-      );
+      var happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
+      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="statusCell">' + happyFaceImg + "</td>");
 
       // add an empty 'expected' cell
-      $("#gradeMatrix tr.gradeMatrixRow:last").append(
-        '<td class="expectedCell"></td>'
-      );
+      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="expectedCell"></td>');
     } else {
-      var sadFaceImg =
-        '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
+      var sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
 
       var debugBtnID = "debug_test_" + i;
-      var debugMeBtn =
-        '<button id="' +
-        debugBtnID +
-        '" class="debugBtn" type="button">Debug me</button>';
+      var debugMeBtn = '<button id="' + debugBtnID + '" class="debugBtn" type="button">Debug me</button>';
       var expectedTd = '<td class="expectedCell">Expected: </td>';
 
       $("#gradeMatrix tr.gradeMatrixRow:last").append(
-        '<td class="statusCell">' +
-          sadFaceImg +
-          debugMeBtn +
-          "</td>" +
-          expectedTd
+        '<td class="statusCell">' + sadFaceImg + debugMeBtn + "</td>" + expectedTd
       );
 
-      renderData(
-        res.expect_val,
-        $("#gradeMatrix tr.gradeMatrixRow:last td.expectedCell:last"),
-        true /* ignoreIDs */
-      );
+      renderData(res.expect_val, $("#gradeMatrix tr.gradeMatrixRow:last td.expectedCell:last"), true /* ignoreIDs */);
 
       $("#" + debugBtnID).unbind(); // unbind it just to be paranoid
       $("#" + debugBtnID).click(genDebugLinkHandler(i));
@@ -446,8 +386,6 @@ function gradeSubmission() {
     );
   } else {
     assert(numPassed == tests.length);
-    $("#gradeSummary").html(
-      "Congrats, your submitted answer passed all " + tests.length + " tests!"
-    );
+    $("#gradeSummary").html("Congrats, your submitted answer passed all " + tests.length + " tests!");
   }
 }

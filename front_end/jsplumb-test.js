@@ -12,10 +12,7 @@ function initJsPlumb() {
   //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
   jsPlumb.Defaults.EndpointStyle = { fillStyle: lightGray };
   jsPlumb.Defaults.Anchors = ["RightMiddle", "LeftMiddle"];
-  jsPlumb.Defaults.Connector = [
-    "Bezier",
-    { curviness: 15 },
-  ]; /* too much 'curviness' causes lines to run together */
+  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }]; /* too much 'curviness' causes lines to run together */
   jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
 
   jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };

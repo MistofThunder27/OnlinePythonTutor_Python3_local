@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
-
-<!--
+  <!--
 Online Python Tutor
 Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -20,130 +19,125 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  -->
 
-<head>
-  <title>Online Python Tutor: Practice Questions</title>
-  <script type="text/javascript" src="jquery.min.js"></script>
-  <script type="text/javascript" src="hunt-mcilroy.js"></script>
-  <script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
-  <script type="text/javascript" src="jquery.textarea.js"></script>
+  <head>
+    <title>Online Python Tutor: Practice Questions</title>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="hunt-mcilroy.js"></script>
+    <script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
+    <script type="text/javascript" src="jquery.textarea.js"></script>
 
-  <!-- jsPlumb library for rendering connectors -->
-  <script type="text/javascript" src="jquery.jsPlumb-1.3.3-all-min.js "></script>
+    <!-- jsPlumb library for rendering connectors -->
+    <script type="text/javascript" src="jquery.jsPlumb-1.3.3-all-min.js "></script>
 
-  <!-- my own code -->
-  <script type="text/javascript" src="edu-python.js"></script>
-  <script type="text/javascript" src="edu-python-questions.js"></script>
+    <!-- my own code -->
+    <script type="text/javascript" src="edu-python.js"></script>
+    <script type="text/javascript" src="edu-python-questions.js"></script>
 
-  <link rel="stylesheet" href="edu-python.css" type="text/css"/>
-</head>
+    <link rel="stylesheet" href="edu-python.css" type="text/css" />
+  </head>
 
-<body>
+  <body>
+    <div id="questionsHeaderPane">
+      <div class="questionsHeaderTitle" id="ProblemName">Please load a question ...</div>
+      <div class="questionsHeaderStmt" id="ProblemStatement"></div>
+      <div class="questionsHeaderStmt" id="HintStatement"><a href="#" id="showHintHref">Show hint</a></div>
+      <div class="questionsHeaderStmt" id="SolutionStatement"><a href="#" id="showSolutionHref">Show solution</a></div>
+    </div>
 
-<div id="questionsHeaderPane">
-  <div class="questionsHeaderTitle" id="ProblemName">Please load a question ...</div>
-  <div class="questionsHeaderStmt" id="ProblemStatement"></div>
-  <div class="questionsHeaderStmt" id="HintStatement"><a href="#" id="showHintHref">Show hint</a></div>
-  <div class="questionsHeaderStmt" id="SolutionStatement"><a href="#" id="showSolutionHref">Show solution</a></div>
-</div>
+    <div id="pyInputPane">
+      <p>Write your solution code here:<br /></p>
+      <textarea class="codeInputPane" id="actualCodeInput" cols="60" rows="15" wrap="off"></textarea>
 
-<div id="pyInputPane">
-  <p>Write your solution code here:<br/></p>
-  <textarea class="codeInputPane" id="actualCodeInput" cols="60" rows="15" wrap="off"></textarea>
+      <p>Write your test code here:<br /></p>
+      <textarea class="codeInputPane" id="testCodeInput" cols="60" rows="3" wrap="off"></textarea>
 
-  <p>Write your test code here:<br/></p>
-  <textarea class="codeInputPane" id="testCodeInput" cols="60" rows="3" wrap="off"></textarea>
+      <p><button id="executeBtn" class="bigBtn" type="button">Visualize execution</button></p>
+    </div>
 
-  <p><button id="executeBtn" class="bigBtn" type="button">Visualize execution</button></p>
-</div>
+    <table border="0" id="pyOutputPane">
+      <tr>
+        <td valign="top">
+          <div id="pyCodeOutputDiv">
+            Use <b>left</b> and <b>right</b> arrow keys to step through this code:
+            <table id="pyCodeOutput"></table>
+          </div>
 
-<table border="0" id="pyOutputPane">
-  <tr>
-    <td valign="top">
-      <div id="pyCodeOutputDiv">
-        Use <b>left</b> and <b>right</b> arrow keys to step through this code:
-        <table id="pyCodeOutput"></table>
+          <div id="editCodeLinkDiv">
+            <button id="editBtn" class="medBtn" type="button">Edit code</button>
+            <span style="margin-left: 7px"></span>
+            <button id="submitBtn" class="medBtn" type="button">Submit answer</button>
+          </div>
+
+          <div id="vcrControls">
+            <button id="jmpFirstInstr" type="button">&lt;&lt; First</button>
+            <button id="jmpStepBack" type="button">&lt; Back</button>
+            <span id="curInstr">Step ? of ?</span>
+            <button id="jmpStepFwd" type="button">Forward &gt;</button>
+            <button id="jmpLastInstr" type="button">Last &gt;&gt;</button>
+          </div>
+
+          <div id="errorOutput"></div>
+
+          Program output:<br />
+          <textarea id="pyStdout" cols="50" rows="13" wrap="off" readonly></textarea>
+        </td>
+
+        <td valign="top">
+          <div style="margin-right: auto; margin-left: auto; padding-bottom: 10px; display: inline-block">
+            <input type="checkbox" id="stackGrowthSelector" /> Grow stack upwards
+            <input type="checkbox" id="classicModeCheckbox" /> Render variables inline
+          </div>
+          <div id="dataViz"></div>
+        </td>
+      </tr>
+    </table>
+
+    <div id="pyGradingPane">
+      <div id="submittedSolutionDisplay" style="margin: auto">
+        <pre id="submittedCodePRE"></pre>
+        <div id="gradeSummary"></div>
       </div>
 
-      <div id="editCodeLinkDiv">
-        <button id="editBtn" class="medBtn" type="button">Edit code</button>
-        <span style="margin-left: 7px;"></span>
-        <button id="submitBtn" class="medBtn" type="button">Submit answer</button>
-      </div>
+      <table id="gradeMatrix" style="margin: auto">
+        <thead>
+          <tr>
+            <td>Input</td>
+            <td>Result</td>
+            <td class="statusCell">Status</td>
+            <td></td>
+          </tr>
+        </thead>
 
-      <div id="vcrControls">
-        <button id="jmpFirstInstr" type="button">&lt;&lt; First</button>
-        <button id="jmpStepBack" type="button">&lt; Back</button>
-        <span id="curInstr">Step ? of ?</span>
-        <button id="jmpStepFwd" type="button">Forward &gt;</button>
-        <button id="jmpLastInstr" type="button">Last &gt;&gt;</button>
-      </div>
+        <tbody id="gradeMatrixTbody"></tbody>
+      </table>
+    </div>
 
-      <div id="errorOutput"></div>
+    <div id="footer">
+      <p><a href="tutor.html">Write Python code and visualize execution</a></p>
 
-      Program output:<br/>
-      <textarea id="pyStdout" cols="50" rows="13" wrap="off" readonly></textarea>
+      <p>
+        Solve:
+        <a href="question.html?two-sum">Two-sum</a> | <a href="question.html?reverse">Reverse list</a> |
+        <a href="question.html?remove-dups">Remove duplicate chars</a>
 
-    </td>
+        <br />Debug: <a href="question.html?debug-ireverse">In-place reverse</a> |
+        <a href="question.html?debug-bsearch">Binary search</a> |
+        <a href="question.html?debug-mergesort">Mergesort</a>
 
-    <td valign="top">
-      <div style="margin-right: auto; margin-left: auto; padding-bottom: 10px; display: inline-block;">
-        <input type="checkbox" id="stackGrowthSelector"/> Grow stack upwards
-        <input type="checkbox" id="classicModeCheckbox"/> Render variables inline
-      </div>
-      <div id="dataViz"></div>
-    </td>
-  </tr>
-</table>
+        <br />Optimize: <a href="question.html?optimize-sum">Greatest sum</a> |
+        <a href="question.html?optimize-find-dups">Find duplicates</a> |
+        <a href="question.html?optimize-search">List search</a>
+      </p>
 
-<div id="pyGradingPane">
-  <div id="submittedSolutionDisplay" style="margin: auto;">
-    <pre id="submittedCodePRE"></pre>
-    <div id="gradeSummary"></div>
-  </div>
+      <p>
+        This application supports the core <a href="https://docs.python.org/3/">Python 3</a> language, with no module
+        imports or file I/O. It's meant to be used as a platform for creating programming tutorials, not for running or
+        debugging production code.
+      </p>
 
-  <table id="gradeMatrix" style="margin: auto;">
-    <thead>
-    <tr>
-      <td>Input</td>
-      <td>Result</td>
-      <td class="statusCell">Status</td>
-      <td></td>
-    </tr>
-    </thead>
-
-    <tbody id="gradeMatrixTbody"></tbody>
-  </table>
-</div>
-
-<div id="footer">
-  <p><a href="tutor.html">Write Python code and visualize execution</a></p>
-
-  <p>
-    Solve:
-    <a href="question.html?two-sum">Two-sum</a> |
-    <a href="question.html?reverse">Reverse list</a> |
-    <a href="question.html?remove-dups">Remove duplicate chars</a>
-
-    <br/>Debug:
-    <a href="question.html?debug-ireverse">In-place reverse</a> |
-    <a href="question.html?debug-bsearch">Binary search</a> |
-    <a href="question.html?debug-mergesort">Mergesort</a>
-
-    <br/>Optimize:
-    <a href="question.html?optimize-sum">Greatest sum</a> |
-    <a href="question.html?optimize-find-dups">Find duplicates</a> |
-    <a href="question.html?optimize-search">List search</a>
-  </p>
-
-  <p>
-    This application supports the core <a href="https://docs.python.org/3/">Python 3</a> language, with no
-    module imports or file I/O.  It's meant to be used as a platform for creating programming tutorials,
-    not for running or debugging production code.
-  </p>
-
-  <p style="margin-top: 8px;">
-    Copyright &copy; 2010-2011 <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>.  All rights reserved.
-  </p>
-</div>
-</body>
+      <p style="margin-top: 8px">
+        Copyright &copy; 2010-2011 <a href="http://www.stanford.edu/~pgbovine/">Philip Guo</a>. All rights reserved.
+      </p>
+    </div>
+  </body>
 </html>

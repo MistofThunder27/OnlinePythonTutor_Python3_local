@@ -60,11 +60,7 @@ function diff(file1, file2) {
       var j = file2indices[jX];
 
       for (var s = 0; s < candidates.length; s++) {
-        if (
-          candidates[s].file2index < j &&
-          (s == candidates.length - 1 || candidates[s + 1].file2index > j)
-        )
-          break;
+        if (candidates[s].file2index < j && (s == candidates.length - 1 || candidates[s + 1].file2index > j)) break;
       }
 
       if (s < candidates.length) {
@@ -109,11 +105,7 @@ function diff(file1, file2) {
     }
   }
 
-  for (
-    var candidate = candidates[candidates.length - 1];
-    candidate != null;
-    candidate = candidate.chain
-  ) {
+  for (var candidate = candidates[candidates.length - 1]; candidate != null; candidate = candidate.chain) {
     var different = { file1: [], file2: [] };
 
     while (--tail1 > candidate.file1index) {
