@@ -524,56 +524,85 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
     if (obj[0] == "LIST") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">empty list' + idStr + "</div>");
+        newDiv.innerText = "empty list" + idStr;
+        jDomElt.appendChild(newDiv);
       } else {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">list' + idStr + ":</div>");
+        newDiv.innerText = "list" + idStr + ":";
+        jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
         table.classList.add("listTbl");
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".listTbl");
-        var headerTr = tbl.querySelector("tr:first-child");
-        var contentTr = tbl.querySelector("tr:last-child");
+        var headerTr = table.querySelector("tr:first-child");
+        var contentTr = table.querySelector("tr:last-child");
         obj.slice(2).forEach((val, ind) => {
-          // add a new column and then pass in that newly-added column
-          // as jDomElt to the recursive call to child:
-          headerTr.insertAdjacentHTML("beforeend", '<td class="listHeader">' + ind + "</td>");
-          contentTr.insertAdjacentHTML("beforeend", '<td class="listElt"></td>');
-          renderData(val, contentTr.querySelector("td:last-child"), ignoreIDs);
+          // create a new column for both header and content rows
+          var headerCell = document.createElement("td");
+          headerCell.classList.add("listHeader");
+          headerCell.textContent = ind;
+          headerTr.appendChild(headerCell);
+
+          var contentCell = document.createElement("td");
+          contentCell.classList.add("listElt");
+          contentTr.appendChild(contentCell);
+
+          // pass in the newly-added content cell to renderData
+          renderData(val, contentCell, ignoreIDs);
         });
       }
     } else if (obj[0] == "TUPLE") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">empty tuple' + idStr + "</div>");
+        newDiv.innerText = "empty tuple" + idStr;
+        jDomElt.appendChild(newDiv);
       } else {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">tuple' + idStr + ":</div>");
+        newDiv.innerText = "tuple" + idStr + ":";
+        jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
         table.classList.add("tupvarbl");
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".tupvarbl");
-        var headerTr = tbl.querySelector("tr:first-child");
-        var contentTr = tbl.querySelector("tr:last-child");
-        obj.slice(2).forEach(function (val, ind) {
-          headerTr.insertAdjacentHTML("beforeend", '<td class="tupleHeader">' + ind + "</td>");
-          contentTr.insertAdjacentHTML("beforeend", '<td class="tupleElt"></td>');
-          renderData(val, contentTr.querySelector("td:last-child"), ignoreIDs);
+        var headerTr = table.querySelector("tr:first-child");
+        var contentTr = table.querySelector("tr:last-child");
+        obj.slice(2).forEach((val, ind) => {
+          // create a new column for both header and content rows
+          var headerCell = document.createElement("td");
+          headerCell.classList.add("tupleHeader");
+          headerCell.textContent = ind;
+          headerTr.appendChild(headerCell);
+
+          var contentCell = document.createElement("td");
+          contentCell.classList.add("tupleElt");
+          contentTr.appendChild(contentCell);
+
+          // pass in the newly-added content cell to renderData
+          renderData(val, contentCell, ignoreIDs);
         });
       }
     } else if (obj[0] == "SET") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">empty set' + idStr + "</div>");
+        newDiv.innerText = "empty set" + idStr;
+        jDomElt.appendChild(newDiv);
       } else {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">set' + idStr + ":</div>");
+        newDiv.innerText = "set" + idStr + ":";
+        jDomElt.appendChild(newDiv);
+
         var table = document.createElement("table");
         table.classList.add("setTbl");
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".setTbl");
         // create an R x C matrix:
         var numElts = obj.length - 2;
         // gives roughly a 3x5 rectangular ratio, square is too, err,
@@ -591,104 +620,130 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
         obj.slice(2).forEach((val, ind) => {
           if (ind % numCols == 0) {
-            tbl.insertAdjacentHTML("beforeend", "<tr></tr>");
+            var newTr = document.createElement("tr");
+            table.appendChild(newTr);
           }
 
-          var curTr = tbl.querySelector("tr:last-child");
-          curTr.insertAdjacentHTML("beforeend", '<td class="setElt"></td>');
+          var curTr = table.querySelector("tr:last-child");
+          var newTd = document.createElement("td");
+          newTd.classList.add("setElt");
+          curTr.appendChild(newTd);
           renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
         });
       }
     } else if (obj[0] == "DICT") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">empty dict' + idStr + "</div>");
+        newDiv.innerText = "empty dict" + idStr;
+        jDomElt.appendChild(newDiv);
       } else {
-        jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">dict' + idStr + ":</div>");
+        newDiv.innerText = "dict" + idStr + ":";
+        jDomElt.appendChild(newDiv);
+
         var table = document.createElement("table");
         table.classList.add("dictTbl");
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".dictTbl");
-        obj.slice(2).forEach(function (kvPair, ind) {
-          tbl.insertAdjacentHTML(
-            "beforeend",
-            '<tr class="dictEntry"><td class="dictKey"></td><td class="dictVal"></td></tr>'
-          );
-          var newRow = tbl.querySelector("tr:last-child");
-          var keyTd = newRow.querySelector("td:first-child");
-          var valTd = newRow.querySelector("td:last-child");
-          renderData(kvPair[0], keyTd, ignoreIDs);
-          renderData(kvPair[1], valTd, ignoreIDs);
+        obj.slice(2).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("dictKey");
+
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("dictVal");
+
+          var newDictTr = document.createElement("tr");
+          newDictTr.classList.add("dictEntry");
+          newDictTr.appendChild(newKeyTd);
+          newDictTr.appendChild(newValTd);
+
+          table.appendChild(newDictTr);
+
+          renderData(kvPair[0], newKeyTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "INSTANCE") {
       assert(obj.length >= 3);
-      jDomElt.insertAdjacentHTML("beforeend", '<div class="typeLabel">' + obj[1] + " instance" + idStr + "</div>");
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
+      newDiv.innerText = obj[1] + " instance" + idStr;
+      jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
         var table = document.createElement("table");
         table.classList.add("instTbl");
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".instTbl");
-        obj.slice(3).forEach(function (kvPair, ind) {
-          tbl.insertAdjacentHTML(
-            "beforeend",
-            '<tr class="instEntry"><td class="instKey"></td><td class="instVal"></td></tr>'
-          );
-          var newRow = tbl.querySelector("tr:last-child");
-          var keyTd = newRow.querySelector("td:first-child");
-          var valTd = newRow.querySelector("td:last-child");
+        obj.slice(3).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("instKey");
+
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("instVal");
+
+          var newInstTr = document.createElement("tr");
+          newInstTr.classList.add("instEntry");
+          newInstTr.appendChild(newKeyTd);
+          newInstTr.appendChild(newValTd);
+
+          table.appendChild(newInstTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.innerHTML += '<span class="keyObj">' + attrnameStr + "</span>";
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlspecialchars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CLASS") {
       assert(obj.length >= 4);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       var superclassStr = "";
       if (obj[3].length > 0) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
 
-      jDomElt.insertAdjacentHTML(
-        "beforeend",
-        '<div class="typeLabel">' + obj[1] + " class " + superclassStr + idStr + "</div>"
-      );
+      newDiv.innerText = obj[1] + " class " + superclassStr + idStr;
+      jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
         var table = document.createElement("table");
         table.classList.add("classTbl");
         jDomElt.appendChild(table);
-        var tbl = jDomElt.querySelector(".classTbl");
-        obj.slice(4).forEach(function (kvPair, ind) {
-          tbl.insertAdjacentHTML(
-            "beforeend",
-            '<tr class="classEntry"><td class="classKey"></td><td class="classVal"></td></tr>'
-          );
-          var newRow = tbl.querySelector("tr:last-child");
-          var keyTd = newRow.querySelector("td:first-child");
-          var valTd = newRow.querySelector("td:last-child");
+        obj.slice(4).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("classKey");
+
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("classVal");
+
+          var newClassTr = document.createElement("tr");
+          newClassTr.classList.add("classEntry");
+          newClassTr.appendChild(newKeyTd);
+          newClassTr.appendChild(newValTd);
+
+          table.appendChild(newClassTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.innerHTML += '<span class="keyObj">' + attrnameStr + "</span>";
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlspecialchars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CIRCULAR_REF") {
       assert(obj.length == 2);
-      jDomElt.insertAdjacentHTML(
-        "beforeend",
-        '<div class="circRefLabel">circular reference to id=' + obj[1] + "</div>"
-      );
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("circRefLabel");
+      newDiv.innerText = "circular reference to id=" + obj[1];
+      jDomElt.appendChild(newDiv);
     } else {
       // render custom data type
       assert(obj.length == 3);
