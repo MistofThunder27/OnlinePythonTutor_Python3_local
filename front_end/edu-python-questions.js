@@ -132,7 +132,7 @@ $(document).ready(function () {
 // concatenate solution code and test code:
 function concatSolnTestCode(solnCode, testCode) {
   // use rtrim to get rid of trailing whitespace and newlines
-  return solnCode.rtrim() + "\n\n# Everything below here is test code\n" + testCode;
+  return solnCode.replace(/\s+$/, '') + "\n\n# Everything below here is test code\n" + testCode;
 }
 
 function genDebugLinkHandler(failingTestIndex) {

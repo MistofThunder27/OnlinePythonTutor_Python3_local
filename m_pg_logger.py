@@ -220,7 +220,7 @@ class PGLogger(bdb.Bdb):
                 return ["CIRCULAR_REF", self.real_to_small_IDs[my_id]]
 
             if my_id not in self.real_to_small_IDs:
-                self.real_to_small_IDs[my_id] = 99999 if self.ignore_id else self.cur_small_id
+                self.real_to_small_IDs[my_id] = 0 if self.ignore_id else self.cur_small_id
                 self.cur_small_id += 1
 
             new_compound_obj_ids = compound_obj_ids.union({my_id})
