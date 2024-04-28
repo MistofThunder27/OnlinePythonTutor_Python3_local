@@ -49,15 +49,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <p style="margin-top: 25px">
         Try these small examples:<br />
-        <a id="aliasExampleLink" href="#">aliasing</a> | <a id="tutorialExampleLink" href="#">intro</a> |
-        <a id="factExampleLink" href="#">factorial</a> | <a id="fibonacciExampleLink" href="#">fibonacci</a> |
-        <a id="memoFibExampleLink" href="#">memoized fib</a> | <a id="newtonExampleLink" href="#">square root</a> |
-        <a id="insSortExampleLink" href="#">insertion sort</a>
-        <br />
-        <a id="filterExampleLink" href="#">filter</a> | <a id="strtokExampleLink" href="#">tokenize</a> |
-        <a id="oopSmallExampleLink" href="#">OOP</a> | <a id="pwGcdLink" href="#">gcd</a> |
-        <a id="pwSumListLink" href="#">sumList</a> | <a id="towersOfHanoiLink" href="#">towers of hanoi</a> |
-        <a id="pwTryFinallyLink" href="#">exceptions</a>
+        <select id="exampleSelect" onchange="loadExample(this.value)">
+          <option selected disabled>Select an example...</option>
+        </select>
       </p>
 
       <p style="margin-top: 25px">

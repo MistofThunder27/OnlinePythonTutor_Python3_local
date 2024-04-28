@@ -44,8 +44,7 @@ var darkRed = "#9D1E18";
 var curTrace = null;
 var curInstr = 0;
 
-// true iff trace ended prematurely since maximum instruction limit has
-// been reached
+// true iff trace ended prematurely since maximum instruction limit has been reached
 var instrLimitReached = false;
 
 function assert(cond) {
@@ -75,7 +74,7 @@ function htmlspecialchars(str) {
 function processTrace(traceData) {
   curTrace = traceData;
   curInstr = 0;
-  document.getElementById("pyStdout").value = ""; // devare any old output
+  document.getElementById("pyStdout").value = "";
 
   if (curTrace.length > 0) {
     var lastEntry = curTrace[curTrace.length - 1];
@@ -85,8 +84,9 @@ function processTrace(traceData) {
 
     if (instrLimitReached) {
       curTrace.pop(); // kill last entry which only has the error message
-      document.getElementById("errorOutput").innerHTML = htmlspecialchars(lastEntry.exception_msg);
-      document.getElementById("errorOutput").style.display = "block";
+      const errorOutput = document.getElementById("errorOutput");
+      errorOutput.innerHTML = htmlspecialchars(lastEntry.exception_msg);
+      errorOutput.style.display = "block";
     }
   }
   updateOutput();
@@ -101,28 +101,24 @@ function updateOutput() {
   inlineRendering = document.getElementById("classicModeCheckbox").checked;
   stackGrowsUp = document.getElementById("stackGrowthSelector").checked;
   var curEntry = curTrace[curInstr];
-
-  // render VCR controls:
   var totalInstrs = curTrace.length;
 
+  // render VCR controls:
   var vcrControls = document.getElementById("vcrControls");
-  var curInstrElement = vcrControls.querySelector("#curInstr");
-  var jmpFirstInstrButton = vcrControls.querySelector("#jmpFirstInstr");
-  var jmpStepBackButton = vcrControls.querySelector("#jmpStepBack");
-  var jmpStepFwdButton = vcrControls.querySelector("#jmpStepFwd");
-  var jmpLastInstrButton = vcrControls.querySelector("#jmpLastInstr");
 
   // to be user-friendly, if we're on the LAST instruction, print "Program has terminated"
   // and DON'T highlight any lines of code in the code display
-  curInstrElement.innerHTML =
+  vcrControls.querySelector("#curInstr").innerHTML =
     curInstr === totalInstrs - 1
       ? instrLimitReached
         ? "Instruction limit reached"
         : "Program has terminated"
       : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
-  jmpFirstInstrButton.disabled = jmpStepBackButton.disabled = curInstr === 0;
-  jmpLastInstrButton.disabled = jmpStepFwdButton.disabled = curInstr === totalInstrs - 1;
+  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmpStepBack").disabled =
+    curInstr === 0;
+  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmpStepFwd").disabled =
+    curInstr === totalInstrs - 1;
 
   // render error (if applicable):
   var errorOutput = document.getElementById("errorOutput");
@@ -148,10 +144,7 @@ function updateOutput() {
   // Reset background color of code lines
   tbl.querySelectorAll("td.cod").forEach((line) => {
     line.style.backgroundColor = "";
-    line.innerHTML = line.innerHTML
-      .replace(/<br\/?>.*$/g, "")
-      .replace(/<span.*?>(.*?)<\/span>/g, "$1")
-      .replace(/<span.*?>(.*?)<\/span>/g, "$1");
+    line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
   // Set visited lines
@@ -786,18 +779,27 @@ function renderPyCodeOutput(codeStr) {
   var tbl = document.getElementById("pyCodeOutput");
   tbl.innerHTML = ""; // Clear table content
 
-  codeStr
-    .trimRight()
-    .split("\n")
-    .forEach((cod, i) => {
-      // Create table row
-      var newRow = document.createElement("tr");
-      newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
-      newRow.querySelector(".lineNo").textContent = i + 1;
-      newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod);
+  codeStr.split("\n").forEach((cod, i) => {
+    // Create table row
+    var newRow = document.createElement("tr");
+    newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
+    newRow.querySelector(".lineNo").textContent = i + 1;
+    newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod.replace(/\s+$/, ""));
 
-      tbl.appendChild(newRow);
-    });
+    tbl.appendChild(newRow);
+  });
+}
+
+function loadExample(example) {
+  var pyInput = document.getElementById("pyInput");
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "../example_code/" + example + ".py", true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+      pyInput.value = xhr.responseText;
+    }
+  };
+  xhr.send();
 }
 
 // initialization function that should be called when the page is loaded
@@ -847,16 +849,16 @@ function eduPythonCommonInit() {
   jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
 
   // set keyboard event listeners ...
-  document.addEventListener("keydown", function (k) {
+  document.addEventListener("keydown", (k) => {
     // ONLY capture keys if we're in 'visualize code' mode:
     if (appMode == "visualize") {
-      if (k.keyCode == 37) {
+      if (k.key == "ArrowLeft") {
         // left arrow
         if (!document.getElementById("jmpStepBack").disabled) {
           document.getElementById("jmpStepBack").click();
           k.preventDefault(); // don't horizontally scroll the display
         }
-      } else if (k.keyCode == 39) {
+      } else if (k.key == "ArrowRight") {
         // right arrow
         if (!document.getElementById("jmpStepFwd").disabled) {
           document.getElementById("jmpStepFwd").click();

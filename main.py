@@ -29,18 +29,27 @@ class LocalServer(BaseHTTPRequestHandler):
         path = path.split("?")[0]
 
         try:
-            file_path = os.path.join(os.getcwd(), path[1:])
-            if os.path.exists(file_path):
-                file_type = content_type_mapping.get(
-                    os.path.splitext(path)[1], "")
+            true_path = os.path.join(os.getcwd(), path[1:])
+            extention = os.path.splitext(path)[1]
+            if extention:
+                if os.path.exists(true_path):
+                    file_type = content_type_mapping.get(
+                        os.path.splitext(path)[1], "")
+                    self.send_response(200)
+                    if file_type:
+                        self.send_header("Content-type", file_type)
+                    self.end_headers()
+                    with open(true_path, "rb") as file:
+                        self.wfile.write(file.read())
+                else:
+                    self.send_error(404, "File not found")
+            else:  # fetch files in the directory
                 self.send_response(200)
-                if file_type:
-                    self.send_header("Content-type", file_type)
+                self.send_header("Content-type", "application/json")
                 self.end_headers()
-                with open(file_path, "rb") as file:
-                    self.wfile.write(file.read())
-            else:
-                self.send_error(404, "File not found")
+                filenames = [filename for filename in os.listdir(
+                    true_path) if os.path.isfile(os.path.join(true_path, filename))]
+                self.wfile.write(json.dumps(filenames).encode())
         except Exception as e:
             self.send_error(500, f"Server error: {str(e)}")
 
