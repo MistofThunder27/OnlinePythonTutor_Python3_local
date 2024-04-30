@@ -33,28 +33,28 @@ document.addEventListener("DOMContentLoaded", function () {
   var pyOutputPane = document.getElementById("pyOutputPane");
   var executeBtn = document.getElementById("executeBtn");
 
-  pyInput.addEventListener("keydown", (event) => {
+  pyInput.addEventListener("keydown", (k) => {
     //TODO: fix
-    if (event.key === "Tab" && !event.shiftKey) {
-      event.preventDefault();
-      var start = this.selectionStart;
-      var end = this.selectionEnd;
-      this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
-      this.selectionStart = this.selectionEnd = start + 1;
-    } else if (event.key === "Tab" && event.shiftKey) {
-      event.preventDefault();
-      var start = this.selectionStart;
-      var end = this.selectionEnd;
+    if (k.key === "Tab" && !k.shiftKey) {
+      k.preventDefault();
+      var start = pyInput.selectionStart;
+      var end = pyInput.selectionEnd;
+      pyInput.value = pyInput.value.substring(0, start) + "\t" + pyInput.value.substring(end);
+      pyInput.selectionStart = pyInput.selectionEnd = start + 1;
+    } else if (k.key === "Tab" && k.shiftKey) {
+      k.preventDefault();
+      var start = pyInput.selectionStart;
+      var end = pyInput.selectionEnd;
       var tabLength = "\t".length;
-      var selectedText = this.value.substring(start, end);
+      var selectedText = pyInput.value.substring(start, end);
       var lines = selectedText.split("\n");
       for (var i = 0; i < lines.length; i++) {
         if (lines[i].startsWith("\t")) {
           lines[i] = lines[i].substring(tabLength);
         }
       }
-      this.value = this.value.substring(0, start) + lines.join("\n") + this.value.substring(end);
-      this.selectionStart = this.selectionEnd = start - tabLength;
+      pyInput.value = pyInput.value.substring(0, start) + lines.join("\n") + pyInput.value.substring(end);
+      pyInput.selectionStart = pyInput.selectionEnd = start - tabLength;
     }
   });
 
