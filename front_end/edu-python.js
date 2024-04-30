@@ -790,6 +790,17 @@ function renderPyCodeOutput(codeStr) {
   });
 }
 
+function loadExample() {
+  const selectedOption = document.getElementById("selectExample").value;
+  // TODO: add switching possibility
+  if (selectedOption) {
+    fetch("../example_code/" + selectedOption)
+      .then((response) => response.text())
+      .then((data) => document.getElementById("pyInput").value = data)
+      .catch((error) => console.error("Error fetching data:", error));
+  }
+}
+
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
   document.getElementById("jmpFirstInstr").addEventListener("click", function () {
@@ -817,74 +828,31 @@ function eduPythonCommonInit() {
   });
 
   // Build the dropdowns with filenames
-  const loadCodeDiv = document.getElementById("loadCodeDiv");
+  const selectExampleBox = document.getElementById("selectExample");
   fetch("../example_code/")
     .then((response) => response.json())
     .then((data) => {
       if (data.length > 0) {
-        const par = document.createElement("p");
-        par.style.marginTop = 25;
-        par.innerText = "Try these small examples:";
-
-        const selectBox = document.createElement("select");
-        selectBox.onchange = function () {
-          const selectedOption = this.value;
-          console.log(selectedOption);
-          if (selectedOption) {
-            var pyInput = document.getElementById("pyInput");
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "../example_code/" + selectedOption, true);
-            xhr.onreadystatechange = function () {
-              if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                pyInput.value = xhr.responseText;
-              }
-            };
-            xhr.send();
-          }
-        };
-
-        const defaultOption = document.createElement("option");
-        defaultOption.selected = true;
-        defaultOption.disabled = true;
-        defaultOption.textContent = "Select an example...";
-        selectBox.appendChild(defaultOption);
-
         data.forEach((filename) => {
           const option = document.createElement("option");
           option.textContent = filename.split(".")[0];
           option.value = filename;
-          selectBox.appendChild(option);
+          selectExampleBox.appendChild(option);
         });
-
-        par.appendChild(selectBox);
-        loadCodeDiv.appendChild(par);
       }
     })
     .catch((error) => console.error("Error fetching filenames:", error));
 
+  const selectQuestionBox = document.getElementById("selectQuestion");
   fetch("../questions/")
     .then((response) => response.json())
     .then((data) => {
       if (data.length > 0) {
-        const par = document.createElement("p");
-        par.style.marginTop = 25;
-        par.innerText = "Some example questions for you to solve:";
-
-        const selectBox = document.createElement("select");
-        const defaultOption = document.createElement("option");
-        defaultOption.selected = true;
-        defaultOption.disabled = true;
-        defaultOption.textContent = "Select an example...";
-        selectBox.appendChild(defaultOption);
-
         data.forEach((filename) => {
           const option = document.createElement("option");
           option.textContent = filename.split(".")[0];
-          selectBox.appendChild(option);
+          selectQuestionBox.appendChild(option);
         });
-
-        par.appendChild(selectBox);
-        loadCodeDiv.appendChild(par);
       }
     })
     .catch((error) => console.error("Error fetching filenames:", error));

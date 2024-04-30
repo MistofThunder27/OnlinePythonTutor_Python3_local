@@ -115,7 +115,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <div id="footer">
       <p><a href="tutor.html">Write Python code and visualize execution</a></p>
 
-      <div id="loadCodeDiv"></div>
+      <p style="margin-top: 25px">
+        Here are some premade examples for you to try:<br />
+        <select id="selectExample" , onchange="loadExample">
+          <option selected disabled>Select an example...</option>
+        </select>
+      </p>
+
+      <p style="margin-top: 25px">
+        Switch to question mode and solve on of these problems:<br />
+        <select id="selectQuestion" , onchange="">
+          <option selected disabled>Select a question...</option>
+        </select>
+      </p>
 
       <p>
         This application supports the core <a href="https://docs.python.org/3/">Python 3</a> language, with no module
