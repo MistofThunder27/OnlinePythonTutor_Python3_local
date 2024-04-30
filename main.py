@@ -55,8 +55,8 @@ class LocalServer(BaseHTTPRequestHandler):
 
     def do_POST(self):  # TODO: fix after having changed post
         output_json = json.dumps(process_post(json.loads(
-            self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
-        ), indent=4)
+            self.rfile.read(int(self.headers["Content-Length"]))
+        )))
 
         with open("output.json", "w") as f:
             f.write(output_json)

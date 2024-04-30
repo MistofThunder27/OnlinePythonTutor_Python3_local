@@ -33,7 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
   var pyOutputPane = document.getElementById("pyOutputPane");
   var executeBtn = document.getElementById("executeBtn");
 
-  pyInput.addEventListener("keydown", (event) => {  //TODO: fix
+  pyInput.addEventListener("keydown", (event) => {
+    //TODO: fix
     if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault();
       var start = this.selectionStart;
@@ -59,17 +60,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // be friendly to the browser's forward and back buttons
   window.addEventListener("hashchange", function () {
-    var appMode = location.hash.substr(1); // assign this to the GLOBAL appMode
+    appMode = location.hash.substring(1); // assign this to the GLOBAL appMode
 
-    // default mode is 'edit'
-    if (!appMode) {
+    // if there's no curTrace or the hash has not been set, default mode is 'edit'
+    if (!appMode || !curTrace) {
       appMode = "edit";
-    }
-
-    // if there's no curTrace, then default to edit mode since there's nothing to visualize:
-    if (!curTrace) {
-      appMode = "edit";
-      history.pushState({ mode: "edit" }, "");
+      location.hash = "#edit";
     }
 
     if (appMode === "edit") {
@@ -103,21 +99,20 @@ document.addEventListener("DOMContentLoaded", function () {
     pyOutputPane.style.display = "none";
 
     fetch("../main.py", {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ user_script: pyInputValue, request: "execute" })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_script: pyInputValue, request: "execute" }),
     })
-    .then(response => response.json())
-    .then(data => {
-      curTrace = data;
-      renderPyCodeOutput(pyInputValue);
-      history.pushState({ mode: "visualize" }, "");
-    })
-    .catch(error => console.error('Error:', error));
-    
+      .then((response) => response.json())
+      .then((data) => {
+        renderPyCodeOutput(pyInputValue);
+        curTrace = data;
+        location.hash = "#visualize";
+      })
+      .catch((error) => console.error("Error:", error));
   });
 
   document.getElementById("editBtn").addEventListener("click", function () {
-    history.pushState({ mode: "edit" }, "");
+    location.hash = "#edit";
   });
 });

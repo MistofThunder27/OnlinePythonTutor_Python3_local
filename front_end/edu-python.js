@@ -780,12 +780,18 @@ function renderPyCodeOutput(codeStr) {
   tbl.innerHTML = ""; // Clear table content
 
   codeStr.split("\n").forEach((cod, i) => {
-    // Create table row
-    var newRow = document.createElement("tr");
-    newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
-    newRow.querySelector(".lineNo").textContent = i + 1;
-    newRow.querySelector(".cod").innerText = htmlspecialchars(cod.replace(/\s+$/, ""));
+    const newRow = document.createElement("tr");
 
+    const lineNoTd = document.createElement("td");
+    lineNoTd.className = "lineNo";
+    lineNoTd.textContent = i + 1;
+
+    const codTd = document.createElement("td");
+    codTd.className = "cod";
+    codTd.innerHTML = htmlspecialchars(cod.replace(/\s+$/, ""));
+
+    newRow.appendChild(lineNoTd);
+    newRow.appendChild(codTd);
     tbl.appendChild(newRow);
   });
 }
@@ -796,10 +802,12 @@ function loadExample() {
   if (selectedOption) {
     fetch("../example_code/" + selectedOption)
       .then((response) => response.text())
-      .then((data) => document.getElementById("pyInput").value = data)
+      .then((data) => (document.getElementById("pyInput").value = data))
       .catch((error) => console.error("Error fetching data:", error));
   }
 }
+
+// TODO: add loadQuestion
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
