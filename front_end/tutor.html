@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <script type="text/javascript" src="jquery.min.js"></script>
     <script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
     <script type="text/javascript" src="jquery.textarea.js"></script>
-    <script type="text/javascript" src="jquery.autogrow.js"></script>
 
     <!-- jsPlumb library for rendering connectors -->
     <script type="text/javascript" src="jquery.jsPlumb-1.3.3-all-min.js "></script>
@@ -38,10 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <body>
     <div id="pyInputPane">
       Write your Python code here:<br />
-      <textarea class="codeInputPane" id="pyInput" cols="55" rows="20" wrap="off"></textarea>
-      <script>
-        $(".codeInputPane").autogrow();
-      </script>
+      <textarea class="codeInputPane" id="pyInput" cols="80" rows="24" wrap="off"></textarea>
 
       <p>
         <button id="executeBtn" class="bigBtn" type="button">Visualize execution</button>
@@ -56,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <p style="margin-top: 25px">
         Switch to question mode and solve on of these problems:<br />
-        <select id="selectQuestion" , onchange="">
+        <select id="selectQuestion" , onchange="loadQuestion()">
           <option selected disabled>Select a question...</option>
         </select>
       </p>

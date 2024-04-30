@@ -46,10 +46,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     <div id="pyInputPane">
       <p>Write your solution code here:<br /></p>
-      <textarea class="codeInputPane" id="actualCodeInput" cols="60" rows="15" wrap="off"></textarea>
+      <textarea class="codeInputPane" id="actualCodeInput" cols="80" rows="15" wrap="off"></textarea>
 
       <p>Write your test code here:<br /></p>
-      <textarea class="codeInputPane" id="testCodeInput" cols="60" rows="3" wrap="off"></textarea>
+      <textarea class="codeInputPane" id="testCodeInput" cols="80" rows="3" wrap="off"></textarea>
 
       <p><button id="executeBtn" class="bigBtn" type="button">Visualize execution</button></p>
     </div>
@@ -116,15 +116,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><a href="tutor.html">Write Python code and visualize execution</a></p>
 
       <p style="margin-top: 25px">
-        Here are some premade examples for you to try:<br />
-        <select id="selectExample" , onchange="loadExample">
+        Switch to example mode and load one of these examples:<br />
+        <select id="selectExample" , onchange="loadExample()">
           <option selected disabled>Select an example...</option>
         </select>
       </p>
 
       <p style="margin-top: 25px">
-        Switch to question mode and solve on of these problems:<br />
-        <select id="selectQuestion" , onchange="">
+        Load another question to solve:<br />
+        <select id="selectQuestion" , onchange="loadQuestion()">
           <option selected disabled>Select a question...</option>
         </select>
       </p>

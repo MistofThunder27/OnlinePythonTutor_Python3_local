@@ -102,17 +102,19 @@ document.addEventListener("DOMContentLoaded", function () {
     this.disabled = true;
     pyOutputPane.style.display = "none";
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "../main.py", true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-        curTrace = JSON.parse(xhr.responseText);
-        renderPyCodeOutput(pyInputValue);
-        history.pushState({ mode: "visualize" }, "");
-      }
-    };
-    xhr.send(JSON.stringify({ user_script: pyInputValue, request: "execute" }));
+    fetch("../main.py", {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_script: pyInputValue, request: "execute" })
+    })
+    .then(response => response.json())
+    .then(data => {
+      curTrace = data;
+      renderPyCodeOutput(pyInputValue);
+      history.pushState({ mode: "visualize" }, "");
+    })
+    .catch(error => console.error('Error:', error));
+    
   });
 
   document.getElementById("editBtn").addEventListener("click", function () {

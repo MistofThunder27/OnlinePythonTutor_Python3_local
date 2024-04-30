@@ -10,7 +10,7 @@ from m_pg_logger import *
 
 
 PORT = 8000
-content_type_mapping = {
+extention_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",
     ".js": "application/javascript",
@@ -22,46 +22,41 @@ content_type_mapping = {
 
 class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        path = self.path
-        if path == "/":
-            path = "/front_end/index.html"
+        requested_path = self.path
+        if requested_path == "/":
+            requested_path = "/front_end/index.html"
 
-        path = path.split("?")[0]
+        requested_path = requested_path.split("?")[0]
 
         try:
-            true_path = os.path.join(os.getcwd(), path[1:])
-            extention = os.path.splitext(path)[1]
+            full_path = os.path.join(os.getcwd(), requested_path[1:])
+            if not os.path.exists(full_path):
+                self.send_error(404, "File not found")
+                return
+
+            extention = os.path.splitext(requested_path)[1]
             if extention:
-                if os.path.exists(true_path):
-                    file_type = content_type_mapping.get(
-                        os.path.splitext(path)[1], "")
+                if os.path.exists(full_path):
                     self.send_response(200)
+                    file_type = extention_type_mapping.get(extention, "")
                     if file_type:
                         self.send_header("Content-type", file_type)
                     self.end_headers()
-                    with open(true_path, "rb") as file:
+                    with open(full_path, "rb") as file:
                         self.wfile.write(file.read())
-                else:
-                    self.send_error(404, "File not found")
             else:  # fetch files in the directory
-                # TODO: make more robust when fetching file from directory from directory
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                filenames = [filename for filename in os.listdir(
-                    true_path) if os.path.isfile(os.path.join(true_path, filename))]
-                self.wfile.write(json.dumps(filenames).encode())
+                self.wfile.write(json.dumps(
+                    [filename for filename in os.listdir(full_path)]).encode())
         except Exception as e:
             self.send_error(500, f"Server error: {str(e)}")
 
-    def do_POST(self):
-        output_json = json.dumps(
-            process_post(
-                parse_qs(
-                    self.rfile.read(
-                        int(self.headers["Content-Length"])
-                    ).decode("utf-8"))
-            ), indent=4)
+    def do_POST(self):  # TODO: fix after having changed post
+        output_json = json.dumps(process_post(json.loads(
+            self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
+        ), indent=4)
 
         with open("output.json", "w") as f:
             f.write(output_json)
@@ -72,7 +67,7 @@ class LocalServer(BaseHTTPRequestHandler):
 
 
 def process_post(parsed_post_dict):
-    request = parsed_post_dict["request"][0]
+    request = parsed_post_dict["request"]
 
     if request == "question":
         def process_record():
@@ -95,7 +90,7 @@ def process_post(parsed_post_dict):
         cur_parts = []
         cur_delimiter = None
 
-        for line in open(f"questions/{parsed_post_dict["question_file"][0]}.txt"):
+        for line in open(f"questions/{parsed_post_dict["question_file"]}.txt"):
             # only strip TRAILING spaces and not leading spaces
             line = line.rstrip()
 
@@ -127,16 +122,16 @@ def process_post(parsed_post_dict):
         return ret
 
     # =================================================================================
-    user_script = parsed_post_dict["user_script"][0]
+    user_script = parsed_post_dict["user_script"]
     changed_max_executed_lines = int(parsed_post_dict.get(
-        "max_instructions", [MAX_EXECUTED_LINES])[0])
+        "max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
         return PGLogger(changed_max_executed_lines).runscript(user_script)
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
     expect_trace_final_entry = PGLogger(ignore_id=True).runscript(
-        parsed_post_dict["expect_script"][0])[-1]
+        parsed_post_dict["expect_script"])[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}

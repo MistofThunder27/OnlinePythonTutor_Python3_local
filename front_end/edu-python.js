@@ -784,7 +784,7 @@ function renderPyCodeOutput(codeStr) {
     var newRow = document.createElement("tr");
     newRow.innerHTML = '<td class="lineNo"></td><td class="cod"></td>';
     newRow.querySelector(".lineNo").textContent = i + 1;
-    newRow.querySelector(".cod").innerHTML = htmlspecialchars(cod.replace(/\s+$/, ""));
+    newRow.querySelector(".cod").innerText = htmlspecialchars(cod.replace(/\s+$/, ""));
 
     tbl.appendChild(newRow);
   });
@@ -916,12 +916,5 @@ function eduPythonCommonInit() {
     if (appMode == "visualize") {
       updateOutput();
     }
-  });
-
-  // log a generic AJAX error handler
-  document.addEventListener("ajaxError", function () {
-    alert(
-      "Uh oh, the server returned an error, boo :(  Please reload the page and try executing a different Python script."
-    );
   });
 }
