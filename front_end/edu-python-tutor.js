@@ -33,20 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var pyOutputPane = document.getElementById("pyOutputPane");
   var executeBtn = document.getElementById("executeBtn");
 
-  fetch("../example_code/")
-    .then((response) => response.json())
-    .then((data) => {
-      // Populate the select dropdown with filenames
-      const select = document.getElementById("exampleSelect");
-      data.forEach((filename) => {
-        const option = document.createElement("option");
-        option.textContent = filename.split(".")[0];
-        select.appendChild(option);
-      });
-    })
-    .catch((error) => console.error("Error fetching filenames:", error));
-
-  pyInput.addEventListener("keydown", (event) => {
+  pyInput.addEventListener("keydown", (event) => {  //TODO: fix
     if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault();
       var start = this.selectionStart;

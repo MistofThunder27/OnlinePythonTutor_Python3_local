@@ -44,6 +44,7 @@ class LocalServer(BaseHTTPRequestHandler):
                 else:
                     self.send_error(404, "File not found")
             else:  # fetch files in the directory
+                # TODO: make more robust when fetching file from directory from directory
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
