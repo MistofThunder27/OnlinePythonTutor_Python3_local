@@ -33,34 +33,11 @@ document.addEventListener("DOMContentLoaded", function () {
   var pyOutputPane = document.getElementById("pyOutputPane");
   var executeBtn = document.getElementById("executeBtn");
 
-  pyInput.addEventListener("keydown", (k) => {
-    //TODO: fix
-    if (k.key === "Tab" && !k.shiftKey) {
-      k.preventDefault();
-      var start = pyInput.selectionStart;
-      var end = pyInput.selectionEnd;
-      pyInput.value = pyInput.value.substring(0, start) + "\t" + pyInput.value.substring(end);
-      pyInput.selectionStart = pyInput.selectionEnd = start + 1;
-    } else if (k.key === "Tab" && k.shiftKey) {
-      k.preventDefault();
-      var start = pyInput.selectionStart;
-      var end = pyInput.selectionEnd;
-      var tabLength = "\t".length;
-      var selectedText = pyInput.value.substring(start, end);
-      var lines = selectedText.split("\n");
-      for (var i = 0; i < lines.length; i++) {
-        if (lines[i].startsWith("\t")) {
-          lines[i] = lines[i].substring(tabLength);
-        }
-      }
-      pyInput.value = pyInput.value.substring(0, start) + lines.join("\n") + pyInput.value.substring(end);
-      pyInput.selectionStart = pyInput.selectionEnd = start - tabLength;
-    }
-  });
+  addTabSupport(pyInput);
 
   // be friendly to the browser's forward and back buttons
   window.addEventListener("hashchange", function () {
-    appMode = location.hash.substring(1); // assign this to the GLOBAL appMode
+    appMode = location.hash.substring(1);
 
     // if there's no curTrace or the hash has not been set, default mode is 'edit'
     if (!appMode || !curTrace) {
@@ -75,14 +52,12 @@ document.addEventListener("DOMContentLoaded", function () {
       pyInputPane.style.display = "none";
       pyOutputPane.style.display = "block";
 
-      executeBtn.innerText = "Visualize execution";
+      executeBtn.textContent = "Visualize execution";
       executeBtn.disabled = false;
 
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
       processTrace(curTrace);
-    } else {
-      console.assert(false);
     }
   });
 
@@ -94,14 +69,14 @@ document.addEventListener("DOMContentLoaded", function () {
   executeBtn.disabled = false;
   executeBtn.addEventListener("click", function () {
     var pyInputValue = pyInput.value;
-    this.innerText = "Please wait ... processing your code";
+    this.textContent = "Please wait ... processing your code";
     this.disabled = true;
     pyOutputPane.style.display = "none";
 
     fetch("../main.py", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_script: pyInputValue, request: "execute" }),
+      body: JSON.stringify({ request: "execute", user_script: pyInputValue }),
     })
       .then((response) => response.json())
       .then((data) => {

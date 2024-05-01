@@ -148,18 +148,21 @@ function updateOutput() {
   });
 
   // Set visited lines
-  curEntry.visited_lines.forEach((line) => {
-    var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
-    lineNoCell.style.color = visitedLineColor;
-    lineNoCell.style.fontWeight = "bold";
-  });
+  var visitedLines = curEntry.visited_lines;
+  if (visitedLines) {
+    visitedLines.forEach((line) => {
+      var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
+      lineNoCell.style.color = visitedLineColor;
+      lineNoCell.style.fontWeight = "bold";
+    });
+  }
 
   // Highlight and duplicate calling function:
   var caller_info = curEntry.caller_info;
   if (caller_info) {
     var {
       code: evaluated_code,
-      line_no: callinglines,
+      line_group: callinglines,
       true_positions: [[startLine, startIndex], [endLine, endIndex]],
       relative_positions: [relativeStart, relativeEnd],
     } = caller_info;
@@ -213,13 +216,15 @@ function updateOutput() {
   }
 
   // Highlight curLineGroup:
-  curEntry.lines.forEach((line) => {
+  var LineGroup = curEntry.line_group
+  if (LineGroup) {
+  LineGroup.forEach((line) => {
     tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
       ? errorColor
       : !instrLimitReached && curInstr === totalInstrs - 1
       ? terminatingColor
       : lightLineColor;
-  });
+  });}
 
   // render stdout:
   var stdoutElement = document.getElementById("pyStdout");
@@ -236,7 +241,9 @@ function updateOutput() {
   dataViz.innerHTML = ""; // Clear the content
 
   // organise frames based on settings
-  var orderedFrames = curEntry.encoded_frames.slice();
+  var encodedFrames = curEntry.encoded_frames
+  if (encodedFrames) {
+  var orderedFrames = encodedFrames.slice();
   if (stackGrowsUp) {
     orderedFrames = orderedFrames.reverse();
   }
@@ -279,7 +286,7 @@ function updateOutput() {
   } else {
     renderDataStructuresVersion2(curEntry, orderedFrames);
   }
-}
+}}
 
 // The "2.0" version of renderDataStructures, which renders variables in
 // a stack and values in a separate heap, with data structure aliasing
@@ -521,10 +528,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
       var newDiv = document.createElement("div");
       newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        newDiv.innerText = "empty list" + idStr;
+        newDiv.textContent = "empty list" + idStr;
         jDomElt.appendChild(newDiv);
       } else {
-        newDiv.innerText = "list" + idStr + ":";
+        newDiv.textContent = "list" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
@@ -554,10 +561,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
       var newDiv = document.createElement("div");
       newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        newDiv.innerText = "empty tuple" + idStr;
+        newDiv.textContent = "empty tuple" + idStr;
         jDomElt.appendChild(newDiv);
       } else {
-        newDiv.innerText = "tuple" + idStr + ":";
+        newDiv.textContent = "tuple" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
@@ -587,10 +594,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
       var newDiv = document.createElement("div");
       newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        newDiv.innerText = "empty set" + idStr;
+        newDiv.textContent = "empty set" + idStr;
         jDomElt.appendChild(newDiv);
       } else {
-        newDiv.innerText = "set" + idStr + ":";
+        newDiv.textContent = "set" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
@@ -630,10 +637,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
       var newDiv = document.createElement("div");
       newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        newDiv.innerText = "empty dict" + idStr;
+        newDiv.textContent = "empty dict" + idStr;
         jDomElt.appendChild(newDiv);
       } else {
-        newDiv.innerText = "dict" + idStr + ":";
+        newDiv.textContent = "dict" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
@@ -662,7 +669,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
       var newDiv = document.createElement("div");
       newDiv.classList.add("typeLabel");
-      newDiv.innerText = obj[1] + " instance" + idStr;
+      newDiv.textContent = obj[1] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
@@ -701,7 +708,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
 
-      newDiv.innerText = obj[1] + " class " + superclassStr + idStr;
+      newDiv.textContent = obj[1] + " class " + superclassStr + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
@@ -735,7 +742,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
       var newDiv = document.createElement("div");
       newDiv.classList.add("circRefLabel");
-      newDiv.innerText = "circular reference to id=" + obj[1];
+      newDiv.textContent = "circular reference to id=" + obj[1];
       jDomElt.appendChild(newDiv);
     } else {
       // render custom data type
@@ -923,6 +930,31 @@ function eduPythonCommonInit() {
   document.getElementById("classicModeCheckbox").addEventListener("click", function () {
     if (appMode == "visualize") {
       updateOutput();
+    }
+  });
+}
+
+function addTabSupport(textElement) {
+  textElement.addEventListener("keydown", (k) => {
+    //TODO: change to proper tab
+    if (k.key === "Tab") {
+      k.preventDefault();
+      var start = textElement.selectionStart;
+      var end = textElement.selectionEnd;
+
+      if (k.shiftKey) {
+        var lines = textElement.value.substring(start, end).split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith("    ")) {
+            lines[i] = lines[i].substring(4);
+          }
+        }
+        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start - 4;
+      } else {
+        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start + 4;
+      }
     }
   });
 }

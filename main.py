@@ -159,7 +159,7 @@ def process_post(parsed_post_dict):
     # your input data, since the FIRST function call must be the function
     # that you're testing.
     for e in user_trace:
-        if e['event'] == 'call':
+        if e.get('caller_info'):
             ret['input_globals'] = e['encoded_frames'][0][-1]
             break
 

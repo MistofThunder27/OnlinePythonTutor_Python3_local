@@ -57,15 +57,11 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
 
-        line_no = calling_frame.f_lineno
-        for group in self.line_groups:
-            if line_no in group:
-                line_no = list(group)
-                break
+        line_group = self.get_current_line_group(calling_frame.f_lineno)
 
         # relative positions
         code_so_far = "\n".join(
-            self.script_lines[line_no[0] - 1: start_line - 1])
+            self.script_lines[line_group[0] - 1: start_line - 1])
         relative_start_position = len(code_so_far) + start_offset
         code_so_far = "\n".join(
             [code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
@@ -73,12 +69,12 @@ class PGLogger(bdb.Bdb):
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             code_so_far = "\n".join(
-                [code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
+                [code_so_far, *self.script_lines[end_line - 1: line_group[-1]]])
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
                 "code": code_so_far.strip("\n"),
-                "line_no": line_no,
+                "line_group": line_group,
                 "true_positions": [[start_line, start_offset], [end_line, end_offset]],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
@@ -97,7 +93,7 @@ class PGLogger(bdb.Bdb):
 
     def user_line(self, frame):
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
-            if frame.f_lineno in self.calling_function_info[-1]["line_no"]:
+            if frame.f_lineno in self.calling_function_info[-1]["line_group"]:
                 return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -131,14 +127,9 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
-        line_no = frame.f_lineno
-        for group in self.line_groups:
-            if line_no in group:
-                line_no = list(group)
-                break
-
         trace_entry = {
-            "lines": line_no, "event": event_type, "scope_name": frame.f_code.co_name,
+            "line_group": self.get_current_line_group(frame.f_lineno),
+            "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
@@ -263,7 +254,65 @@ class PGLogger(bdb.Bdb):
 
     def runscript(self, script_str):
         self.script_lines = script_str.split("\n")
+        self.create_line_groups()
 
+        # redirect stdout of the user program to a memory buffer
+        user_stdout = io.StringIO()
+        # sys.stdout = user_stdout
+        user_globals = {"__name__": "__main__",
+                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
+                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
+                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
+                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
+                        "__stdout__": user_stdout}
+
+        try:
+            self.run(script_str, user_globals, user_globals)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+
+            trace_entry = {
+                "event": "uncaught_exception",
+                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
+            }
+
+            if hasattr(exc, "lineno"):
+                trace_entry["line_group"] = self.get_current_line_group(
+                    exc.lineno)
+            if hasattr(exc, "offset"):
+                trace_entry["offset"] = exc.offset
+
+            self.trace.append(trace_entry)
+
+        # finalise results
+        sys.stdout = sys.__stdout__
+        assert len(self.trace) <= (self.max_executed_lines + 1)
+
+        # Post-processing
+        final_trace = []
+        last_entry = {}
+        visited_lines = set()
+
+        for entry in self.trace[:-1]:
+            entry["visited_lines"] = list(visited_lines)
+            # added after assigning as currently highlighted line has not been processed yet
+            visited_lines.update(set(entry["line_group"]))
+
+            # if the entries are different other than if we visited the current line, then add
+            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
+                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
+                final_trace.append(entry)
+
+            last_entry = entry
+
+        if "line_group" in self.trace[-1]:
+            self.trace[-1]["visited_lines"] = list(visited_lines)
+
+        final_trace.append(self.trace[-1])
+        return final_trace
+
+    def create_line_groups(self):
         def line_is_complete(s):  # TODO: WIP
             # Initialize variables
             in_string = False
@@ -324,6 +373,7 @@ class PGLogger(bdb.Bdb):
             # Check if the line is complete
             return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
 
+        # Group lines to make line_groups list
         j = 1
         place_holder = ""
         for i, line in enumerate(self.script_lines, 1):
@@ -333,57 +383,7 @@ class PGLogger(bdb.Bdb):
                 place_holder = ""
                 j = i + 1
 
-        # redirect stdout of the user program to a memory buffer
-        user_stdout = io.StringIO()
-        sys.stdout = user_stdout
-        user_globals = {"__name__": "__main__",
-                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
-                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
-                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
-                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
-                        "__stdout__": user_stdout}
-
-        try:
-            self.run(script_str, user_globals, user_globals)
-        except Exception as exc:
-            import traceback
-            traceback.print_exc()
-
-            trace_entry = {
-                "event": "uncaught_exception",
-                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
-            }
-
-            if hasattr(exc, "lineno"):
-                trace_entry["line"] = exc.lineno
-            if hasattr(exc, "offset"):
-                trace_entry["offset"] = exc.offset
-
-            self.trace.append(trace_entry)
-
-        # finalise results
-        sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (self.max_executed_lines + 1)
-
-        # Post-processing
-        final_trace = []
-        last_entry = {}
-        visited_lines = set()
-
-        for entry in self.trace[:-1]:
-            entry["visited_lines"] = list(visited_lines)
-            # added after assigning as currently highlighted line has not been processed yet
-            visited_lines.update(set(entry["lines"]))
-
-            # if the entries are different other than if we visited the current line, then add
-            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
-                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
-                final_trace.append(entry)
-
-            last_entry = entry
-
-        if "lines" in self.trace[-1]:
-            self.trace[-1]["visited_lines"] = list(visited_lines)
-
-        final_trace.append(self.trace[-1])
-        return final_trace
+    def get_current_line_group(self, line_no):
+        for group in self.line_groups:
+            if line_no in group:
+                return list(group)
