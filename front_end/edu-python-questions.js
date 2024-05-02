@@ -372,7 +372,7 @@ function gradeSubmission() {
       testOutputValCell.className = "testOutputValCell";
       testOutputVarRow.appendChild(testOutputValCell);
 
-      renderData(v, testOutputValCell, true /* ignoreIDs */);
+      renderData(result.test_val, testOutputValCell, true /* ignoreIDs */);
     }
 
     const statusCell = document.createElement("td");
