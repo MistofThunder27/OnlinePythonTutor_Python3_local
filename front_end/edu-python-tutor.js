@@ -27,6 +27,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 document.addEventListener("DOMContentLoaded", function () {
   eduPythonCommonInit(); // must call this first!
+  const selectExampleBox = document.getElementById("selectExample");
+  fetch("../example_code/")
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.length > 0) {
+        data.forEach((filename) => {
+          const option = document.createElement("option");
+          option.textContent = filename.split(".")[0];
+          option.value = filename;
+          selectExampleBox.appendChild(option);
+        });
+      }
+    })
+    .catch((error) => console.error("Error fetching filenames:", error));
 
   var pyInput = document.getElementById("pyInput");
   var pyInputPane = document.getElementById("pyInputPane");

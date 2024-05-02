@@ -10,7 +10,7 @@ from m_pg_logger import *
 
 
 PORT = 8000
-extention_type_mapping = {
+extension_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",
     ".js": "application/javascript",
@@ -34,11 +34,11 @@ class LocalServer(BaseHTTPRequestHandler):
                 self.send_error(404, "File not found")
                 return
 
-            extention = os.path.splitext(requested_path)[1]
-            if extention:
+            extension = os.path.splitext(requested_path)[1]
+            if extension:
                 if os.path.exists(full_path):
                     self.send_response(200)
-                    file_type = extention_type_mapping.get(extention, "")
+                    file_type = extension_type_mapping.get(extension, "")
                     if file_type:
                         self.send_header("Content-type", file_type)
                     self.end_headers()
@@ -53,7 +53,7 @@ class LocalServer(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Server error: {str(e)}")
 
-    def do_POST(self):  # TODO: fix after having changed post
+    def do_POST(self):
         output_json = json.dumps(process_post(json.loads(
             self.rfile.read(int(self.headers["Content-Length"]))
         )))

@@ -805,7 +805,6 @@ function renderPyCodeOutput(codeStr) {
 
 function loadExample() {
   const selectedOption = document.getElementById("selectExample").value;
-  // TODO: add switching possibility
   if (selectedOption) {
     fetch("../example_code/" + selectedOption)
       .then((response) => response.text())
@@ -841,36 +840,6 @@ function eduPythonCommonInit() {
       updateOutput();
     }
   });
-
-  // Build the dropdowns with filenames
-  const selectExampleBox = document.getElementById("selectExample");
-  fetch("../example_code/")
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.length > 0) {
-        data.forEach((filename) => {
-          const option = document.createElement("option");
-          option.textContent = filename.split(".")[0];
-          option.value = filename;
-          selectExampleBox.appendChild(option);
-        });
-      }
-    })
-    .catch((error) => console.error("Error fetching filenames:", error));
-
-  const selectQuestionBox = document.getElementById("selectQuestion");
-  fetch("../questions/")
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.length > 0) {
-        data.forEach((filename) => {
-          const option = document.createElement("option");
-          option.textContent = filename.split(".")[0];
-          selectQuestionBox.appendChild(option);
-        });
-      }
-    })
-    .catch((error) => console.error("Error fetching filenames:", error));
 
   // disable controls initially ...
   document.getElementById("jmpFirstInstr").disabled = true;

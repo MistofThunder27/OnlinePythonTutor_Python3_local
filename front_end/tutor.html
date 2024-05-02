@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <head>
     <title>Online Python Tutor</title>
     <script type="text/javascript" src="jquery.min.js"></script>
-    <script type="text/javascript" src="jquery.ba-bbq.min.js"></script>
     <script type="text/javascript" src="jquery.textarea.js"></script>
 
     <!-- jsPlumb library for rendering connectors -->
@@ -44,18 +43,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </p>
 
       <p style="margin-top: 25px">
-        Here are some premade examples for you to try:<br />
+        Here are some pre-made examples for you to try:<br />
         <select id="selectExample" , onchange="loadExample()">
           <option selected disabled>Select an example...</option>
         </select>
       </p>
 
-      <p style="margin-top: 25px">
-        Switch to question mode and solve on of these problems:<br />
-        <select id="selectQuestion" , onchange="loadQuestion()">
-          <option selected disabled>Select a question...</option>
-        </select>
-      </p>
+      <p><a href="question.html">Load a question and try to solve it</a></p>
     </div>
 
     <table border="0" id="pyOutputPane">

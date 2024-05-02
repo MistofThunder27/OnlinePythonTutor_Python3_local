@@ -45,6 +45,19 @@ function resetTestResults() {
 
 $(document).ready(function () {
   eduPythonCommonInit(); // must call this first!
+  const selectQuestionBox = document.getElementById("selectQuestion");
+  fetch("../questions/")
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.length > 0) {
+        data.forEach((filename) => {
+          const option = document.createElement("option");
+          option.textContent = filename.split(".")[0];
+          selectQuestionBox.appendChild(option);
+        });
+      }
+    })
+    .catch((error) => console.error("Error fetching filenames:", error));
 
   var pyInputPane = document.getElementById("pyInputPane");
   var pyOutputPane = document.getElementById("pyOutputPane");

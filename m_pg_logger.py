@@ -229,8 +229,8 @@ class PGLogger(bdb.Bdb):
                      recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.items()
                 ]]
-            if not isinstance(data, type) or "__class__" in dir(data):
-                if not isinstance(data, type):
+            if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
+                if "." in str(data_type):
                     ret = ["INSTANCE", data.__class__.__name__, my_small_id]
                 else:
                     ret = ["CLASS", data.__name__, my_small_id,
@@ -258,7 +258,7 @@ class PGLogger(bdb.Bdb):
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
-        # sys.stdout = user_stdout
+        sys.stdout = user_stdout
         user_globals = {"__name__": "__main__",
                         # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
                         "__builtins__": {k: v for k, v in __builtins__.items() if k not in
@@ -285,7 +285,7 @@ class PGLogger(bdb.Bdb):
 
             self.trace.append(trace_entry)
 
-        # finalise results
+        # finalize results
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (self.max_executed_lines + 1)
 
@@ -313,7 +313,7 @@ class PGLogger(bdb.Bdb):
         return final_trace
 
     def create_line_groups(self):
-        def line_is_complete(s):  # TODO: WIP
+        def line_is_complete(s):  # TODO: improve and test
             # Initialize variables
             in_string = False
             in_triple_string = False
