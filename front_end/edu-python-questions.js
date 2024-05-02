@@ -259,6 +259,7 @@ function finishQuestionsInit(questionsDat) {
     // remember that these results come in asynchronously and probably
     // out-of-order, so code very carefully here!!!
     for (var i = 0; i < tests.length; i++) {
+      const ind = i;
       var submittedCode = concatSolnTestCode(document.getElementById("actualCodeInput").value, tests[i]);
 
       var postParams = {
@@ -277,13 +278,21 @@ function finishQuestionsInit(questionsDat) {
       })
         .then((response) => response.json())
         .then((data) => {
-          // create a closure?????
-          assert(testResults[i] === null);
-          testResults[i] = data;
+          assert(testResults[ind] === null);
+          testResults[ind] = data;
+
+          let sum = 0;
+          testResults.forEach((result) => {
+            if (result != null) {
+              sum += 1;
+            }
+          });
+          if (sum == testResults.length) {
+            location.hash = "#grade";
+          }
         })
         .catch((error) => console.error("Error:", error));
     }
-    location.hash = "#grade";
   });
 }
 
@@ -379,7 +388,7 @@ function gradeSubmission() {
     } else {
       const debugMeBtn = document.createElement("button");
       debugMeBtn.type = "button";
-      debugBtn.textContent = "Debug me";
+      debugMeBtn.textContent = "Debug me";
 
       statusCell.innerHTML = sadFaceImg + debugMeBtn;
       expectedCell.textContent = "Expected: ";
