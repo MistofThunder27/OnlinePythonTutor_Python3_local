@@ -281,13 +281,7 @@ function finishQuestionsInit(questionsDat) {
           assert(testResults[ind] === null);
           testResults[ind] = data;
 
-          let sum = 0;
-          testResults.forEach((result) => {
-            if (result != null) {
-              sum += 1;
-            }
-          });
-          if (sum == testResults.length) {
+          if (testResults.every((result) => result !== null)) {
             location.hash = "#grade";
           }
         })
@@ -309,7 +303,6 @@ function gradeSubmission() {
 
   testResults.forEach((result, i) => {
     const gradeMatrixRow = document.createElement("tr");
-    gradeMatrixRow.className = "gradeMatrixRow";
     gradeMatrix.appendChild(gradeMatrixRow);
 
     const testInputCell = document.createElement("td");
@@ -342,21 +335,17 @@ function gradeSubmission() {
       });
     }
 
-    if (result.status == "error") {
-      const testOutputCell = document.createElement("td");
-      testOutputCell.className = "testOutputCell";
-      gradeMatrixRow.appendChild(testOutputCell);
+    const testOutputCell = document.createElement("td");
+    testOutputCell.className = "testOutputCell";
+    gradeMatrixRow.appendChild(testOutputCell);
 
+    if (result.status == "error") {
       const span1 = document.createElement("span");
       span1.style.color = "darkRed";
       span1.textContent = result.error_msg;
       testOutputCell.appendChild(span1);
     } else {
       assert(result.status == "ok");
-      const testOutputCell = document.createElement("td");
-      testOutputCell.className = "testOutputCell";
-      gradeMatrixRow.appendChild(testOutputCell);
-
       const testOutputSubTable = document.createElement("table");
       testOutputCell.appendChild(testOutputSubTable);
 
@@ -379,24 +368,35 @@ function gradeSubmission() {
     statusCell.className = "statusCell";
     gradeMatrixRow.appendChild(statusCell);
 
-    const expectedCell = document.createElement("td");
-    expectedCell.className = "expectedCell";
-    gradeMatrixRow.appendChild(expectedCell);
-
     if (result.passed_test) {
       statusCell.innerHTML = happyFaceImg;
     } else {
       const debugMeBtn = document.createElement("button");
       debugMeBtn.type = "button";
       debugMeBtn.textContent = "Debug me";
-
-      statusCell.innerHTML = sadFaceImg + debugMeBtn;
-      expectedCell.textContent = "Expected: ";
-
-      renderData(result.expect_val, expectedCell, true /* ignoreIDs */);
-
       debugMeBtn.onclick = genDebugLinkHandler(i);
+
+      statusCell.innerHTML = sadFaceImg;
+      statusCell.appendChild(debugMeBtn);
     }
+
+    const expectedCell = document.createElement("td");
+    expectedCell.className = "expectedCell";
+    gradeMatrixRow.appendChild(expectedCell);
+
+    const expectedSubTable = document.createElement("table");
+    expectedCell.appendChild(expectedSubTable);
+
+    const expectedVarRow = document.createElement("tr");
+    expectedSubTable.appendChild(expectedVarRow);
+
+    const expectedVarnameCell = document.createElement("td");
+    expectedVarnameCell.textContent = "Expected: ";
+    expectedVarRow.appendChild(expectedVarnameCell);
+
+    const expectedValCell = document.createElement("td");
+    expectedVarRow.appendChild(expectedValCell);
+    renderData(result.expect_val, expectedValCell, true /* ignoreIDs */);
   });
 
   var numPassed = 0;
@@ -408,7 +408,7 @@ function gradeSubmission() {
 
   const gradeSummary = document.getElementById("gradeSummary");
   if (numPassed < tests.length) {
-    gradeSummary.innerHTML =
+    gradeSummary.textContent =
       "Your submitted answer passed " +
       numPassed +
       " out of " +
@@ -416,6 +416,6 @@ function gradeSubmission() {
       " tests.  Try to debug the failed tests!";
   } else {
     assert(numPassed == tests.length);
-    gradeSummary.innerHTML = "Congrats, your submitted answer passed all " + tests.length + " tests!";
+    gradeSummary.textContent = "Congrats, your submitted answer passed all " + tests.length + " tests!";
   }
 }
