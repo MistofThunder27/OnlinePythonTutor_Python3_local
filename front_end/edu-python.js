@@ -891,10 +891,9 @@ function eduPythonCommonInit() {
     let inputValue = document.getElementById("jmpFwdToLineText").value;
     if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
       let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 0 && curInstr <= curTrace.length - 1) {
+      if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
         curInstr += 1;
-        while (curInstr <= curTrace.length - 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
-          console.log(curInstr)
+        while (curInstr <= curTrace.length - 2 && !curTrace[curInstr].line_group.includes(lineNumber)) {
           curInstr += 1;
         }
         updateOutput();
@@ -906,10 +905,9 @@ function eduPythonCommonInit() {
     let inputValue = document.getElementById("jmpBackToLineText").value;
     if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
       let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 0 && curInstr >= 0) {
+      if (lineNumber >= 1 && curInstr >= 1) {
         curInstr -= 1;
-        while (curInstr >= 0 && !curTrace[curInstr].line_group.includes(lineNumber)) {
-          console.log(curInstr)
+        while (curInstr >= 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
           curInstr -= 1;
         }
         updateOutput();
