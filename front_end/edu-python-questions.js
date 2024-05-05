@@ -43,7 +43,7 @@ function resetTestResults() {
   assert(testResults.length == tests.length);
 }
 
-$(document).ready(function () {
+document.addEventListener("DOMContentLoaded", function () {
   eduPythonCommonInit(); // must call this first!
   const selectQuestionBox = document.getElementById("selectQuestion");
   fetch("../questions/")
@@ -53,6 +53,7 @@ $(document).ready(function () {
         data.forEach((filename) => {
           const option = document.createElement("option");
           option.textContent = filename.split(".")[0];
+          option.value = filename;
           selectQuestionBox.appendChild(option);
         });
       }
