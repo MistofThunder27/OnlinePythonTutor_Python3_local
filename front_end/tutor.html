@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <p><a href="question.html">Load a question and try to solve it</a></p>
     </div>
 
-    <table border="0" id="pyOutputPane">
+    <table id="pyOutputPane">
       <tr>
         <td valign="top">
           <div id="pyCodeOutputDiv">
@@ -64,12 +64,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <button id="editBtn" class="medBtn" type="button">Edit code</button>
           </div>
 
-          <div id="vcrControls">
+          <div id="vcrControls", style="text-align: center;">
+            <span id="curInstr">Step ? of ?</span><br>
+            <button id="jmp1StepBack" type="button">&lt; 1 Step Back</button>
+            <button id="jmp1StepFwd" type="button">1 Step Forward &gt;</button><br>
+            <button id="jmp5StepBack" type="button">&lt; 5 Steps Back</button>
+            <button id="jmp5StepFwd" type="button">5 Steps Forward &gt;</button><br>
+            <button id="jmp25StepBack" type="button">&lt; 25 Steps Back</button>
+            <button id="jmp25StepFwd" type="button">25 Steps Forward &gt;</button><br>
             <button id="jmpFirstInstr" type="button">&lt;&lt; First</button>
-            <button id="jmpStepBack" type="button">&lt; Back</button>
-            <span id="curInstr">Step ? of ?</span>
-            <button id="jmpStepFwd" type="button">Forward &gt;</button>
-            <button id="jmpLastInstr" type="button">Last &gt;&gt;</button>
+            <button id="jmpLastInstr" type="button">Last &gt;&gt;</button><br>
+            <button id="jmpToStepBtn" type="button">Go To Step:</button>
+            <input id="jmpToStepText" type="text"><br>
+            <button id="jmpFwdToLineBtn" type="button">Keep Forwards Until Line No:</button>
+            <input id="jmpFwdToLineText" type="text"><br>
+            <button id="jmpBackToLineBtn" type="button">Keep Forwards Until Line No:</button>
+            <input id="jmpBackToLineText" type="text">
           </div>
 
           <div id="errorOutput"></div>

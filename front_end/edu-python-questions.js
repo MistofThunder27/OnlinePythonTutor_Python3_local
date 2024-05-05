@@ -306,7 +306,7 @@ function finishQuestionsInit(questionsDat) {
 // should be called after ALL elements in testsTraces and expectsTraces
 // have been populated by their respective AJAX POST calls
 function gradeSubmission() {
-  document.getElementById("submittedCodePRE").innerHTML = htmlspecialchars(
+  document.getElementById("submittedCodePRE").innerHTML = htmlSpecialChars(
     document.getElementById("actualCodeInput").value
   );
 

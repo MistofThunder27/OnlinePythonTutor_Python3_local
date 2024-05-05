@@ -53,8 +53,8 @@ function assert(cond) {
   }
 }
 
-// taken from http://www.toao.net/32-my-htmlspecialchars-function-for-javascript and modified
-function htmlspecialchars(str) {
+// taken from http://www.toao.net/32-my-htmlSpecialChars-function-for-javascript and modified
+function htmlSpecialChars(str) {
   return str.replace(
     /[&<> ]/g,
     (match) =>
@@ -85,7 +85,7 @@ function processTrace(traceData) {
     if (instrLimitReached) {
       curTrace.pop(); // kill last entry which only has the error message
       const errorOutput = document.getElementById("errorOutput");
-      errorOutput.innerHTML = htmlspecialchars(lastEntry.exception_msg);
+      errorOutput.innerHTML = htmlSpecialChars(lastEntry.exception_msg);
       errorOutput.style.display = "block";
     }
   }
@@ -115,17 +115,21 @@ function updateOutput() {
         : "Program has terminated"
       : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
-  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmpStepBack").disabled =
+  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmp1StepBack").disabled =
     curInstr === 0;
-  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmpStepFwd").disabled =
+  vcrControls.querySelector("#jmp5StepBack").disabled = curInstr < 5;
+  vcrControls.querySelector("#jmp25StepBack").disabled = curInstr < 25;
+  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmp1StepFwd").disabled =
     curInstr === totalInstrs - 1;
+  vcrControls.querySelector("#jmp5StepFwd").disabled = curInstr > totalInstrs - 6;
+  vcrControls.querySelector("#jmp25StepFwd").disabled = curInstr > totalInstrs - 26;
 
   // render error (if applicable):
   var errorOutput = document.getElementById("errorOutput");
   var hasError;
   if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
     assert(curEntry.exception_msg);
-    errorOutput.innerHTML = htmlspecialchars(curEntry.exception_msg);
+    errorOutput.innerHTML = htmlSpecialChars(curEntry.exception_msg);
     errorOutput.style.display = "block";
     hasError = true;
   } else {
@@ -147,6 +151,7 @@ function updateOutput() {
     line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
+  // TODO: fuse all curEntry definitions
   // Set visited lines
   var visitedLines = curEntry.visited_lines;
   if (visitedLines) {
@@ -162,12 +167,12 @@ function updateOutput() {
   if (caller_info) {
     var {
       code: evaluated_code,
-      line_group: callinglines,
+      line_group: callingLines,
       true_positions: [[startLine, startIndex], [endLine, endIndex]],
       relative_positions: [relativeStart, relativeEnd],
     } = caller_info;
 
-    callinglines.forEach((line) => {
+    callingLines.forEach((line) => {
       tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
         curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     });
@@ -207,24 +212,25 @@ function updateOutput() {
 
     cell.innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
-      htmlspecialchars(evaluated_code.substring(0, relativeStart)) +
+      htmlSpecialChars(evaluated_code.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
-      htmlspecialchars(evaluated_code.substring(relativeStart, relativeEnd)) +
+      htmlSpecialChars(evaluated_code.substring(relativeStart, relativeEnd)) +
       "</span>" +
-      htmlspecialchars(evaluated_code.substring(relativeEnd)) +
+      htmlSpecialChars(evaluated_code.substring(relativeEnd)) +
       "</span>";
   }
 
   // Highlight curLineGroup:
-  var LineGroup = curEntry.line_group
+  var LineGroup = curEntry.line_group;
   if (LineGroup) {
-  LineGroup.forEach((line) => {
-    tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
-      ? errorColor
-      : !instrLimitReached && curInstr === totalInstrs - 1
-      ? terminatingColor
-      : lightLineColor;
-  });}
+    LineGroup.forEach((line) => {
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
+        ? errorColor
+        : !instrLimitReached && curInstr === totalInstrs - 1
+        ? terminatingColor
+        : lightLineColor;
+    });
+  }
 
   // render stdout:
   var stdoutElement = document.getElementById("pyStdout");
@@ -241,52 +247,53 @@ function updateOutput() {
   dataViz.innerHTML = ""; // Clear the content
 
   // organise frames based on settings
-  var encodedFrames = curEntry.encoded_frames
+  var encodedFrames = curEntry.encoded_frames;
   if (encodedFrames) {
-  var orderedFrames = encodedFrames.slice();
-  if (stackGrowsUp) {
-    orderedFrames = orderedFrames.reverse();
+    var orderedFrames = encodedFrames.slice();
+    if (stackGrowsUp) {
+      orderedFrames = orderedFrames.reverse();
+    }
+
+    if (inlineRendering) {
+      orderedFrames.forEach((frame) => {
+        var vizFrame = document.createElement("div");
+        vizFrame.className = "vizFrame";
+        vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlSpecialChars(
+          frame[0]
+        )}</span> variables:`;
+        dataViz.appendChild(vizFrame);
+
+        var encodedVars = Object.entries(frame[1]);
+        if (encodedVars.length > 0) {
+          var frameDataViz = document.createElement("table");
+          frameDataViz.className = "frameDataViz";
+          vizFrame.appendChild(document.createElement("br"));
+          vizFrame.appendChild(frameDataViz);
+
+          encodedVars.forEach((entry) => {
+            var [varname, val] = entry;
+            var tr = document.createElement("tr");
+            tr.innerHTML = `<td>${
+              varname === "__return__"
+                ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
+                : varname
+            }</td><td></td>`;
+            frameDataViz.appendChild(tr);
+            renderData(val, tr.querySelector("td:last-child"), false);
+          });
+
+          var lastRow = frameDataViz.lastElementChild;
+          lastRow.querySelector("td:first-child").style.borderBottom = "0px";
+          lastRow.querySelector("td:last-child").style.borderBottom = "0px";
+        } else {
+          vizFrame.innerHTML += "<i>none</i>";
+        }
+      });
+    } else {
+      renderDataStructuresVersion2(curEntry, orderedFrames);
+    }
   }
-
-  if (inlineRendering) {
-    orderedFrames.forEach((frame) => {
-      var vizFrame = document.createElement("div");
-      vizFrame.className = "vizFrame";
-      vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlspecialchars(
-        frame[0]
-      )}</span> variables:`;
-      dataViz.appendChild(vizFrame);
-
-      var encodedVars = Object.entries(frame[1]);
-      if (encodedVars.length > 0) {
-        var frameDataViz = document.createElement("table");
-        frameDataViz.className = "frameDataViz";
-        vizFrame.appendChild(document.createElement("br"));
-        vizFrame.appendChild(frameDataViz);
-
-        encodedVars.forEach((entry) => {
-          var [varname, val] = entry;
-          var tr = document.createElement("tr");
-          tr.innerHTML = `<td>${
-            varname === "__return__"
-              ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
-              : varname
-          }</td><td></td>`;
-          frameDataViz.appendChild(tr);
-          renderData(val, tr.querySelector("td:last-child"), false);
-        });
-
-        var lastRow = frameDataViz.lastElementChild;
-        lastRow.querySelector("td:first-child").style.borderBottom = "0px";
-        lastRow.querySelector("td:last-child").style.borderBottom = "0px";
-      } else {
-        vizFrame.innerHTML += "<i>none</i>";
-      }
-    });
-  } else {
-    renderDataStructuresVersion2(curEntry, orderedFrames);
-  }
-}}
+}
 
 // The "2.0" version of renderDataStructures, which renders variables in
 // a stack and values in a separate heap, with data structure aliasing
@@ -341,7 +348,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
     var headerDiv = document.createElement("div");
     headerDiv.id = "stack_header" + i;
     headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
-    headerDiv.innerHTML = htmlspecialchars(frame[0]);
+    headerDiv.innerHTML = htmlSpecialChars(frame[0]);
     stackDiv.appendChild(headerDiv);
 
     var encodedVars = Object.entries(frame[1]);
@@ -515,7 +522,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       jDomElt.innerHTML = '<span class="boolObj">False</span>';
     }
   } else if (typ == "string") {
-    jDomElt.innerHTML = '<span class="stringObj">"' + htmlspecialchars(obj).replaceAll('"', '\\"') + '"</span>';
+    jDomElt.innerHTML = '<span class="stringObj">"' + htmlSpecialChars(obj).replaceAll('"', '\\"') + '"</span>';
   } else if (typ == "object") {
     var idStr = "";
     if (!ignoreIDs) {
@@ -692,7 +699,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlspecialchars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -731,7 +738,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlspecialchars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -760,7 +767,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         customObjSpan.textContent = typeName + idStr;
         jDomElt.appendChild(customObjSpan);
       } else {
-        strRepr = htmlspecialchars(strRepr); // escape strings!
+        strRepr = htmlSpecialChars(strRepr); // escape strings!
 
         // warning: we're overloading tuple elts for custom data types
         var typeLabelDiv = document.createElement("div");
@@ -795,7 +802,7 @@ function renderPyCodeOutput(codeStr) {
 
     const codTd = document.createElement("td");
     codTd.className = "cod";
-    codTd.innerHTML = htmlspecialchars(cod.replace(/\s+$/, ""));
+    codTd.innerHTML = htmlSpecialChars(cod.replace(/\s+$/, ""));
 
     newRow.appendChild(lineNoTd);
     newRow.appendChild(codTd);
@@ -827,24 +834,97 @@ function eduPythonCommonInit() {
     updateOutput();
   });
 
-  document.getElementById("jmpStepBack").addEventListener("click", function () {
+  document.getElementById("jmp1StepBack").addEventListener("click", function () {
     if (curInstr > 0) {
       curInstr -= 1;
       updateOutput();
     }
   });
 
-  document.getElementById("jmpStepFwd").addEventListener("click", function () {
+  document.getElementById("jmp5StepBack").addEventListener("click", function () {
+    if (curInstr > 4) {
+      curInstr -= 5;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp25StepBack").addEventListener("click", function () {
+    if (curInstr > 24) {
+      curInstr -= 25;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp1StepFwd").addEventListener("click", function () {
     if (curInstr < curTrace.length - 1) {
       curInstr += 1;
       updateOutput();
     }
   });
 
+  document.getElementById("jmp5StepFwd").addEventListener("click", function () {
+    if (curInstr < curTrace.length - 6) {
+      curInstr += 5;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp25StepFwd").addEventListener("click", function () {
+    if (curInstr < curTrace.length - 26) {
+      curInstr += 25;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmpToStepBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpToStepText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let number = parseInt(inputValue) - 1;
+      if (number >= 0 && number <= curTrace.length) {
+        curInstr = number;
+        updateOutput();
+      }
+    }
+  });
+
+  document.getElementById("jmpFwdToLineBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpFwdToLineText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let lineNumber = parseInt(inputValue);
+      if (lineNumber >= 0 && curInstr <= curTrace.length - 1) {
+        curInstr += 1;
+        while (curInstr <= curTrace.length - 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+          console.log(curInstr)
+          curInstr += 1;
+        }
+        updateOutput();
+      }
+    }
+  });
+
+  document.getElementById("jmpBackToLineBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpBackToLineText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let lineNumber = parseInt(inputValue);
+      if (lineNumber >= 0 && curInstr >= 0) {
+        curInstr -= 1;
+        while (curInstr >= 0 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+          console.log(curInstr)
+          curInstr -= 1;
+        }
+        updateOutput();
+      }
+    }
+  });
+
   // disable controls initially ...
   document.getElementById("jmpFirstInstr").disabled = true;
-  document.getElementById("jmpStepBack").disabled = true;
-  document.getElementById("jmpStepFwd").disabled = true;
+  document.getElementById("jmp1StepBack").disabled = true;
+  document.getElementById("jmp5StepBack").disabled = true;
+  document.getElementById("jmp25StepBack").disabled = true;
+  document.getElementById("jmp1StepFwd").disabled = true;
+  document.getElementById("jmp5StepFwd").disabled = true;
+  document.getElementById("jmp25StepFwd").disabled = true;
   document.getElementById("jmpLastInstr").disabled = true;
 
   // set some sensible jsPlumb defaults
@@ -867,14 +947,14 @@ function eduPythonCommonInit() {
     if (appMode == "visualize") {
       if (k.key == "ArrowLeft") {
         // left arrow
-        if (!document.getElementById("jmpStepBack").disabled) {
-          document.getElementById("jmpStepBack").click();
+        if (!document.getElementById("jmp1StepBack").disabled) {
+          document.getElementById("jmp1StepBack").click();
           k.preventDefault(); // don't horizontally scroll the display
         }
       } else if (k.key == "ArrowRight") {
         // right arrow
-        if (!document.getElementById("jmpStepFwd").disabled) {
-          document.getElementById("jmpStepFwd").click();
+        if (!document.getElementById("jmp1StepFwd").disabled) {
+          document.getElementById("jmp1StepFwd").click();
           k.preventDefault(); // don't horizontally scroll the display
         }
       }
