@@ -2,7 +2,6 @@ Name:
 Debug: Binary search
 
 Question:
-
 Change ONE line of code to make the given binary search function work
 properly on all tests.
 
