@@ -77,16 +77,17 @@ h2 {
   margin-bottom: 20px;
 }
 
-div.activityPane {
+td.activityTd {
   /*background-color: #899CD1;*/
   background-color: #f5f798;
   /* TOP RIGHT BOTTOM LEFT */
   padding: 15px 20px 5px 20px;
-  width: 450px;
+  width: 500px;
   margin: 20px;
   margin-right: auto;
   margin-left: auto;
   text-align: left;
+  vertical-align: top;
 }
 
 pre {

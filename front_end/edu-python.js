@@ -210,7 +210,7 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    cell.innerHTML +=
+    tbl.querySelectorAll("td.cod")[endLine - 1].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluated_code.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -820,7 +820,20 @@ function loadExample() {
   }
 }
 
-// TODO: add loadQuestion
+function loadQuestion() {
+  const selectedOption = document.getElementById("selectQuestion").value;
+  if (selectedOption) {
+    // load the questions file specified by the query string
+    fetch("../main.py", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: "question", question_file: selectedOption }),
+    })
+      .then((response) => response.json())
+      .then((data) => finishQuestionsInit(data))
+      .catch((error) => console.error("Error:", error));
+  }
+}
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {

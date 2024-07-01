@@ -5,9 +5,6 @@ import os
 
 from m_pg_logger import *
 
-# TODO class calls being functions
-# TODO nested function call highlighting when on multiple lines (it pops the last call on user line)
-
 
 PORT = 8000
 extension_type_mapping = {
@@ -22,11 +19,9 @@ extension_type_mapping = {
 
 class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        requested_path = self.path
+        requested_path = self.path.split("?")[0]
         if requested_path == "/":
             requested_path = "/front_end/index.html"
-
-        requested_path = requested_path.split("?")[0]
 
         try:
             full_path = os.path.join(os.getcwd(), requested_path[1:])
@@ -34,18 +29,16 @@ class LocalServer(BaseHTTPRequestHandler):
                 self.send_error(404, "File not found")
                 return
 
+            self.send_response(200)
             extension = os.path.splitext(requested_path)[1]
             if extension:
-                if os.path.exists(full_path):
-                    self.send_response(200)
-                    file_type = extension_type_mapping.get(extension, "")
-                    if file_type:
-                        self.send_header("Content-type", file_type)
-                    self.end_headers()
-                    with open(full_path, "rb") as file:
-                        self.wfile.write(file.read())
+                file_type = extension_type_mapping.get(extension, "")
+                if file_type:
+                    self.send_header("Content-type", file_type)
+                self.end_headers()
+                with open(full_path, "rb") as file:
+                    self.wfile.write(file.read())
             else:  # fetch files in the directory
-                self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps(
@@ -66,8 +59,8 @@ class LocalServer(BaseHTTPRequestHandler):
         self.wfile.write(output_json.encode())
 
 
-def process_post(parsed_post_dict):
-    request = parsed_post_dict["request"]
+def process_post(post_dict):
+    request = post_dict["request"]
 
     if request == "question":
         def process_record():
@@ -90,7 +83,7 @@ def process_post(parsed_post_dict):
         cur_parts = []
         cur_delimiter = None
 
-        for line in open(f"questions/{parsed_post_dict["question_file"]}.txt"):
+        for line in open(f"questions/{post_dict["question_file"]}"):
             # only strip TRAILING spaces and not leading spaces
             line = line.rstrip()
 
@@ -122,8 +115,8 @@ def process_post(parsed_post_dict):
         return ret
 
     # =================================================================================
-    user_script = parsed_post_dict["user_script"]
-    changed_max_executed_lines = int(parsed_post_dict.get(
+    user_script = post_dict["user_script"]
+    changed_max_executed_lines = int(post_dict.get(
         "max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
@@ -131,7 +124,7 @@ def process_post(parsed_post_dict):
 
     # Make sure to ignore IDs so that we can do direct object comparisons!
     expect_trace_final_entry = PGLogger(ignore_id=True).runscript(
-        parsed_post_dict["expect_script"])[-1]
+        post_dict["expect_script"])[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}

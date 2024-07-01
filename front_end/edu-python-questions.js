@@ -133,16 +133,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // to trigger the event now, to handle the hash the page may have
   // loaded with.
   window.dispatchEvent(new Event("hashchange"));
-
-  // load the questions file specified by the query string
-  fetch("../main.py", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ request: "question", question_file: location.search.substring(1) }),
-  })
-    .then((response) => response.json())
-    .then((data) => finishQuestionsInit(data))
-    .catch((error) => console.error("Error:", error));
 });
 
 // concatenate solution code and test code:
