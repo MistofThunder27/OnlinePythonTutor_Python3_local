@@ -56,7 +56,7 @@ function assert(cond) {
 // taken from http://www.toao.net/32-my-htmlSpecialChars-function-for-javascript and modified
 function htmlSpecialChars(str) {
   return str.replace(
-    /[&<> ]/g,
+    /[&<> \n]/g,
     (match) =>
       ({
         "&": "&amp;",
@@ -151,9 +151,14 @@ function updateOutput() {
     line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
-  // TODO: fuse all curEntry definitions
+  var {
+    line_group: lineGroup,
+    encoded_frames: encodedFrames,
+    caller_info: callerInfo,
+    visited_lines: visitedLines,
+  } = curEntry;
+
   // Set visited lines
-  var visitedLines = curEntry.visited_lines;
   if (visitedLines) {
     visitedLines.forEach((line) => {
       var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
@@ -163,18 +168,17 @@ function updateOutput() {
   }
 
   // Highlight and duplicate calling function:
-  var caller_info = curEntry.caller_info;
-  if (caller_info) {
+  if (callerInfo) {
     var {
-      code: evaluated_code,
+      code: evaluatedCode,
       line_group: callingLines,
       true_positions: [[startLine, startIndex], [endLine, endIndex]],
       relative_positions: [relativeStart, relativeEnd],
-    } = caller_info;
+    } = callerInfo;
 
+    let callingLineColor = encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     callingLines.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
-        curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = callingLineColor;
     });
 
     var cell, content;
@@ -210,20 +214,19 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tbl.querySelectorAll("td.cod")[endLine - 1].innerHTML +=
+    tbl.querySelectorAll("td.cod")[callingLines[callingLines.length - 1] - 1].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
-      htmlSpecialChars(evaluated_code.substring(0, relativeStart)) +
+      htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
-      htmlSpecialChars(evaluated_code.substring(relativeStart, relativeEnd)) +
+      htmlSpecialChars(evaluatedCode.substring(relativeStart, relativeEnd)) +
       "</span>" +
-      htmlSpecialChars(evaluated_code.substring(relativeEnd)) +
+      htmlSpecialChars(evaluatedCode.substring(relativeEnd)) +
       "</span>";
   }
 
   // Highlight curLineGroup:
-  var LineGroup = curEntry.line_group;
-  if (LineGroup) {
-    LineGroup.forEach((line) => {
+  if (lineGroup) {
+    lineGroup.forEach((line) => {
       tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
         ? errorColor
         : !instrLimitReached && curInstr === totalInstrs - 1
@@ -247,7 +250,6 @@ function updateOutput() {
   dataViz.innerHTML = ""; // Clear the content
 
   // organise frames based on settings
-  var encodedFrames = curEntry.encoded_frames;
   if (encodedFrames) {
     var orderedFrames = encodedFrames.slice();
     if (stackGrowsUp) {

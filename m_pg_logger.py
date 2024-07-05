@@ -46,15 +46,18 @@ class PGLogger(bdb.Bdb):
 
         # relative positions
         code_so_far = "\n".join(
-            self.script_lines[line_group[0] - 1: start_line - 1]).strip("\n")
-        relative_start_position = len(code_so_far) + start_offset
+            self.script_lines[line_group[0] - 1: start_line]).strip("\n")
+        relative_start_position = len(
+            code_so_far) - len(self.script_lines[start_line - 1]) + start_offset
+        # this weird way of calculating it is necessary because it accounts for "\n"s that may or may not be there
+
         code_so_far = "\n".join(
-            [code_so_far, *self.script_lines[start_line - 1: end_line - 1]]).strip("\n")
-        relative_end_position = len(code_so_far) + end_offset
+            [code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
+        relative_end_position = len(code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             code_so_far = "\n".join(
-                [code_so_far, *self.script_lines[end_line - 1: line_group[-1]]]).strip("\n")
+                [code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
@@ -86,9 +89,9 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
-        if not self.calling_function_info:
+        if frame.f_back.f_code.co_filename != "<string>":
             self.set_quit()
-        
+
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -295,22 +298,15 @@ class PGLogger(bdb.Bdb):
         last_entry = {}
         visited_lines = set()
 
-        for entry in self.trace[:-1]:
+        for entry in self.trace:
+            if entry != last_entry:
+                final_trace.append(entry)
+            last_entry = entry.copy()
+
             entry["visited_lines"] = list(visited_lines)
             # added after assigning as currently highlighted line has not been processed yet
-            visited_lines.update(set(entry["line_group"]))
+            visited_lines.update(set(entry.get("line_group", visited_lines)))
 
-            # if the entries are different other than if we visited the current line, then add
-            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
-                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
-                final_trace.append(entry)
-
-            last_entry = entry
-
-        if "line_group" in self.trace[-1]:
-            self.trace[-1]["visited_lines"] = list(visited_lines)
-
-        final_trace.append(self.trace[-1])
         return final_trace
 
     def create_line_groups(self):
