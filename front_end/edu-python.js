@@ -77,7 +77,7 @@ function processTrace(traceData) {
   document.getElementById("pyStdout").value = "";
 
   if (curTrace.length > 0) {
-    var lastEntry = curTrace[curTrace.length - 1];
+    const lastEntry = curTrace[curTrace.length - 1];
 
     // GLOBAL!
     instrLimitReached = lastEntry.event == "instruction_limit_reached";
@@ -98,13 +98,13 @@ function updateOutput() {
     return;
   }
 
-  inlineRendering = document.getElementById("classicModeCheckbox").checked;
-  stackGrowsUp = document.getElementById("stackGrowthSelector").checked;
+  inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
+  stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
   var curEntry = curTrace[curInstr];
-  var totalInstrs = curTrace.length;
+  const totalInstrs = curTrace.length;
 
   // render VCR controls:
-  var vcrControls = document.getElementById("vcrControls");
+  const vcrControls = document.getElementById("vcrControls");
 
   // to be user-friendly, if we're on the LAST instruction, print "Program has terminated"
   // and DON'T highlight any lines of code in the code display
@@ -125,7 +125,7 @@ function updateOutput() {
   vcrControls.querySelector("#jmp25StepFwd").disabled = curInstr > totalInstrs - 26;
 
   // render error (if applicable):
-  var errorOutput = document.getElementById("errorOutput");
+  const errorOutput = document.getElementById("errorOutput");
   var hasError;
   if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
     assert(curEntry.exception_msg);
@@ -138,7 +138,7 @@ function updateOutput() {
   }
 
   // render code output: --
-  var tbl = document.querySelector("table#pyCodeOutput");
+  const tbl = document.querySelector("table#pyCodeOutput");
 
   // Reset color and font-weight of line number cells
   tbl.querySelectorAll("td.lineNo").forEach((cell) => {
@@ -981,13 +981,13 @@ function eduPythonCommonInit() {
     }
   });
 
-  document.getElementById("stackGrowthSelector").addEventListener("click", function () {
+  document.getElementById("stackGrowUpCheckbox").addEventListener("click", function () {
     if (appMode == "visualize") {
       updateOutput();
     }
   });
 
-  document.getElementById("classicModeCheckbox").addEventListener("click", function () {
+  document.getElementById("inlineRenderingCheckbox").addEventListener("click", function () {
     if (appMode == "visualize") {
       updateOutput();
     }

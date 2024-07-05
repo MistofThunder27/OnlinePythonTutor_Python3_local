@@ -25,26 +25,11 @@ import inspect
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
 
-MAX_EXECUTED_LINES = 200
-
 
 class PGLogger(bdb.Bdb):
-    def __init__(self, max_executed_lines=MAX_EXECUTED_LINES, ignore_id=False):
+    def __init__(self):
         bdb.Bdb.__init__(self)
-        self.trace = []  # each entry contains a dict with the information for a single executed line
-        # don"t print out a custom ID for each object (for regression testing)
-        self.ignore_id = ignore_id
-        # upper-bound of executed lines, to guard against infinite loops
-        self.max_executed_lines = max_executed_lines
-
-        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
-        self.real_to_small_IDs = {}
-        self.cur_small_id = 1
-
-        self.line_groups = []
-        self.script_lines = []
-        self.calling_function_info = []
-        self.relative_position_shifts = [[]]
+        # all variables declared in self.runscript
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -61,19 +46,19 @@ class PGLogger(bdb.Bdb):
 
         # relative positions
         code_so_far = "\n".join(
-            self.script_lines[line_group[0] - 1: start_line - 1])
+            self.script_lines[line_group[0] - 1: start_line - 1]).strip("\n")
         relative_start_position = len(code_so_far) + start_offset
         code_so_far = "\n".join(
-            [code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
+            [code_so_far, *self.script_lines[start_line - 1: end_line - 1]]).strip("\n")
         relative_end_position = len(code_so_far) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             code_so_far = "\n".join(
-                [code_so_far, *self.script_lines[end_line - 1: line_group[-1]]])
+                [code_so_far, *self.script_lines[end_line - 1: line_group[-1]]]).strip("\n")
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
-                "code": code_so_far.strip("\n"),
+                "code": code_so_far,
                 "line_group": line_group,
                 "true_positions": [[start_line, start_offset], [end_line, end_offset]],
                 "relative_positions": [relative_start_position, relative_end_position]
@@ -101,6 +86,9 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
+        if not self.calling_function_info:
+            self.set_quit()
+        
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -140,7 +128,6 @@ class PGLogger(bdb.Bdb):
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
 
-        # if there's an exception, then record its info:
         if exception_info:
             trace_entry["exception_msg"] = f"{
                 exception_info[0].__name__}: {exception_info[-1]}"
@@ -200,6 +187,7 @@ class PGLogger(bdb.Bdb):
 
         def recursive_encode(data, compound_obj_ids):
             data_type = type(data)
+
             # primitive type
             if data is None or data_type in {int, float, str, bool}:
                 return data
@@ -218,11 +206,11 @@ class PGLogger(bdb.Bdb):
             my_small_id = self.real_to_small_IDs[my_id]
 
             if data_type == list:
-                return ["LIST", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["LIST", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == tuple:
-                return ["TUPLE", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["TUPLE", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == set:
-                return ["SET", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["SET", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == dict:
                 return ["DICT", my_small_id, *[
                     [recursive_encode(k, new_compound_obj_ids),
@@ -252,9 +240,22 @@ class PGLogger(bdb.Bdb):
 
         return recursive_encode(outer_data, set())
 
-    def runscript(self, script_str):
+    def runscript(self, script_str, max_executed_lines, ignore_id):
+        self.trace = []  # each entry contains a dict with the information for a single executed line
+        # don"t print out a custom ID for each object (for regression testing)
+        self.ignore_id = ignore_id
+        # upper-bound of executed lines, to guard against infinite loops
+        self.max_executed_lines = max_executed_lines
+
+        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
+        self.real_to_small_IDs = {}
+        self.cur_small_id = 1
+
+        self.calling_function_info = []
+        self.relative_position_shifts = [[]]
+
         self.script_lines = script_str.split("\n")
-        self.create_line_groups()
+        self.line_groups = self.create_line_groups()
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
@@ -287,7 +288,7 @@ class PGLogger(bdb.Bdb):
 
         # finalize results
         sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (self.max_executed_lines + 1)
+        assert len(self.trace) <= (max_executed_lines + 1)
 
         # Post-processing
         final_trace = []
@@ -313,6 +314,8 @@ class PGLogger(bdb.Bdb):
         return final_trace
 
     def create_line_groups(self):
+        line_groups = []
+
         def line_is_complete(s):  # TODO: improve and test
             # Initialize variables
             in_string = False
@@ -379,9 +382,11 @@ class PGLogger(bdb.Bdb):
         for i, line in enumerate(self.script_lines, 1):
             place_holder += f"\n{line}"
             if line_is_complete(place_holder):
-                self.line_groups.append(range(j, i + 1))
+                line_groups.append(range(j, i + 1))
                 place_holder = ""
                 j = i + 1
+
+        return line_groups
 
     def get_current_line_group(self, line_no):
         for group in self.line_groups:

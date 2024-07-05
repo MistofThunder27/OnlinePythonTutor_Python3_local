@@ -3,10 +3,11 @@ from urllib.parse import parse_qs
 import json
 import os
 
-from m_pg_logger import *
-
+from m_pg_logger import PGLogger
+logger = PGLogger()
 
 PORT = 8000
+MAX_EXECUTED_LINES = 200
 extension_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",
@@ -47,16 +48,19 @@ class LocalServer(BaseHTTPRequestHandler):
             self.send_error(500, f"Server error: {str(e)}")
 
     def do_POST(self):
-        output_json = json.dumps(process_post(json.loads(
-            self.rfile.read(int(self.headers["Content-Length"]))
-        )))
+        try:
+            output_json = json.dumps(process_post(json.loads(
+                self.rfile.read(int(self.headers["Content-Length"]))
+            )))
 
-        with open("output.json", "w") as f:
-            f.write(output_json)
+            with open("output.json", "w") as f:
+                f.write(output_json)
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(output_json.encode())
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(output_json.encode())
+        except Exception as e:
+            self.send_error(500, f"Server error: {str(e)}")
 
 
 def process_post(post_dict):
@@ -84,7 +88,6 @@ def process_post(post_dict):
         cur_delimiter = None
 
         for line in open(f"questions/{post_dict["question_file"]}"):
-            # only strip TRAILING spaces and not leading spaces
             line = line.rstrip()
 
             # comments are denoted by a leading "//", so ignore those lines.
@@ -120,11 +123,12 @@ def process_post(post_dict):
         "max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
-        return PGLogger(changed_max_executed_lines).runscript(user_script)
+        return logger.runscript(user_script, changed_max_executed_lines, False)
 
+    # else: request == "run test"
     # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_trace_final_entry = PGLogger(ignore_id=True).runscript(
-        post_dict["expect_script"])[-1]
+    expect_trace_final_entry = logger.runscript(
+        post_dict["expect_script"], MAX_EXECUTED_LINES, True)[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
@@ -142,8 +146,8 @@ def process_post(post_dict):
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
            'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
 
-    user_trace = PGLogger(changed_max_executed_lines,
-                          True).runscript(user_script)
+    user_trace = logger.runscript(
+        user_script, changed_max_executed_lines, True)
 
     # Grab the 'inputs' by finding all global vars that are in scope
     # prior to making the first function call.
