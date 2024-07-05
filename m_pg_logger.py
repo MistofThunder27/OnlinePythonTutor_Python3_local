@@ -1,17 +1,17 @@
 # Online Python Tutor
 # Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 # https://github.com/pgbovine/OnlinePythonTutor/
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,24 +25,11 @@ import inspect
 # Python debugger imported via the bdb module), printing out the values
 # of all in-scope data structures after each executed instruction.
 
-MAX_EXECUTED_LINES = 200
-
 
 class PGLogger(bdb.Bdb):
-    def __init__(self, max_executed_lines=MAX_EXECUTED_LINES, ignore_id=False):
+    def __init__(self):
         bdb.Bdb.__init__(self)
-        self.trace = []  # each entry contains a dict with the information for a single executed line
-        self.ignore_id = ignore_id  # don"t print out a custom ID for each object (for regression testing)
-        self.max_executed_lines = max_executed_lines  # upper-bound of executed lines, to guard against infinite loops
-
-        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
-        self.real_to_small_IDs = {}
-        self.cur_small_id = 1
-
-        self.line_groups = []
-        self.script_lines = []
-        self.calling_function_info = []
-        self.relative_position_shifts = [[]]
+        # all variables declared in self.runscript
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -55,28 +42,28 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
         end_offset = positions.end_col_offset
 
-        line_no = calling_frame.f_lineno
-        for group in self.line_groups:
-            if line_no in group:
-                line_no = list(group)
-                break
+        line_group = self.get_current_line_group(calling_frame.f_lineno)
 
         # relative positions
-        code_so_far = "\n".join(self.script_lines[line_no[0] - 1: start_line - 1])
-        relative_start_position = len(code_so_far) + start_offset
-        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
-        relative_end_position = len(code_so_far) + end_offset
+        code_so_far = "\n".join(
+            self.script_lines[line_group[0] - 1: start_line]).strip("\n")
+        relative_start_position = len(
+            code_so_far) - len(self.script_lines[start_line - 1]) + start_offset
+        # this weird way of calculating it is necessary because it accounts for "\n"s that may or may not be there
+
+        code_so_far = "\n".join(
+            [code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
+        relative_end_position = len(code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line - 1: line_no[-1]]])
+            code_so_far = "\n".join(
+                [code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
-                "code": code_so_far.strip("\n"),
-                "line_no": line_no,
-                "true_positions": [
-                    [start_line, start_offset], [end_line, end_offset]
-                ],
+                "code": code_so_far,
+                "line_group": line_group,
+                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
@@ -94,7 +81,7 @@ class PGLogger(bdb.Bdb):
 
     def user_line(self, frame):
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
-            if frame.f_lineno in self.calling_function_info[-1]["line_no"]:
+            if frame.f_lineno in self.calling_function_info[-1]["line_group"]:
                 return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -102,6 +89,9 @@ class PGLogger(bdb.Bdb):
         self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
+        if frame.f_back.f_code.co_filename != "<string>":
+            self.set_quit()
+
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -112,10 +102,13 @@ class PGLogger(bdb.Bdb):
             [pos_start, pos_end] = last_caller["relative_positions"]
             ret = str(return_value)
 
-            last_caller["code"] = code.replace(code[pos_start: pos_end], ret, 1)
-            last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
+            last_caller["code"] = code.replace(
+                code[pos_start: pos_end], ret, 1)
+            last_caller["relative_positions"] = [
+                pos_start, pos_start + len(ret)]
 
-            self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(ret)])
+            self.relative_position_shifts[-1].append(
+                [pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
@@ -125,14 +118,9 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
-        line_no = frame.f_lineno
-        for group in self.line_groups:
-            if line_no in group:
-                line_no = list(group)
-                break
-
         trace_entry = {
-            "lines": line_no, "event": event_type, "scope_name": frame.f_code.co_name,
+            "line_group": self.get_current_line_group(frame.f_lineno),
+            "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
@@ -143,11 +131,12 @@ class PGLogger(bdb.Bdb):
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
 
-        # if there's an exception, then record its info:
         if exception_info:
-            trace_entry["exception_msg"] = f"{exception_info[0].__name__}: {exception_info[-1]}"
+            trace_entry["exception_msg"] = f"{
+                exception_info[0].__name__}: {exception_info[-1]}"
 
-        encoded_frames = []  # each element is a pair of (function name, ENCODED locals dict)
+        # each element is a pair of (function name, ENCODED locals dict)
+        encoded_frames = []
         # climb up until you find "<module>", which is (hopefully) the global scope
         cur_frame = frame
         while True:
@@ -175,7 +164,7 @@ class PGLogger(bdb.Bdb):
             self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
-                                                "infinite loop)"})
+                               "infinite loop)"})
 
     def encode(self, outer_data):
         # Given an arbitrary piece of Python data, encode it in such a manner
@@ -201,6 +190,7 @@ class PGLogger(bdb.Bdb):
 
         def recursive_encode(data, compound_obj_ids):
             data_type = type(data)
+
             # primitive type
             if data is None or data_type in {int, float, str, bool}:
                 return data
@@ -212,35 +202,39 @@ class PGLogger(bdb.Bdb):
                 return ["CIRCULAR_REF", self.real_to_small_IDs[my_id]]
 
             if my_id not in self.real_to_small_IDs:
-                self.real_to_small_IDs[my_id] = 99999 if self.ignore_id else self.cur_small_id
+                self.real_to_small_IDs[my_id] = 0 if self.ignore_id else self.cur_small_id
                 self.cur_small_id += 1
 
             new_compound_obj_ids = compound_obj_ids.union({my_id})
             my_small_id = self.real_to_small_IDs[my_id]
 
             if data_type == list:
-                return ["LIST", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["LIST", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == tuple:
-                return ["TUPLE", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["TUPLE", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == set:
-                return ["SET", my_small_id, *[recursive_encode(e, new_compound_obj_ids) for e in data]]
+                return ["SET", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == dict:
                 return ["DICT", my_small_id, *[
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    [recursive_encode(k, new_compound_obj_ids),
+                     recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.items()
                 ]]
-            if not isinstance(data, type) or "__class__" in dir(data):
-                if not isinstance(data, type):
+            if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
+                if "." in str(data_type):
                     ret = ["INSTANCE", data.__class__.__name__, my_small_id]
                 else:
-                    ret = ["CLASS", data.__name__, my_small_id, [e.__name__ for e in data.__bases__]]
+                    ret = ["CLASS", data.__name__, my_small_id,
+                           [e.__name__ for e in data.__bases__]]
 
                 # traverse inside its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
                 ret.extend([
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    [recursive_encode(k, new_compound_obj_ids),
+                     recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.__dict__.items() if
-                    k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}
+                    k not in {"__doc__", "__module__",
+                              "__return__", "__dict__", "__weakref__"}
                 ])
 
                 return ret
@@ -249,10 +243,76 @@ class PGLogger(bdb.Bdb):
 
         return recursive_encode(outer_data, set())
 
-    def runscript(self, script_str):
-        self.script_lines = script_str.split("\n")
+    def runscript(self, script_str, max_executed_lines, ignore_id):
+        self.trace = []  # each entry contains a dict with the information for a single executed line
+        # don"t print out a custom ID for each object (for regression testing)
+        self.ignore_id = ignore_id
+        # upper-bound of executed lines, to guard against infinite loops
+        self.max_executed_lines = max_executed_lines
 
-        def line_is_complete(s):  # TODO: WIP
+        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
+        self.real_to_small_IDs = {}
+        self.cur_small_id = 1
+
+        self.calling_function_info = []
+        self.relative_position_shifts = [[]]
+
+        self.script_lines = script_str.split("\n")
+        self.line_groups = self.create_line_groups()
+
+        # redirect stdout of the user program to a memory buffer
+        user_stdout = io.StringIO()
+        sys.stdout = user_stdout
+        user_globals = {"__name__": "__main__",
+                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
+                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
+                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
+                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
+                        "__stdout__": user_stdout}
+
+        try:
+            self.run(script_str, user_globals, user_globals)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+
+            trace_entry = {
+                "event": "uncaught_exception",
+                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
+            }
+
+            if hasattr(exc, "lineno"):
+                trace_entry["line_group"] = self.get_current_line_group(
+                    exc.lineno)
+            if hasattr(exc, "offset"):
+                trace_entry["offset"] = exc.offset
+
+            self.trace.append(trace_entry)
+
+        # finalize results
+        sys.stdout = sys.__stdout__
+        assert len(self.trace) <= (max_executed_lines + 1)
+
+        # Post-processing
+        final_trace = []
+        last_entry = {}
+        visited_lines = set()
+
+        for entry in self.trace:
+            if entry != last_entry:
+                final_trace.append(entry)
+            last_entry = entry.copy()
+
+            entry["visited_lines"] = list(visited_lines)
+            # added after assigning as currently highlighted line has not been processed yet
+            visited_lines.update(set(entry.get("line_group", visited_lines)))
+
+        return final_trace
+
+    def create_line_groups(self):
+        line_groups = []
+
+        def line_is_complete(s):  # TODO: improve and test
             # Initialize variables
             in_string = False
             in_triple_string = False
@@ -312,65 +372,19 @@ class PGLogger(bdb.Bdb):
             # Check if the line is complete
             return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
 
+        # Group lines to make line_groups list
         j = 1
         place_holder = ""
         for i, line in enumerate(self.script_lines, 1):
             place_holder += f"\n{line}"
             if line_is_complete(place_holder):
-                self.line_groups.append(range(j, i + 1))
+                line_groups.append(range(j, i + 1))
                 place_holder = ""
                 j = i + 1
 
-        # redirect stdout of the user program to a memory buffer
-        user_stdout = io.StringIO()
-        sys.stdout = user_stdout
-        user_globals = {"__name__": "__main__",
-                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
-                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
-                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
-                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
-                        "__stdout__": user_stdout}
+        return line_groups
 
-        try:
-            self.run(script_str, user_globals, user_globals)
-        except Exception as exc:
-            import traceback; traceback.print_exc()
-
-            trace_entry = {
-                "event": "uncaught_exception",
-                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
-            }
-
-            if hasattr(exc, "lineno"):
-                trace_entry["line"] = exc.lineno
-            if hasattr(exc, "offset"):
-                trace_entry["offset"] = exc.offset
-
-            self.trace.append(trace_entry)
-
-        # finalise results
-        sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (self.max_executed_lines + 1)
-
-        # Post-processing
-        final_trace = []
-        last_entry = {}
-        visited_lines = set()
-
-        for entry in self.trace[:-1]:
-            entry["visited_lines"] = list(visited_lines)
-            # added after assigning as currently highlighted line has not been processed yet
-            visited_lines.update(set(entry["lines"]))
-
-            # if the entries are different other than if we visited the current line, then add
-            if ({k: v for k, v in entry.items() if k != "visited_lines"} !=
-                    {k: v for k, v in last_entry.items() if k != "visited_lines"}):
-                final_trace.append(entry)
-
-            last_entry = entry
-
-        if "lines" in self.trace[-1]:
-            self.trace[-1]["visited_lines"] = list(visited_lines)
-
-        final_trace.append(self.trace[-1])
-        return final_trace
+    def get_current_line_group(self, line_no):
+        for group in self.line_groups:
+            if line_no in group:
+                return list(group)

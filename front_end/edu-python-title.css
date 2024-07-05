@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-
 /*
 Color scheme ideas: 
 
@@ -35,7 +34,6 @@ Secondary Color B:
 
 */
 
-
 body {
   background-color: white;
   font-family: verdana, arial, helvetica, sans-serif;
@@ -45,18 +43,17 @@ body {
 }
 
 a {
-  color: #3D58A2;
+  color: #3d58a2;
 }
 
 a:visited {
-  color: #3D58A2;
+  color: #3d58a2;
 }
 
 a:hover {
-  color: #142B69;
+  color: #142b69;
   /* darken during hover */
 }
-
 
 h1 {
   font-weight: normal;
@@ -80,16 +77,17 @@ h2 {
   margin-bottom: 20px;
 }
 
-div.activityPane {
+td.activityTd {
   /*background-color: #899CD1;*/
-  background-color: #F5F798;
+  background-color: #f5f798;
   /* TOP RIGHT BOTTOM LEFT */
   padding: 15px 20px 5px 20px;
-  width: 450px;
+  width: 500px;
   margin: 20px;
   margin-right: auto;
   margin-left: auto;
   text-align: left;
+  vertical-align: top;
 }
 
 pre {

@@ -3,14 +3,12 @@ from urllib.parse import parse_qs
 import json
 import os
 
-from m_pg_logger import *
-
-# TODO class calls being functions
-# TODO nested function call highlighting when on multiple lines (it pops the last call on user line)
-
+from m_pg_logger import PGLogger
+logger = PGLogger()
 
 PORT = 8000
-content_type_mapping = {
+MAX_EXECUTED_LINES = 200
+extension_type_mapping = {
     ".html": "text/html",
     ".css": "text/css",
     ".js": "application/javascript",
@@ -22,46 +20,51 @@ content_type_mapping = {
 
 class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        path = self.path
-        if path == "/":
-            path = "/front_end/index.html"
-
-        path = path.split("?")[0]
+        requested_path = self.path.split("?")[0]
+        if requested_path == "/":
+            requested_path = "/front_end/index.html"
 
         try:
-            file_path = os.path.join(os.getcwd(), path[1:])
-            if os.path.exists(file_path):
-                file_type = content_type_mapping.get(os.path.splitext(path)[1], "")
-                self.send_response(200)
+            full_path = os.path.join(os.getcwd(), requested_path[1:])
+            if not os.path.exists(full_path):
+                self.send_error(404, "File not found")
+                return
+
+            self.send_response(200)
+            extension = os.path.splitext(requested_path)[1]
+            if extension:
+                file_type = extension_type_mapping.get(extension, "")
                 if file_type:
                     self.send_header("Content-type", file_type)
                 self.end_headers()
-                with open(file_path, "rb") as file:
+                with open(full_path, "rb") as file:
                     self.wfile.write(file.read())
-            else:
-                self.send_error(404, "File not found")
+            else:  # fetch files in the directory
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(
+                    [filename for filename in os.listdir(full_path)]).encode())
         except Exception as e:
             self.send_error(500, f"Server error: {str(e)}")
 
     def do_POST(self):
-        output_json = json.dumps(
-            process_post(
-                parse_qs(
-                    self.rfile.read(
-                        int(self.headers["Content-Length"])
-                    ).decode("utf-8"))
-            ), indent=4)
+        try:
+            output_json = json.dumps(process_post(json.loads(
+                self.rfile.read(int(self.headers["Content-Length"]))
+            )))
 
-        with open("output.json", "w") as f:
-            f.write(output_json)
+            with open("output.json", "w") as f:
+                f.write(output_json)
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(output_json.encode())
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(output_json.encode())
+        except Exception as e:
+            self.send_error(500, f"Server error: {str(e)}")
 
 
-def process_post(parsed_post_dict):
-    request = parsed_post_dict["request"][0]
+def process_post(post_dict):
+    request = post_dict["request"]
 
     if request == "question":
         def process_record():
@@ -84,8 +87,7 @@ def process_post(parsed_post_dict):
         cur_parts = []
         cur_delimiter = None
 
-        for line in open(f"questions/{parsed_post_dict["question_file"][0]}.txt"):
-            # only strip TRAILING spaces and not leading spaces
+        for line in open(f"questions/{post_dict["question_file"]}"):
             line = line.rstrip()
 
             # comments are denoted by a leading "//", so ignore those lines.
@@ -116,14 +118,17 @@ def process_post(parsed_post_dict):
         return ret
 
     # =================================================================================
-    user_script = parsed_post_dict["user_script"][0]
-    changed_max_executed_lines = int(parsed_post_dict.get("max_instructions", [MAX_EXECUTED_LINES])[0])
+    user_script = post_dict["user_script"]
+    changed_max_executed_lines = int(post_dict.get(
+        "max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
-        return PGLogger(changed_max_executed_lines).runscript(user_script)
+        return logger.runscript(user_script, changed_max_executed_lines, False)
 
+    # else: request == "run test"
     # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_trace_final_entry = PGLogger(ignore_id=True).runscript(parsed_post_dict["expect_script"][0])[-1]
+    expect_trace_final_entry = logger.runscript(
+        post_dict["expect_script"], MAX_EXECUTED_LINES, True)[-1]
 
     if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
         return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
@@ -132,7 +137,8 @@ def process_post(parsed_post_dict):
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    vars_to_compare = list(expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
+    vars_to_compare = list(
+        expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
@@ -140,7 +146,8 @@ def process_post(parsed_post_dict):
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
            'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
 
-    user_trace = PGLogger(changed_max_executed_lines, True).runscript(user_script)
+    user_trace = logger.runscript(
+        user_script, changed_max_executed_lines, True)
 
     # Grab the 'inputs' by finding all global vars that are in scope
     # prior to making the first function call.
@@ -149,7 +156,7 @@ def process_post(parsed_post_dict):
     # your input data, since the FIRST function call must be the function
     # that you're testing.
     for e in user_trace:
-        if e['event'] == 'call':
+        if e.get('caller_info'):
             ret['input_globals'] = e['encoded_frames'][0][-1]
             break
 
@@ -164,7 +171,8 @@ def process_post(parsed_post_dict):
                 ret['passed_test'] = True
 
     else:
-        ret.update({'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
+        ret.update(
+            {'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
 
     return ret
 

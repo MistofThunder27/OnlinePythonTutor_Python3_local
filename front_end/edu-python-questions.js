@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // UI for online problem sets
-// Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
+// Pre-req: edu-python.js should be imported BEFORE this file
 
 // parsed form of a questions file from questions/
 var curQuestion = null;
@@ -35,7 +35,7 @@ var testResults = null;
 // Pre: 'tests' and 'expects' are non-null
 function resetTestResults() {
   testResults = [];
-  $.each(tests, function (i) {
+  tests.forEach(function () {
     testResults.push(null);
   });
 
@@ -43,50 +43,80 @@ function resetTestResults() {
   assert(testResults.length == tests.length);
 }
 
+function loadQuestion() {
+  const selectedOption = document.getElementById("selectQuestion").value;
+  if (selectedOption) {
+    // load the questions file specified by the query string
+    fetch("../main.py", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: "question", question_file: selectedOption }),
+    })
+      .then((response) => response.json())
+      .then((data) => finishQuestionsInit(data))
+      .catch((error) => console.error("Error:", error));
+  }
+}
 
-$(document).ready(function () {
+document.addEventListener("DOMContentLoaded", function () {
   eduPythonCommonInit(); // must call this first!
-  $("#actualCodeInput").tabby(); // recognize TAB and SHIFT-TAB
-  $("#testCodeInput").tabby();   // recognize TAB and SHIFT-TAB
+  const selectQuestionBox = document.getElementById("selectQuestion");
+  fetch("../questions/")
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.length > 0) {
+        data.forEach((filename) => {
+          const option = document.createElement("option");
+          option.textContent = filename.split(".")[0];
+          option.value = filename;
+          selectQuestionBox.appendChild(option);
+        });
+      }
+    })
+    .catch((error) => console.error("Error fetching filenames:", error));
+
+  var pyInputPane = document.getElementById("pyInputPane");
+  var pyOutputPane = document.getElementById("pyOutputPane");
+  var executeBtn = document.getElementById("executeBtn");
+
+  var pyGradingPane = document.getElementById("pyGradingPane");
+  var HintStatement = document.getElementById("HintStatement");
+  var SolutionStatement = document.getElementById("SolutionStatement");
+  var submitBtn = document.getElementById("submitBtn");
+
+  addTabSupport(document.getElementById("actualCodeInput"));
+  addTabSupport(document.getElementById("testCodeInput"));
 
   // be friendly to the browser's forward and back buttons
-  // thanks to http://benalman.com/projects/jquery-bbq-plugin/
-  $(window).bind("hashchange", function (e) {
-    appMode = $.bbq.getState("mode"); // assign this to the GLOBAL appMode
+  window.addEventListener("hashchange", function () {
+    appMode = location.hash.substring(1);
 
-    // default mode is 'edit'
-    if (appMode == undefined) {
-      appMode = 'edit';
+    // if there's no curTrace or the hash has not been set, default mode is 'edit'
+    if (!appMode || !curTrace) {
+      appMode = "edit";
+      location.hash = "#edit";
     }
 
-    // if there's no curTrace, then default to edit mode since there's
-    // nothing to visualize or grade:
-    if (!curTrace) {
-      appMode = 'edit';
-      $.bbq.pushState({ mode: 'edit' });
-    }
+    if (appMode == "edit") {
+      pyInputPane.style.display = "block";
+      pyOutputPane.style.display = "none";
+      pyGradingPane.style.display = "none";
 
-    if (appMode == 'edit') {
-      $("#pyInputPane").show();
-      $("#pyOutputPane").hide();
-      $("#pyGradingPane").hide();
+      HintStatement.style.display = "block";
+      SolutionStatement.style.display = "block";
+    } else if (appMode == "visualize") {
+      pyInputPane.style.display = "none";
+      pyOutputPane.style.display = "block";
+      pyGradingPane.style.display = "none";
 
-      $("#HintStatement").show();
-      $("#SolutionStatement").show();
-    }
-    else if (appMode == 'visualize') {
-      $("#pyInputPane").hide();
-      $("#pyOutputPane").show();
-      $("#pyGradingPane").hide();
+      HintStatement.style.display = "block";
+      SolutionStatement.style.display = "block";
 
-      $("#HintStatement").show();
-      $("#SolutionStatement").show();
+      submitBtn.textContent = "Submit answer";
+      submitBtn.disabled = false;
 
-      $('#submitBtn').html("Submit answer");
-      $('#submitBtn').attr('disabled', false);
-
-      $('#executeBtn').html("Visualize execution");
-      $('#executeBtn').attr('disabled', false);
+      executeBtn.textContent = "Visualize execution";
+      executeBtn.disabled = false;
 
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
@@ -95,82 +125,67 @@ $(document).ready(function () {
       // don't let the user submit answer when there's an error
       for (var i = 0; i < curTrace.length; i++) {
         var curEntry = curTrace[i];
-        if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
-          $('#submitBtn').attr('disabled', true);
+        if (curEntry.event == "exception" || curEntry.event == "uncaught_exception") {
+          submitBtn.disabled = true;
           break;
         }
       }
-    }
-    else if (appMode == 'grade') {
-      $("#gradeMatrix #gradeMatrixTbody").empty(); // clear it!!!
+    } else if (appMode == "grade") {
+      document.querySelector("#gradeMatrix #gradeMatrixTbody").innerHTML = ""; // clear it!!!
 
-      $("#pyInputPane").hide();
-      $("#pyOutputPane").hide();
-      $("#pyGradingPane").show();
+      pyInputPane.style.display = "none";
+      pyOutputPane.style.display = "none";
+      pyGradingPane.style.display = "block";
 
-      $("#HintStatement").hide();
-      $("#SolutionStatement").hide();
+      HintStatement.style.display = "none";
+      SolutionStatement.style.display = "none";
 
       gradeSubmission();
     }
   });
 
-  // From: http://benalman.com/projects/jquery-bbq-plugin/
-  //   Since the event is only triggered when the hash changes, we need
-  //   to trigger the event now, to handle the hash the page may have
-  //   loaded with.
-  $(window).trigger("hashchange");
-
-  // load the questions file specified by the query string
-  $.post("../main.py",
-    { request: "question", question_file: location.search.substring(1) },
-    function (questionsDat) {
-      finishQuestionsInit(questionsDat);
-    },
-    "json");
+  // Since the event is only triggered when the hash changes, we need
+  // to trigger the event now, to handle the hash the page may have
+  // loaded with.
+  window.dispatchEvent(new Event("hashchange"));
 });
 
 // concatenate solution code and test code:
 function concatSolnTestCode(solnCode, testCode) {
-  // use rtrim to get rid of trailing whitespace and newlines
-  return solnCode.rtrim() + "\n\n# Everything below here is test code\n" + testCode;
+  return solnCode.replace(/\s+$/, "") + "\n\n# Everything below here is test code\n" + testCode;
 }
 
 function genDebugLinkHandler(failingTestIndex) {
-  function ret() {
+  return function () {
     // Switch back to visualize mode, populating the "testCodeInput"
     // field with the failing test case, and RE-RUN the back-end to
     // visualize execution (this time with proper object IDs)
     curTestIndex = failingTestIndex;
-    $("#testCodeInput").val(tests[curTestIndex]);
+    document.getElementById("testCodeInput").value = tests[curTestIndex];
 
     // prevent multiple-clicking ...
-    $(this).html("One sec ...");
-    $(this).attr('disabled', true);
+    this.innerHTML = "One sec ...";
+    this.disabled = true;
 
-    $("#executeBtn").trigger('click'); // emulate an execute button press!
-  }
-
-  return ret;
+    document.getElementById("executeBtn").click(); // emulate an execute button press!
+  };
 }
 
 function finishQuestionsInit(questionsDat) {
   curQuestion = questionsDat; // initialize global
 
-  $("#ProblemName").html(questionsDat.name);
-  $("#ProblemStatement").html(questionsDat.question);
+  document.getElementById("ProblemName").value = questionsDat.name;
+  document.getElementById("ProblemStatement").value = questionsDat.question;
 
-  $("#showHintHref").click(function () {
-    $("#HintStatement").html("<b>Hint</b>: " + questionsDat.hint);
-    return false; // don't reload the page
+  document.getElementById("showHintHref").addEventListener("click", function () {
+    document.getElementById("HintStatement").innerHTML = "<b>Hint</b>: " + questionsDat.hint;
   });
 
-  $("#showSolutionHref").click(function () {
-    $("#SolutionStatement").html("<b>Solution</b>: " + questionsDat.solution);
-    return false; // don't reload the page
+  document.getElementById("showSolutionHref").addEventListener("click", function () {
+    document.getElementById("SolutionStatement").innerHTML = "<b>Solution</b>: " + questionsDat.solution;
   });
 
-  $("#actualCodeInput").val(questionsDat.skeleton);
+  document.getElementById("actualCodeInput").value = questionsDat.skeleton;
 
   // set some globals
   tests = questionsDat.tests;
@@ -179,10 +194,11 @@ function finishQuestionsInit(questionsDat) {
 
   resetTestResults();
 
-  $("#testCodeInput").val(tests[curTestIndex]);
+  document.getElementById("testCodeInput").value = tests[curTestIndex];
 
-  $("#executeBtn").attr('disabled', false);
-  $("#executeBtn").click(function () {
+  var executeBtn = document.getElementById("executeBtn");
+  executeBtn.disabled = false;
+  executeBtn.addEventListener("click", function () {
     if (curQuestion.max_line_delta) {
       // if the question has a 'max_line_delta' field, then check to see
       // if > curQuestion.max_line_delta lines have changed from
@@ -192,85 +208,102 @@ function finishQuestionsInit(questionsDat) {
       // split on newlines to do a line-level diff
       // (rtrim both strings to discount the effect of trailing
       // whitespace and newlines)
-      var diffResults = diff($("#actualCodeInput").val().rtrim().split(/\n/), questionsDat.skeleton.rtrim().split(/\n/));
+      var diffResults = diff(
+        // TODO: remove dependacy
+        document.getElementById("actualCodeInput").value.replace(/\s+$/, "").split(/\n/),
+        questionsDat.skeleton.replace(/\s+$/, "").split(/\n/)
+      );
       //console.log(diffResults);
-      $.each(diffResults, function (i, e) {
-        if (e.file1 && e.file2) {
-          // i THINK this is the right way to calculate the number of
-          // changed lines ... taking the MAXIMUM of the delta lengths
-          // of e.file1 and e.file2:
-          numChangedLines += Math.max(e.file1.length, e.file2.length);
-        }
-      });
+      diffResults.forEach((e) => {
+          if (e.file1 && e.file2) {
+            // i THINK this is the right way to calculate the number of
+            // changed lines ... taking the MAXIMUM of the delta lengths
+            // of e.file1 and e.file2:
+            numChangedLines += Math.max(e.file1.length, e.file2.length);
+          }
+        });
 
       if (numChangedLines > curQuestion.max_line_delta) {
-        alert("Error: You have changed " + numChangedLines + " lines of code, but you are only allowed to change " + curQuestion.max_line_delta + " lines to solve this problem.");
+        alert(
+          "Error: You have changed " +
+            numChangedLines +
+            " lines of code, but you are only allowed to change " +
+            curQuestion.max_line_delta +
+            " lines to solve this problem."
+        );
         return;
       }
     }
 
-    $('#executeBtn').html("Please wait ... processing your code");
-    $('#executeBtn').attr('disabled', true);
-    $("#pyOutputPane").hide();
+    this.textContent = "Please wait ... processing your code";
+    this.disabled = true;
+    document.getElementById("pyOutputPane").style.display = "none";
 
-    var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), $("#testCodeInput").val());
+    var submittedCode = concatSolnTestCode(
+      document.getElementById("actualCodeInput").value,
+      document.getElementById("testCodeInput").value
+    );
 
-    var postParams = { user_script: submittedCode, request: "execute" };
+    var postParams = { request: "execute", user_script: submittedCode };
     if (questionsDat.max_instructions) {
       postParams.max_instructions = questionsDat.max_instructions;
     }
 
-    $.post("../main.py",
-      postParams,
-      function (traceData) {
+    fetch("../main.py", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(postParams),
+    })
+      .then((response) => response.json())
+      .then((data) => {
         renderPyCodeOutput(submittedCode);
-        curTrace = traceData; // first assign it to the global curTrace, then let jQuery BBQ take care of the rest
-        $.bbq.pushState({ mode: 'visualize' });
-      },
-      "json");
+        curTrace = data;
+        location.hash = "#visualize";
+      })
+      .catch((error) => console.error("Error:", error));
   });
 
-  $("#editBtn").click(function () {
-    $.bbq.pushState({ mode: 'edit' });
+  document.getElementById("editBtn").addEventListener("click", function () {
+    location.hash = "#edit";
   });
 
-  $("#submitBtn").click(function () {
-    $('#submitBtn').html("Please wait ... submitting ...");
-    $('#submitBtn').attr('disabled', true);
+  var submitBtn = document.getElementById("submitBtn");
+  submitBtn.addEventListener("click", function () {
+    this.textContent = "Please wait ... submitting ...";
+    this.disabled = true;
 
     resetTestResults(); // prepare for a new fresh set of test results
 
     // remember that these results come in asynchronously and probably
     // out-of-order, so code very carefully here!!!
     for (var i = 0; i < tests.length; i++) {
-      var submittedCode = concatSolnTestCode($("#actualCodeInput").val(), tests[i]);
+      const ind = i;
+      var submittedCode = concatSolnTestCode(document.getElementById("actualCodeInput").value, tests[i]);
 
-      var postParams = { request: "run test", user_script: submittedCode, expect_script: expects[i] };
+      var postParams = {
+        request: "run test",
+        user_script: submittedCode,
+        expect_script: expects[i],
+      };
       if (questionsDat.max_instructions) {
         postParams.max_instructions = questionsDat.max_instructions;
       }
 
-      $.post("../main.py",
-        postParams,
-        // create a closure
-        (function (idx) {
-          return function (res) {
-            assert(testResults[idx] === null);
-            testResults[idx] = res;
+      fetch("../main.py", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postParams),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          assert(testResults[ind] === null);
+          testResults[ind] = data;
 
-            // if ALL results have been successfully delivered, then call
-            // enterGradingMode() (remember that each result comes in
-            // asynchronously and probably out-of-order)
-
-            for (var i = 0; i < testResults.length; i++) {
-              if (testResults[i] === null) {
-                return;
-              }
-            }
-            $.bbq.pushState({ mode: 'grade' });
-          };
-        })(i),
-        "json");
+          if (testResults.every((result) => result !== null)) {
+            location.hash = "#grade";
+          }
+        })
+        .catch((error) => console.error("Error:", error));
     }
   });
 }
@@ -278,92 +311,129 @@ function finishQuestionsInit(questionsDat) {
 // should be called after ALL elements in testsTraces and expectsTraces
 // have been populated by their respective AJAX POST calls
 function gradeSubmission() {
-  $("#submittedCodePRE").html(htmlspecialchars($("#actualCodeInput").val()));
+  document.getElementById("submittedCodePRE").innerHTML = htmlSpecialChars(
+    document.getElementById("actualCodeInput").value
+  );
 
-  for (var i = 0; i < tests.length; i++) {
-    var res = testResults[i];
+  const gradeMatrix = document.querySelector("#gradeMatrix tbody#gradeMatrixTbody");
+  const happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
+  const sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
 
-    $("#gradeMatrix tbody#gradeMatrixTbody").append('<tr class="gradeMatrixRow"></tr>');
+  testResults.forEach((result, i) => {
+    const gradeMatrixRow = document.createElement("tr");
+    gradeMatrix.appendChild(gradeMatrixRow);
 
-    $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="testInputCell"></td>');
+    const testInputCell = document.createElement("td");
+    testInputCell.className = "testInputCell";
+    gradeMatrixRow.appendChild(testInputCell);
 
     // input_val could be null if there's a REALLY bad error :(
-    if (res.input_globals) {
-      var curCell = $("#gradeMatrix tr.gradeMatrixRow:last td.testInputCell:last");
-
-      curCell.append('<table class="testInputTable"></table>');
+    if (result.input_globals) {
+      const testInputSubTable = document.createElement("table");
+      testInputCell.appendChild(testInputSubTable);
 
       // print out all non-function input global variables in a table
-      for (k in res.input_globals) {
-        var v = res.input_globals[k];
-        if (isPrimitiveType(v) || v[0] != 'function') {
-          curCell.find('table.testInputTable').append('<tr class="testInputVarRow"></tr>');
+      Object.entries(result.input_globals).forEach((entry) => {
+        const [k, v] = entry;
+        if (v == null || typeof v != "object" || v[0] != "function") {
+          const testInputVarRow = document.createElement("tr");
+          testInputSubTable.appendChild(testInputVarRow);
 
-          curCell.find('table.testInputTable tr.testInputVarRow:last').append('<td class="testInputVarnameCell">' + k + ':</td>');
+          const testInputVarnameCell = document.createElement("td");
+          testInputVarnameCell.className = "testInputVarnameCell";
+          testInputVarnameCell.textContent = k + ":";
+          testInputVarRow.appendChild(testInputVarnameCell);
 
-          curCell.find('table.testInputTable tr.testInputVarRow:last').append('<td class="testInputValCell"></td>');
-          renderData(v, curCell.find('table.testInputTable td.testInputValCell:last'), true /* ignoreIDs */);
+          const testInputValCell = document.createElement("td");
+          testInputValCell.className = "testInputValCell";
+          testInputVarRow.appendChild(testInputValCell);
+
+          renderData(v, testInputValCell, true /* ignoreIDs */);
         }
-      }
+      });
     }
 
-    if (res.status == 'error') {
-      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="testOutputCell"><span style="color: ' + darkRed + '">' + res.error_msg + '</span></td>');
+    const testOutputCell = document.createElement("td");
+    testOutputCell.className = "testOutputCell";
+    gradeMatrixRow.appendChild(testOutputCell);
+
+    if (result.status == "error") {
+      const span1 = document.createElement("span");
+      span1.style.color = "darkRed";
+      span1.textContent = result.error_msg;
+      testOutputCell.appendChild(span1);
+    } else {
+      assert(result.status == "ok");
+      const testOutputSubTable = document.createElement("table");
+      testOutputCell.appendChild(testOutputSubTable);
+
+      const testOutputVarRow = document.createElement("tr");
+      testOutputSubTable.appendChild(testOutputVarRow);
+
+      const testOutputVarnameCell = document.createElement("td");
+      testOutputVarnameCell.className = "testOutputVarnameCell";
+      testOutputVarnameCell.textContent = result.output_var_to_compare + ":";
+      testOutputVarRow.appendChild(testOutputVarnameCell);
+
+      const testOutputValCell = document.createElement("td");
+      testOutputValCell.className = "testOutputValCell";
+      testOutputVarRow.appendChild(testOutputValCell);
+
+      renderData(result.test_val, testOutputValCell, true /* ignoreIDs */);
     }
-    else {
-      assert(res.status == 'ok');
-      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="testOutputCell"></td>');
 
-      var curCell = $("#gradeMatrix tr.gradeMatrixRow:last td.testOutputCell:last");
-      curCell.append('<table><tr class="testOutputVarRow"></tr></table>');
+    const statusCell = document.createElement("td");
+    statusCell.className = "statusCell";
+    gradeMatrixRow.appendChild(statusCell);
 
-      curCell.find('tr.testOutputVarRow:last').append('<td class="testOutputVarnameCell">' + res.output_var_to_compare + ':</td>');
+    if (result.passed_test) {
+      statusCell.innerHTML = happyFaceImg;
+    } else {
+      const debugMeBtn = document.createElement("button");
+      debugMeBtn.type = "button";
+      debugMeBtn.textContent = "Debug me";
+      debugMeBtn.onclick = genDebugLinkHandler(i);
 
-      curCell.find('tr.testOutputVarRow:last').append('<td class="testOutputValCell"></td>');
-      renderData(res.test_val, curCell.find('td.testOutputValCell:last'), true /* ignoreIDs */);
+      statusCell.innerHTML = sadFaceImg;
+      statusCell.appendChild(debugMeBtn);
     }
 
+    const expectedCell = document.createElement("td");
+    expectedCell.className = "expectedCell";
+    gradeMatrixRow.appendChild(expectedCell);
 
-    if (res.passed_test) {
-      var happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
-      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="statusCell">' + happyFaceImg + '</td>');
+    const expectedSubTable = document.createElement("table");
+    expectedCell.appendChild(expectedSubTable);
 
-      // add an empty 'expected' cell
-      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="expectedCell"></td>');
-    }
-    else {
-      var sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
+    const expectedVarRow = document.createElement("tr");
+    expectedSubTable.appendChild(expectedVarRow);
 
-      var debugBtnID = 'debug_test_' + i;
-      var debugMeBtn = '<button id="' + debugBtnID + '" class="debugBtn" type="button">Debug me</button>';
-      var expectedTd = '<td class="expectedCell">Expected: </td>';
+    const expectedVarnameCell = document.createElement("td");
+    expectedVarnameCell.textContent = "Expected: ";
+    expectedVarRow.appendChild(expectedVarnameCell);
 
-      $("#gradeMatrix tr.gradeMatrixRow:last").append('<td class="statusCell">' + sadFaceImg + debugMeBtn + '</td>' + expectedTd);
-
-      renderData(res.expect_val,
-        $("#gradeMatrix tr.gradeMatrixRow:last td.expectedCell:last"),
-        true /* ignoreIDs */);
-
-      $('#' + debugBtnID).unbind(); // unbind it just to be paranoid
-      $('#' + debugBtnID).click(genDebugLinkHandler(i));
-    }
-  }
-
+    const expectedValCell = document.createElement("td");
+    expectedVarRow.appendChild(expectedValCell);
+    renderData(result.expect_val, expectedValCell, true /* ignoreIDs */);
+  });
 
   var numPassed = 0;
-  for (var i = 0; i < tests.length; i++) {
-    var res = testResults[i];
-    if (res.passed_test) {
+  testResults.forEach((result) => {
+    if (result.passed_test) {
       numPassed++;
     }
-  }
+  });
 
+  const gradeSummary = document.getElementById("gradeSummary");
   if (numPassed < tests.length) {
-    $("#gradeSummary").html('Your submitted answer passed ' + numPassed + ' out of ' + tests.length + ' tests.  Try to debug the failed tests!');
-  }
-  else {
+    gradeSummary.textContent =
+      "Your submitted answer passed " +
+      numPassed +
+      " out of " +
+      tests.length +
+      " tests.  Try to debug the failed tests!";
+  } else {
     assert(numPassed == tests.length);
-    $("#gradeSummary").html('Congrats, your submitted answer passed all ' + tests.length + ' tests!');
+    gradeSummary.textContent = "Congrats, your submitted answer passed all " + tests.length + " tests!";
   }
-
 }

@@ -2,3 +2,5 @@
 .vscode/
 __pycache__/
 output.json
+known bugs.txt
+scratch.py

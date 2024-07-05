@@ -23,172 +23,95 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // representing the user's script POST['user_script'] and receives a complete
 // execution trace, which it parses and displays to HTML.
 
-// Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
+// Pre-req: edu-python.js should be imported BEFORE this file
 
-$(document).ready(function () {
+function loadExample() {
+  const selectedOption = document.getElementById("selectExample").value;
+  if (selectedOption) {
+    fetch("../example_code/" + selectedOption)
+      .then((response) => response.text())
+      .then((data) => (document.getElementById("pyInput").value = data))
+      .catch((error) => console.error("Error fetching data:", error));
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
   eduPythonCommonInit(); // must call this first!
-  $("#pyInput").tabby(); // recognize TAB and SHIFT-TAB
+  const selectExampleBox = document.getElementById("selectExample");
+  fetch("../example_code/")
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.length > 0) {
+        data.forEach((filename) => {
+          const option = document.createElement("option");
+          option.textContent = filename.split(".")[0];
+          option.value = filename;
+          selectExampleBox.appendChild(option);
+        });
+      }
+    })
+    .catch((error) => console.error("Error fetching filenames:", error));
+
+  var pyInput = document.getElementById("pyInput");
+  var pyInputPane = document.getElementById("pyInputPane");
+  var pyOutputPane = document.getElementById("pyOutputPane");
+  var executeBtn = document.getElementById("executeBtn");
+
+  addTabSupport(pyInput);
 
   // be friendly to the browser's forward and back buttons
-  // thanks to http://benalman.com/projects/jquery-bbq-plugin/
-  $(window).bind("hashchange", function (e) {
-    appMode = $.bbq.getState("mode"); // assign this to the GLOBAL appMode
+  window.addEventListener("hashchange", function () {
+    appMode = location.hash.substring(1);
 
-    // default mode is 'edit'
-    if (appMode == undefined) {
-      appMode = 'edit';
+    // if there's no curTrace or the hash has not been set, default mode is 'edit'
+    if (!appMode || !curTrace) {
+      appMode = "edit";
+      location.hash = "#edit";
     }
 
-    // if there's no curTrace, then default to edit mode since there's nothing to visualize:
-    if (!curTrace) {
-      appMode = 'edit';
-      $.bbq.pushState({ mode: 'edit' });
-    }
+    if (appMode === "edit") {
+      pyInputPane.style.display = "block";
+      pyOutputPane.style.display = "none";
+    } else if (appMode === "visualize") {
+      pyInputPane.style.display = "none";
+      pyOutputPane.style.display = "block";
 
-    if (appMode == 'edit') {
-      $("#pyInputPane").show();
-      $("#pyOutputPane").hide();
-    }
-    else if (appMode == 'visualize') {
-      $("#pyInputPane").hide();
-      $("#pyOutputPane").show();
-
-      $('#executeBtn').html("Visualize execution");
-      $('#executeBtn').attr('disabled', false);
+      executeBtn.textContent = "Visualize execution";
+      executeBtn.disabled = false;
 
       // do this AFTER making #pyOutputPane visible, or else
       // jsPlumb connectors won't render properly
       processTrace(curTrace);
     }
-    else {
-      assert(false);
-    }
   });
 
-  // From: http://benalman.com/projects/jquery-bbq-plugin/
-  //   Since the event is only triggered when the hash changes, we need
-  //   to trigger the event now, to handle the hash the page may have
-  //   loaded with.
-  $(window).trigger("hashchange");
+  // Since the event is only triggered when the hash changes, we need
+  // to trigger the event now, to handle the hash the page may have
+  // loaded with.
+  window.dispatchEvent(new Event("hashchange"));
 
-  $("#executeBtn").attr('disabled', false);
-  $("#executeBtn").click(function () {
-    $('#executeBtn').html("Please wait ... processing your code");
-    $('#executeBtn').attr('disabled', true);
-    $("#pyOutputPane").hide();
+  executeBtn.disabled = false;
+  executeBtn.addEventListener("click", function () {
+    var pyInputValue = pyInput.value;
+    this.textContent = "Please wait ... processing your code";
+    this.disabled = true;
+    pyOutputPane.style.display = "none";
 
-    $.post("../main.py",
-      { user_script: $("#pyInput").val(), request: "execute" },
-      function (traceData) {
-        renderPyCodeOutput($("#pyInput").val());
-        curTrace = traceData; // first assign it to the global curTrace, then
-        // let jQuery BBQ take care of the rest
-        $.bbq.pushState({ mode: 'visualize' });
-      },
-      "json");
+    fetch("../main.py", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: "execute", user_script: pyInputValue }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        renderPyCodeOutput(pyInputValue);
+        curTrace = data;
+        location.hash = "#visualize";
+      })
+      .catch((error) => console.error("Error:", error));
   });
 
-  $("#editBtn").click(function () {
-    $.bbq.pushState({ mode: 'edit' });
+  document.getElementById("editBtn").addEventListener("click", function () {
+    location.hash = "#edit";
   });
-
-  // canned examples
-  $("#tutorialExampleLink").click(function () {
-    $.get("../example_code/py_tutorial.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#strtokExampleLink").click(function () {
-    $.get("../example_code/strtok.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#fibonacciExampleLink").click(function () {
-    $.get("../example_code/fib.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#memoFibExampleLink").click(function () {
-    $.get("../example_code/memo_fib.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#factExampleLink").click(function () {
-    $.get("../example_code/fact.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#filterExampleLink").click(function () {
-    $.get("../example_code/filter.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#insSortExampleLink").click(function () {
-    $.get("../example_code/ins_sort.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#aliasExampleLink").click(function () {
-    $.get("../example_code/aliasing.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#newtonExampleLink").click(function () {
-    $.get("../example_code/sqrt.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#oopSmallExampleLink").click(function () {
-    $.get("../example_code/oop_small.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#mapExampleLink").click(function () {
-    $.get("../example_code/map.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#oop1ExampleLink").click(function () {
-    $.get("../example_code/oop_1.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#oop2ExampleLink").click(function () {
-    $.get("../example_code/oop_2.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#inheritanceExampleLink").click(function () {
-    $.get("../example_code/oop_inherit.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#sumExampleLink").click(function () {
-    $.get("../example_code/sum.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#pwGcdLink").click(function () {
-    $.get("../example_code/wentworth_gcd.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#pwSumListLink").click(function () {
-    $.get("../example_code/wentworth_sumList.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#towersOfHanoiLink").click(function () {
-    $.get("../example_code/towers_of_hanoi.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  $("#pwTryFinallyLink").click(function () {
-    $.get("../example_code/wentworth_try_finally.py", function (dat) { $("#pyInput").val(dat); });
-    return false;
-  });
-
-  // select an example on start-up:
-  $("#aliasExampleLink").trigger('click');
 });
-

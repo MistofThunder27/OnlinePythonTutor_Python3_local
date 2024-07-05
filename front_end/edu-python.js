@@ -21,37 +21,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // code that is common to all Online Python Tutor pages
 
-var appMode = 'edit'; // 'edit', 'visualize', or 'grade' (only for question.html)
+var appMode = "edit"; // 'edit', 'visualize', or 'grade' (only for question.html)
 
-// set to true to use jsPlumb library to render connections between
-// stack and heap objects
-var useJsPlumbRendering = true;
-
-// if true, then render the stack as growing downwards
-// (if useJsPlumbRendering is true)
-var stackGrowsDown = true;
-
+var inlineRendering;
+var stackGrowsUp;
 
 /* colors - see edu-python.css */
-var lightLineColor = '#FFE536';
-var errorColor = '#F87D76';
-var callingLineColor; var callingLineColor1 = '#ADD8E6'; var callingLineColor2 = '#90EE90';
-var visitedLineColor = '#3D58A2';
+var lightLineColor = "#FFE536";
+var errorColor = "#F87D76";
+var callingLineColor1 = "#ADD8E6";
+var callingLineColor2 = "#90EE90";
+var visitedLineColor = "#3D58A2";
 
 var lightGray = "#cccccc";
 //var lightGray = "#dddddd";
 var darkBlue = "#3D58A2";
-var lightBlue = "#899CD1";
+var terminatingColor = "#899CD1";
 var pinkish = "#F15149";
 var darkRed = "#9D1E18";
-
 
 // ugh globals!
 var curTrace = null;
 var curInstr = 0;
 
-// true iff trace ended prematurely since maximum instruction limit has
-// been reached
+// true iff trace ended prematurely since maximum instruction limit has been reached
 var instrLimitReached = false;
 
 function assert(cond) {
@@ -60,39 +53,40 @@ function assert(cond) {
   }
 }
 
-// taken from http://www.toao.net/32-my-htmlspecialchars-function-for-javascript
-function htmlspecialchars(str) {
-  if (typeof (str) == "string") {
-    str = str.replace(/&/g, "&amp;"); /* must do &amp; first */
-
-    // ignore these for now ...
-    //str = str.replace(/"/g, "&quot;");
-    //str = str.replace(/'/g, "&#039;");
-
-    str = str.replace(/</g, "&lt;");
-    str = str.replace(/>/g, "&gt;");
-
-    // replace spaces:
-    str = str.replace(/ /g, "&nbsp;");
-  }
-  return str;
+// taken from http://www.toao.net/32-my-htmlSpecialChars-function-for-javascript and modified
+function htmlSpecialChars(str) {
+  return str.replace(
+    /[&<> \n]/g,
+    (match) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        " ": "&nbsp;",
+        "\n": "<br>",
+        // ignore these for now ...
+        //str = str.replace(/"/g, "&quot;");
+        //str = str.replace(/'/g, "&#039;");
+      }[match])
+  );
 }
 
 function processTrace(traceData) {
   curTrace = traceData;
   curInstr = 0;
-  $("#pyStdout").val(''); // delete any old output
+  document.getElementById("pyStdout").value = "";
 
   if (curTrace.length > 0) {
-    var lastEntry = curTrace[curTrace.length - 1];
+    const lastEntry = curTrace[curTrace.length - 1];
 
     // GLOBAL!
-    instrLimitReached = (lastEntry.event == 'instruction_limit_reached');
+    instrLimitReached = lastEntry.event == "instruction_limit_reached";
 
     if (instrLimitReached) {
-      curTrace.pop() // kill last entry which only has the error message
-      $("#errorOutput").html(htmlspecialchars(lastEntry.exception_msg));
-      $("#errorOutput").show();
+      curTrace.pop(); // kill last entry which only has the error message
+      const errorOutput = document.getElementById("errorOutput");
+      errorOutput.innerHTML = htmlSpecialChars(lastEntry.exception_msg);
+      errorOutput.style.display = "block";
     }
   }
   updateOutput();
@@ -104,180 +98,202 @@ function updateOutput() {
     return;
   }
 
-  useJsPlumbRendering = !($("#classicModeCheckbox").prop("checked"));
-  stackGrowsDown = !($("#stack_growth_selector").prop("checked"));
-
+  inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
+  stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
   var curEntry = curTrace[curInstr];
-  var hasError = false;
+  const totalInstrs = curTrace.length;
 
   // render VCR controls:
-  var totalInstrs = curTrace.length;
+  const vcrControls = document.getElementById("vcrControls");
 
   // to be user-friendly, if we're on the LAST instruction, print "Program has terminated"
   // and DON'T highlight any lines of code in the code display
-  if (curInstr == (totalInstrs - 1)) {
-    if (instrLimitReached) {
-      $("#vcrControls #curInstr").html("Instruction limit reached");
-    }
-    else {
-      $("#vcrControls #curInstr").html("Program has terminated");
-    }
-  } else {
-    $("#vcrControls #curInstr").html("About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1));
-  }
+  vcrControls.querySelector("#curInstr").innerHTML =
+    curInstr === totalInstrs - 1
+      ? instrLimitReached
+        ? "Instruction limit reached"
+        : "Program has terminated"
+      : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
-  $("#vcrControls #jmpFirstInstr").attr("disabled", false);
-  $("#vcrControls #jmpStepBack").attr("disabled", false);
-  $("#vcrControls #jmpStepFwd").attr("disabled", false);
-  $("#vcrControls #jmpLastInstr").attr("disabled", false);
-
-  if (curInstr == 0) {
-    $("#vcrControls #jmpFirstInstr").attr("disabled", true);
-    $("#vcrControls #jmpStepBack").attr("disabled", true);
-  }
-  if (curInstr == (totalInstrs - 1)) {
-    $("#vcrControls #jmpLastInstr").attr("disabled", true);
-    $("#vcrControls #jmpStepFwd").attr("disabled", true);
-  }
+  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmp1StepBack").disabled =
+    curInstr === 0;
+  vcrControls.querySelector("#jmp5StepBack").disabled = curInstr < 5;
+  vcrControls.querySelector("#jmp25StepBack").disabled = curInstr < 25;
+  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmp1StepFwd").disabled =
+    curInstr === totalInstrs - 1;
+  vcrControls.querySelector("#jmp5StepFwd").disabled = curInstr > totalInstrs - 6;
+  vcrControls.querySelector("#jmp25StepFwd").disabled = curInstr > totalInstrs - 26;
 
   // render error (if applicable):
-  if (curEntry.event == 'exception' || curEntry.event == 'uncaught_exception') {
+  const errorOutput = document.getElementById("errorOutput");
+  var hasError;
+  if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
     assert(curEntry.exception_msg);
-    $("#errorOutput").html(htmlspecialchars(curEntry.exception_msg));
-    $("#errorOutput").show();
+    errorOutput.innerHTML = htmlSpecialChars(curEntry.exception_msg);
+    errorOutput.style.display = "block";
     hasError = true;
   } else {
-    $("#errorOutput").hide();
+    errorOutput.style.display = "none";
+    hasError = false;
   }
 
   // render code output: --
-  var tbl = $("table#pyCodeOutput");
-  tbl.find('td.cod').css('background-color', '');
+  const tbl = document.querySelector("table#pyCodeOutput");
 
-  // reset then set visited lines:
-  tbl.find('td.lineNo').css({ 'color': '', 'font-weight': '' });
-  curEntry.visited_lines.forEach(function (line) {
-    tbl.find('td.lineNo:eq(' + (line - 1) + ')').css({ 'color': visitedLineColor, 'font-weight': 'bold' });
+  // Reset color and font-weight of line number cells
+  tbl.querySelectorAll("td.lineNo").forEach((cell) => {
+    cell.style.color = "";
+    cell.style.fontWeight = "";
+  });
+  // Reset background color of code lines
+  tbl.querySelectorAll("td.cod").forEach((line) => {
+    line.style.backgroundColor = "";
+    line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
-  for (var ind = 0; ind < curEntry.visited_lines[curEntry.visited_lines.length - 1]; ind++) {
-    var cell = tbl.find('td.cod:eq(' + ind + ')')
-    cell.html(cell.html()
-    .replace(/<br\/?>.*$/g, '')
-    .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-    .replace(/<span.*?>(.*?)<\/span>/g, '$1')
-    );
+  var {
+    line_group: lineGroup,
+    encoded_frames: encodedFrames,
+    caller_info: callerInfo,
+    visited_lines: visitedLines,
+  } = curEntry;
+
+  // Set visited lines
+  if (visitedLines) {
+    visitedLines.forEach((line) => {
+      var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
+      lineNoCell.style.color = visitedLineColor;
+      lineNoCell.style.fontWeight = "bold";
+    });
   }
 
   // Highlight and duplicate calling function:
-  var caller_info = curEntry.caller_info
-  if (caller_info) {
-    var { true_positions: [[startLine, startIndex], [endLine, endIndex]], line_no: Highlightlines,
-      code: evaluated_code, relative_positions: [relativeStart, relativeEnd] } = caller_info;
+  if (callerInfo) {
+    var {
+      code: evaluatedCode,
+      line_group: callingLines,
+      true_positions: [[startLine, startIndex], [endLine, endIndex]],
+      relative_positions: [relativeStart, relativeEnd],
+    } = callerInfo;
 
-    var callingLineColor = curEntry.encoded_frames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-    Highlightlines.forEach(function (line) {
-      tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', callingLineColor);
+    let callingLineColor = encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    callingLines.forEach((line) => {
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = callingLineColor;
     });
 
-    const escapeHtml = (str) => str.replace(/ /g, "&nbsp;").replace(/\n/g, '<br>');
     var cell, content;
     if (startLine === endLine) {
-      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-      content = cell.text();
-      cell.html(
-          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-          content.substring(startIndex, endIndex) + '</span>' + content.substring(endIndex)
-        );
+      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      content = cell.textContent;
+      cell.innerHTML =
+        content.substring(0, startIndex) +
+        '<span style="background-color: orange;">' +
+        content.substring(startIndex, endIndex) +
+        "</span>" +
+        content.substring(endIndex);
     } else {
-      cell = tbl.find('td.cod:eq(' + (startLine - 1) + ')');
-      content = cell.text();
-      cell.html(
-          content.substring(0, startIndex) + '<span style="background-color: orange;">' +
-          content.substring(startIndex) + '</span>'
-        );
+      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      content = cell.textContent;
+      cell.innerHTML =
+        content.substring(0, startIndex) +
+        '<span style="background-color: orange;">' +
+        content.substring(startIndex) +
+        "</span>";
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
-        cell = tbl.find('td.cod:eq(' + (line - 1) + ')')
-        cell.html('<span style="background-color: orange;">' + cell.text() + '</span>');
+        cell = tbl.querySelectorAll("td.cod")[line - 1];
+        cell.innerHTML = '<span style="background-color: orange;">' + cell.textContent + "</span>";
       }
 
-      cell = tbl.find('td.cod:eq(' + (endLine - 1) + ')');
-      content = cell.text()
-      cell.html(
-          '<span style="background-color: orange;">' +
-          content.substring(0, endIndex) + '</span>' + content.substring(endIndex) +
-          '<br/><span style="font-style: italic; color: green;">'
-        );
+      cell = tbl.querySelectorAll("td.cod")[endLine - 1];
+      content = cell.textContent;
+      cell.innerHTML =
+        '<span style="background-color: orange;">' +
+        content.substring(0, endIndex) +
+        "</span>" +
+        content.substring(endIndex);
     }
 
-    cell = tbl.find('td.cod:eq(' + (Highlightlines[Highlightlines.length - 1] - 1) + ')');
-    cell.html(cell.html() +
-        '<br/><span style="font-style: italic; color: green;">' +
-        escapeHtml(evaluated_code.substring(0, relativeStart)) +
-        '<span style="background-color: orange;">' +
-        escapeHtml(evaluated_code.substring(relativeStart, relativeEnd)) + '</span>' +
-        escapeHtml(evaluated_code.substring(relativeEnd)) + '</span>');
+    tbl.querySelectorAll("td.cod")[callingLines[callingLines.length - 1] - 1].innerHTML +=
+      '<br/><span style="font-style: italic; color: green;">' +
+      htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
+      '<span style="background-color: orange;">' +
+      htmlSpecialChars(evaluatedCode.substring(relativeStart, relativeEnd)) +
+      "</span>" +
+      htmlSpecialChars(evaluatedCode.substring(relativeEnd)) +
+      "</span>";
   }
 
   // Highlight curLineGroup:
-  // if instrLimitReached, then treat like a normal non-terminating line
-  var isTerminated = !instrLimitReached && curInstr === totalInstrs - 1;
-  var col = hasError ? errorColor : (isTerminated ? lightBlue : lightLineColor)
-  curEntry.lines.forEach(function (line) {
-    tbl.find('td.cod:eq(' + (line - 1) + ')').css('background-color', col);
-  });
-
-  // render stdout:
-  // keep original horizontal scroll level:
-  var oldLeft = $("#pyStdout").scrollLeft();
-  $("#pyStdout").val(curEntry.stdout);
-  $("#pyStdout").scrollLeft(oldLeft);
-  // scroll to bottom, tho:
-  $("#pyStdout").scrollTop($("#pyStdout").attr('scrollHeight'));
-
-  // finally, render all the data structures!!!
-  $("#dataViz").empty(); // jQuery empty() is better than .html('')
-
-  // organise frames based on settings
-  var orderedFrames;
-  if (stackGrowsDown) {
-    orderedFrames = curEntry.encoded_frames;
-  } else {
-    orderedFrames = curEntry.encoded_frames.slice().reverse();
+  if (lineGroup) {
+    lineGroup.forEach((line) => {
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
+        ? errorColor
+        : !instrLimitReached && curInstr === totalInstrs - 1
+        ? terminatingColor
+        : lightLineColor;
+    });
   }
 
-  if (useJsPlumbRendering) {
-    renderDataStructuresVersion2(curEntry, orderedFrames);
-  } else {
-    //render variables and values INLINE within each stack frame without any
-    // explicit representation of data structure aliasing.
-    $.each(orderedFrames, function (_, frame) {
-      $("#dataViz").append('<div class="vizFrame"><span style="font-family: Andale mono, monospace;">' + htmlspecialchars(frame[0]) + '</span> variables:</div>');
+  // render stdout:
+  var stdoutElement = document.getElementById("pyStdout");
 
-      var encodedVars = Object.entries(frame[1]);
-      if (encodedVars.length > 0) {
-        $("#dataViz" + " .vizFrame:last").append('<br/><table class="frameDataViz"></table>');
-        var tbl = $("#pyOutputPane table:last");
+  // keep original horizontal scroll level:
+  var oldLeft = stdoutElement.scrollLeft;
+  stdoutElement.value = curEntry.stdout;
+  stdoutElement.scrollLeft = oldLeft;
+  // scroll to bottom, though:
+  stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
-        $.each(encodedVars, function (_, entry) {
-          var [varname, val] = entry;
-          tbl.append('<tr><td class="varname"></td><td class="val"></td></tr>');
-          var curTr = tbl.find('tr:last');
-          if (varname == '__return__') {
-            curTr.find("td.varname").html('<span style="font-size: 10pt; font-style: italic;">return value</span>');
-          } else {
-            curTr.find("td.varname").html(varname);
-          }
-          renderData(val, curTr.find("td.val"), false);
-        });
+  // finally, render all the data structures!!!
+  var dataViz = document.getElementById("dataViz");
+  dataViz.innerHTML = ""; // Clear the content
 
-        tbl.find("tr:last").find("td.varname").css('border-bottom', '0px');
-        tbl.find("tr:last").find("td.val").css('border-bottom', '0px');
-      } else {
-        $("#dataViz" + " .vizFrame:last").append('<i>none</i>');
-      }
-    });
+  // organize frames based on settings
+  if (encodedFrames) {
+    var orderedFrames = encodedFrames.slice();
+    if (stackGrowsUp) {
+      orderedFrames = orderedFrames.reverse();
+    }
+
+    if (inlineRendering) {
+      orderedFrames.forEach((frame) => {
+        var vizFrame = document.createElement("div");
+        vizFrame.className = "vizFrame";
+        vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlSpecialChars(
+          frame[0]
+        )}</span> variables:`;
+        dataViz.appendChild(vizFrame);
+
+        var encodedVars = Object.entries(frame[1]);
+        if (encodedVars.length > 0) {
+          var frameDataViz = document.createElement("table");
+          frameDataViz.className = "frameDataViz";
+          vizFrame.appendChild(document.createElement("br"));
+          vizFrame.appendChild(frameDataViz);
+
+          encodedVars.forEach((entry) => {
+            var [varname, val] = entry;
+            var tr = document.createElement("tr");
+            tr.innerHTML = `<td>${
+              varname === "__return__"
+                ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
+                : varname
+            }</td><td></td>`;
+            frameDataViz.appendChild(tr);
+            renderData(val, tr.querySelector("td:last-child"), false);
+          });
+
+          var lastRow = frameDataViz.lastElementChild;
+          lastRow.querySelector("td:first-child").style.borderBottom = "0px";
+          lastRow.querySelector("td:last-child").style.borderBottom = "0px";
+        } else {
+          vizFrame.innerHTML += "<i>none</i>";
+        }
+      });
+    } else {
+      renderDataStructuresVersion2(curEntry, orderedFrames);
+    }
   }
 }
 
@@ -287,10 +303,11 @@ function updateOutput() {
 //
 // This version was originally created in September 2011
 function renderDataStructuresVersion2(curEntry, orderedFrames) {
-
   // before we wipe out the old state of the visualization, CLEAR all
   // the click listeners first
-  $(".stackFrameHeader").unbind();
+  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+    header.removeEventListener("click", handleClick);
+  });
 
   // VERY VERY IMPORTANT --- and reset ALL jsPlumb state to prevent
   // weird mis-behavior!!!
@@ -298,50 +315,73 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
-  $("#dataViz").html('<table id="stackHeapTable"><tr><td id="stack_td"><div id="stack"></div></td><td id="heap_td"><div id="heap"></div></td></tr></table>');
+  var stack_td = document.createElement("td");
+  stack_td.id = "stack_td";
+  stack_td.innerHTML = '<div id="stack"></div>';
+
+  var heap_td = document.createElement("td");
+  heap_td.id = "heap_td";
+  heap_td.innerHTML = '<div id="heap"></div>';
+
+  var tr = document.createElement("tr");
+  tr.appendChild(stack_td);
+  tr.appendChild(heap_td);
+
+  var stackHeapTable = document.createElement("table");
+  stackHeapTable.id = "stackHeapTable";
+  stackHeapTable.appendChild(tr);
+
+  var dataViz = document.getElementById("dataViz");
+  dataViz.innerHTML = "";
+  dataViz.appendChild(stackHeapTable);
 
   // Key:   CSS ID of the div element representing the variable
   // Value: CSS ID of the div element representing the value rendered in the heap
-  connectionEndpointIDs = {};
+  var connectionEndpointIDs = {};
 
   // first render the vars
-  $.each(orderedFrames, function (i, frame) {
-    // the stackFrame div's id is simply its index ("stack<index>")
-    var divClass = (i == 0) ? "stackFrame topStackFrame" : "stackFrame";
+  orderedFrames.forEach((frame, i) => {
+    var stackDiv = document.createElement("div");
     var divID = "stack" + i;
-    $("#dataViz" + " #stack").append('<div class="' + divClass + '" id="' + divID + '"></div>');
+    stackDiv.className = "stackFrame";
+    stackDiv.id = divID;
+    document.getElementById("stack").appendChild(stackDiv);
 
-    var headerDivID = "stack_header" + i;
-    $("#dataViz" + " #stack #" + divID).append('<div id="' + headerDivID + '" class="stackFrameHeader inactiveStackFrameHeader">' + htmlspecialchars(frame[0]) + '</div>');
+    var headerDiv = document.createElement("div");
+    headerDiv.id = "stack_header" + i;
+    headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
+    headerDiv.innerHTML = htmlSpecialChars(frame[0]);
+    stackDiv.appendChild(headerDiv);
 
     var encodedVars = Object.entries(frame[1]);
     if (encodedVars.length > 0) {
-      var tableID = divID + '_table';
-      $("#dataViz" + " #stack #" + divID).append('<table class="stackFrameVarTable" id="' + tableID + '"></table>');
-      var tbl = $("#dataViz" + " #" + tableID);
+      var table = document.createElement("table");
+      table.className = "stackFrameVarTable";
+      table.id = divID + "_table";
+      stackDiv.appendChild(table);
 
-      $.each(encodedVars, function (_, entry) {
+      encodedVars.forEach(function (entry) {
         var [varname, val] = entry;
 
+        var tr = document.createElement("tr");
         // special treatment for displaying return value and indicating
         // that the function is about to return to its caller
-        if (varname == '__return__') {
-          assert(curEntry.event == 'return'); // sanity check
-
-          tbl.append('<tr><td colspan="2" class="returnWarning">About to return to caller</td></tr>');
-          tbl.append('<tr><td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td></tr>');
+        if (varname == "__return__") {
+          assert(curEntry.event == "return"); // sanity check
+          tr.innerHTML = '<td colspan="2" class="returnWarning">About to return to caller</td>';
+          table.appendChild(tr);
+          tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
+        } else {
+          tr.innerHTML = '<td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td>';
         }
-        else {
-          tbl.append('<tr><td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td></tr>');
-        }
-
-        var curTr = tbl.find('tr:last');
+        table.appendChild(tr);
 
         // render primitives inline and compound types on the heap
-        if (isPrimitiveType(val)) {
-          renderData(val, curTr.find("td.stackFrameValue"), false);
-        }
-        else {
+        if (val == null || typeof val != "object") {
+          renderData(val, tr.querySelector("td.stackFrameValue"), false);
+        } else {
           // add a stub so that we can connect it with a connector later.
           // IE needs this div to be NON-EMPTY in order to properly
           // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
@@ -354,22 +394,22 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
           //
           // TODO: what other characters are illegal???
-          var lbRE = new RegExp('\\[|{|\\(|<', 'g');
-          var rbRE = new RegExp('\\]|}|\\)|>', 'g');
+          var varDivID = divID + "__" + varname.replace(/[\[{|(<>]/g, "LeftB_").replace(/[\]}|)<>]/g, "_RightB");
+          var divElement = document.createElement("div");
+          divElement.id = varDivID;
+          divElement.innerHTML = "&nbsp;";
+          tr.querySelector("td.stackFrameValue").appendChild(divElement);
 
-          var varDivID = divID + '__' + varname.replace(lbRE, 'LeftB_').replace(rbRE, '_RightB');
-          curTr.find("td.stackFrameValue").append('<div id="' + varDivID + '">&nbsp;</div>');
-
-          assert(connectionEndpointIDs[varDivID] === undefined);
-          var heapObjID = 'heap_object_' + getObjectID(val);
-          connectionEndpointIDs[varDivID] = heapObjID;
+          if (connectionEndpointIDs[varDivID] === undefined) {
+            connectionEndpointIDs[varDivID] = "heap_object_" + getObjectID(val);
+          }
         }
       });
     }
   });
 
   // then render the heap
-  $("#dataViz" + ' #heap').append('<div id="heapHeader">Heap</div>');
+  dataViz.querySelector("#heap").innerHTML += '<div id="heapHeader">Heap</div>';
 
   // if there are multiple aliases to the same object, we want to render
   // the one deepest in the stack, so that we can hopefully prevent
@@ -377,97 +417,91 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   // e.g., if a list L appears as a global variable and as a local in a
   // function, we want to render L when rendering the global frame.
 
-  alreadyRenderedObjectIDs = {}; // set of object IDs that have already been rendered
-  $.each(curEntry.encoded_frames, function (_, frame) {
-    var encodedVars = Object.entries(frame[1]);
-    $.each(encodedVars, function (_, entry) {
+  var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
+  curEntry.encoded_frames.forEach((frame) => {
+    Object.entries(frame[1]).forEach((entry) => {
       var val = entry[1];
       // primitive types are already rendered in the stack
-      if (!isPrimitiveType(val)) {
+      if (typeof val == "object" && val != null) {
         var objectID = getObjectID(val);
 
-        if (alreadyRenderedObjectIDs[objectID] === undefined) {
-          var heapObjID = 'heap_object_' + objectID;
-          $("#dataViz" + ' #heap').append('<div class="heapObject" id="' + heapObjID + '"></div>');
-          renderData(val, $("#dataViz" + ' #heap #' + heapObjID), false);
+        if (!alreadyRenderedObjectIDs.has(objectID)) {
+          var heapObjID = "heap_object_" + objectID;
+          dataViz.querySelector("#heap").innerHTML += '<div class="heapObject" id="' + heapObjID + '"></div>';
+          renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
 
-          alreadyRenderedObjectIDs[objectID] = 1;
+          alreadyRenderedObjectIDs.add(objectID);
         }
       }
     });
   });
 
   // finally connect stack variables to heap objects via connectors
-  for (varID in connectionEndpointIDs) {
-    var valueID = connectionEndpointIDs[varID];
-    jsPlumb.connect({ source: varID, target: valueID });
-  }
+  Object.entries(connectionEndpointIDs).forEach((entry) => {
+    jsPlumb.connect({ source: entry[0], target: entry[1] });
+  });
 
   // add an on-click listener to all stack frame headers
-  $(".stackFrameHeader").click(function () {
-    var enclosingStackFrame = $(this).parent();
-    var enclosingStackFrameID = enclosingStackFrame.attr('id');
+  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+    header.addEventListener("click", function () {
+      var enclosingStackFrame = this.parentNode;
+      var enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
 
-    var allConnections = jsPlumb.getConnections();
-    for (var i = 0; i < allConnections.length; i++) {
-      var c = allConnections[i];
+      var allConnections = jsPlumb.getConnections();
+      allConnections.forEach((connection) => {
+        var element = connection.source;
+        while (element.attr("class") != "stackFrame") {
+          element = element.parent();
+        }
 
-      // this is VERY VERY fragile code, since it assumes that going up
-      // five layers of parent() calls will get you from the source end
-      // of the connector to the enclosing stack frame
-      var stackFrameDiv = c.source.parent().parent().parent().parent().parent();
+        // if this connector starts in the selected stack frame ...
+        if (element.attr("id") == enclosingStackFrameID) {
+          // then HIGHLIGHT IT!
+          connection.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
+          connection.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
+          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
 
-      // if this connector starts in the selected stack frame ...
-      if (stackFrameDiv.attr('id') == enclosingStackFrameID) {
-        // then HIGHLIGHT IT!
-        c.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
-        c.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
-        c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
+          // ... and move it to the VERY FRONT
+          connection.canvas.style.zIndex = 1000;
+        } else {
+          // else unhighlight it
+          connection.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
+          connection.endpoints[0].setPaintStyle({ fillStyle: lightGray });
+          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
+          connection.canvas.style.zIndex = 0;
+        }
+      });
 
-        // ... and move it to the VERY FRONT
-        $(c.canvas).css("z-index", 1000);
-      }
-      else {
-        // else unhighlight it
-        c.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
-        c.endpoints[0].setPaintStyle({ fillStyle: lightGray });
-        c.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
-        $(c.canvas).css("z-index", 0);
-      }
-    }
+      // clear everything, then just activate $(this) one ...
+      document.querySelectorAll(".stackFrame").forEach((frame) => {
+        frame.classList.remove("selectedStackFrame");
+      });
+      document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+        header.classList.add("inactiveStackFrameHeader");
+      });
 
-    // clear everything, then just activate $(this) one ...
-    $(".stackFrame").removeClass("selectedStackFrame");
-    $(".stackFrameHeader").addClass("inactiveStackFrameHeader");
-
-    enclosingStackFrame.addClass("selectedStackFrame");
-    $(this).removeClass("inactiveStackFrameHeader");
+      enclosingStackFrame.classList.add("selectedStackFrame");
+      this.classList.remove("inactiveStackFrameHeader");
+    });
   });
 
   // 'click' on the top-most stack frame if available,
   // or on "Global variables" otherwise
-  if (stackGrowsDown) {
-    $('#stack_header' + (curEntry.encoded_frames.length - 1)).trigger('click');
+  if (stackGrowsUp) {
+    document.getElementById("stack_header0").click();
   } else {
-    $('#stack_header0').trigger('click');
+    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
   }
-
-}
-
-function isPrimitiveType(obj) {
-  var typ = typeof obj;
-  return ((obj == null) || (typ != "object"));
 }
 
 function getObjectID(obj) {
   // pre-condition
-  assert(!isPrimitiveType(obj));
-  assert($.isArray(obj));
+  assert(typeof obj == "object" && obj != null);
+  assert(Array.isArray(obj));
 
-  if ((obj[0] == 'INSTANCE') || (obj[0] == 'CLASS')) {
+  if (obj[0] == "INSTANCE" || obj[0] == "CLASS") {
     return obj[2];
-  }
-  else {
+  } else {
     return obj[1];
   }
 }
@@ -480,95 +514,104 @@ function renderData(obj, jDomElt, ignoreIDs) {
   var typ = typeof obj;
 
   if (obj == null) {
-    jDomElt.append('<span class="nullObj">None</span>');
-  }
-  else if (typ == "number") {
-    jDomElt.append('<span class="numberObj">' + obj + '</span>');
-  }
-  else if (typ == "boolean") {
+    jDomElt.innerHTML = '<span class="nullObj">None</span>';
+  } else if (typ == "number") {
+    jDomElt.innerHTML = '<span class="numberObj">' + obj + "</span>";
+  } else if (typ == "boolean") {
     if (obj) {
-      jDomElt.append('<span class="boolObj">True</span>');
+      jDomElt.innerHTML = '<span class="boolObj">True</span>';
+    } else {
+      jDomElt.innerHTML = '<span class="boolObj">False</span>';
     }
-    else {
-      jDomElt.append('<span class="boolObj">False</span>');
-    }
-  }
-  else if (typ == "string") {
-    // escape using htmlspecialchars to prevent HTML/script injection
-    var literalStr = htmlspecialchars(obj);
-
-    // print as a double-quoted string literal
-    literalStr = literalStr.replace(new RegExp('\"', 'g'), '\\"'); // replace ALL
-    literalStr = '"' + literalStr + '"';
-
-    jDomElt.append('<span class="stringObj">' + literalStr + '</span>');
-  }
-  else if (typ == "object") {
-    assert($.isArray(obj));
-
-    var idStr = '';
+  } else if (typ == "string") {
+    jDomElt.innerHTML = '<span class="stringObj">"' + htmlSpecialChars(obj).replaceAll('"', '\\"') + '"</span>';
+  } else if (typ == "object") {
+    var idStr = "";
     if (!ignoreIDs) {
-      idStr = ' (id=' + getObjectID(obj) + ')';
+      idStr = " (id=" + getObjectID(obj) + ")";
     }
 
-    if (obj[0] == 'LIST') {
+    if (obj[0] == "LIST") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty list' + idStr + '</div>');
-      }
-      else {
-        jDomElt.append('<div class="typeLabel">list' + idStr + ':</div>');
+        newDiv.textContent = "empty list" + idStr;
+        jDomElt.appendChild(newDiv);
+      } else {
+        newDiv.textContent = "list" + idStr + ":";
+        jDomElt.appendChild(newDiv);
 
-        jDomElt.append('<table class="listTbl"><tr></tr><tr></tr></table>');
-        var tbl = jDomElt.children('table');
-        var headerTr = tbl.find('tr:first');
-        var contentTr = tbl.find('tr:last');
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'LIST' tag and ID entry
+        var table = document.createElement("table");
+        table.classList.add("listTbl");
+        table.innerHTML = "<tr></tr><tr></tr>";
+        jDomElt.appendChild(table);
+        var headerTr = table.querySelector("tr:first-child");
+        var contentTr = table.querySelector("tr:last-child");
+        obj.slice(2).forEach((val, ind) => {
+          // create a new column for both header and content rows
+          var headerCell = document.createElement("td");
+          headerCell.classList.add("listHeader");
+          headerCell.textContent = ind;
+          headerTr.appendChild(headerCell);
 
-          // add a new column and then pass in that newly-added column
-          // as jDomElt to the recursive call to child:
-          headerTr.append('<td class="listHeader"></td>');
-          headerTr.find('td:last').append(ind - 2);
+          var contentCell = document.createElement("td");
+          contentCell.classList.add("listElt");
+          contentTr.appendChild(contentCell);
 
-          contentTr.append('<td class="listElt"></td>');
-          renderData(val, contentTr.find('td:last'), ignoreIDs);
+          // pass in the newly-added content cell to renderData
+          renderData(val, contentCell, ignoreIDs);
         });
       }
-    }
-    else if (obj[0] == 'TUPLE') {
+    } else if (obj[0] == "TUPLE") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty tuple' + idStr + '</div>');
-      }
-      else {
-        jDomElt.append('<div class="typeLabel">tuple' + idStr + ':</div>');
-        jDomElt.append('<table class="tupleTbl"><tr></tr><tr></tr></table>');
-        var tbl = jDomElt.children('table');
-        var headerTr = tbl.find('tr:first');
-        var contentTr = tbl.find('tr:last');
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'TUPLE' tag and ID entry
+        newDiv.textContent = "empty tuple" + idStr;
+        jDomElt.appendChild(newDiv);
+      } else {
+        newDiv.textContent = "tuple" + idStr + ":";
+        jDomElt.appendChild(newDiv);
 
-          // add a new column and then pass in that newly-added column
-          // as jDomElt to the recursive call to child:
-          headerTr.append('<td class="tupleHeader"></td>');
-          headerTr.find('td:last').append(ind - 2);
+        var table = document.createElement("table");
+        table.classList.add("tupvarbl");
+        table.innerHTML = "<tr></tr><tr></tr>";
+        jDomElt.appendChild(table);
+        var headerTr = table.querySelector("tr:first-child");
+        var contentTr = table.querySelector("tr:last-child");
+        obj.slice(2).forEach((val, ind) => {
+          // create a new column for both header and content rows
+          var headerCell = document.createElement("td");
+          headerCell.classList.add("tupleHeader");
+          headerCell.textContent = ind;
+          headerTr.appendChild(headerCell);
 
-          contentTr.append('<td class="tupleElt"></td>');
-          renderData(val, contentTr.find('td:last'), ignoreIDs);
+          var contentCell = document.createElement("td");
+          contentCell.classList.add("tupleElt");
+          contentTr.appendChild(contentCell);
+
+          // pass in the newly-added content cell to renderData
+          renderData(val, contentCell, ignoreIDs);
         });
       }
-    }
-    else if (obj[0] == 'SET') {
+    } else if (obj[0] == "SET") {
       assert(obj.length >= 2);
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
       if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty set' + idStr + '</div>');
-      }
-      else {
-        jDomElt.append('<div class="typeLabel">set' + idStr + ':</div>');
-        jDomElt.append('<table class="setTbl"></table>');
-        var tbl = jDomElt.children('table');
+        newDiv.textContent = "empty set" + idStr;
+        jDomElt.appendChild(newDiv);
+      } else {
+        newDiv.textContent = "set" + idStr + ":";
+        jDomElt.appendChild(newDiv);
+
+        var table = document.createElement("table");
+        table.classList.add("setTbl");
+        jDomElt.appendChild(table);
         // create an R x C matrix:
         var numElts = obj.length - 2;
         // gives roughly a 3x5 rectangular ratio, square is too, err,
@@ -584,206 +627,347 @@ function renderData(obj, jDomElt, ignoreIDs) {
           numCols += 1;
         }
 
-        jQuery.each(obj, function (ind, val) {
-          if (ind < 2) return; // skip 'SET' tag and ID entry
-
-          if (((ind - 2) % numCols) == 0) {
-            tbl.append('<tr></tr>');
+        obj.slice(2).forEach((val, ind) => {
+          if (ind % numCols == 0) {
+            var newTr = document.createElement("tr");
+            table.appendChild(newTr);
           }
 
-          var curTr = tbl.find('tr:last');
-          curTr.append('<td class="setElt"></td>');
-          renderData(val, curTr.find('td:last'), ignoreIDs);
+          var curTr = table.querySelector("tr:last-child");
+          var newTd = document.createElement("td");
+          newTd.classList.add("setElt");
+          curTr.appendChild(newTd);
+          renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
         });
       }
-    }
-    else if (obj[0] == 'DICT') {
+    } else if (obj[0] == "DICT") {
       assert(obj.length >= 2);
-      if (obj.length == 2) {
-        jDomElt.append('<div class="typeLabel">empty dict' + idStr + '</div>');
-      }
-      else {
-        jDomElt.append('<div class="typeLabel">dict' + idStr + ':</div>');
-        jDomElt.append('<table class="dictTbl"></table>');
-        var tbl = jDomElt.children('table');
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 2) return; // skip 'DICT' tag and ID entry
 
-          tbl.append('<tr class="dictEntry"><td class="dictKey"></td><td class="dictVal"></td></tr>');
-          var newRow = tbl.find('tr:last');
-          var keyTd = newRow.find('td:first');
-          var valTd = newRow.find('td:last');
-          renderData(kvPair[0], keyTd, ignoreIDs);
-          renderData(kvPair[1], valTd, ignoreIDs);
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
+      if (obj.length == 2) {
+        newDiv.textContent = "empty dict" + idStr;
+        jDomElt.appendChild(newDiv);
+      } else {
+        newDiv.textContent = "dict" + idStr + ":";
+        jDomElt.appendChild(newDiv);
+
+        var table = document.createElement("table");
+        table.classList.add("dictTbl");
+        jDomElt.appendChild(table);
+        obj.slice(2).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("dictKey");
+
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("dictVal");
+
+          var newDictTr = document.createElement("tr");
+          newDictTr.classList.add("dictEntry");
+          newDictTr.appendChild(newKeyTd);
+          newDictTr.appendChild(newValTd);
+
+          table.appendChild(newDictTr);
+
+          renderData(kvPair[0], newKeyTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
-    }
-    else if (obj[0] == 'INSTANCE') {
+    } else if (obj[0] == "INSTANCE") {
       assert(obj.length >= 3);
-      jDomElt.append('<div class="typeLabel">' + obj[1] + ' instance' + idStr + '</div>');
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
+      newDiv.textContent = obj[1] + " instance" + idStr;
+      jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
-        jDomElt.append('<table class="instTbl"></table>');
-        var tbl = jDomElt.children('table');
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 3) return; // skip type tag, class name, and ID entry
+        var table = document.createElement("table");
+        table.classList.add("instTbl");
+        jDomElt.appendChild(table);
+        obj.slice(3).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("instKey");
 
-          tbl.append('<tr class="instEntry"><td class="instKey"></td><td class="instVal"></td></tr>');
-          var newRow = tbl.find('tr:last');
-          var keyTd = newRow.find('td:first');
-          var valTd = newRow.find('td:last');
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("instVal");
+
+          var newInstTr = document.createElement("tr");
+          newInstTr.classList.add("instEntry");
+          newInstTr.appendChild(newKeyTd);
+          newInstTr.appendChild(newValTd);
+
+          table.appendChild(newInstTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.append('<span class="keyObj">' + attrnameStr + '</span>');
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
-    }
-    else if (obj[0] == 'CLASS') {
+    } else if (obj[0] == "CLASS") {
       assert(obj.length >= 4);
-      var superclassStr = '';
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("typeLabel");
+      var superclassStr = "";
       if (obj[3].length > 0) {
-        superclassStr += ('[extends ' + obj[3].join(',') + '] ');
+        superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
 
-      jDomElt.append('<div class="typeLabel">' + obj[1] + ' class ' + superclassStr + idStr + '</div>');
+      newDiv.textContent = obj[1] + " class " + superclassStr + idStr;
+      jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
-        jDomElt.append('<table class="classTbl"></table>');
-        var tbl = jDomElt.children('table');
-        $.each(obj, function (ind, kvPair) {
-          if (ind < 4) return; // skip type tag, class name, ID, and superclasses entries
+        var table = document.createElement("table");
+        table.classList.add("classTbl");
+        jDomElt.appendChild(table);
+        obj.slice(4).forEach((kvPair) => {
+          var newKeyTd = document.createElement("td");
+          newKeyTd.classList.add("classKey");
 
-          tbl.append('<tr class="classEntry"><td class="classKey"></td><td class="classVal"></td></tr>');
-          var newRow = tbl.find('tr:last');
-          var keyTd = newRow.find('td:first');
-          var valTd = newRow.find('td:last');
+          var newValTd = document.createElement("td");
+          newValTd.classList.add("classVal");
+
+          var newClassTr = document.createElement("tr");
+          newClassTr.classList.add("classEntry");
+          newClassTr.appendChild(newKeyTd);
+          newClassTr.appendChild(newValTd);
+
+          table.appendChild(newClassTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          var attrnameStr = htmlspecialchars(kvPair[0]);
-          keyTd.append('<span class="keyObj">' + attrnameStr + '</span>');
+          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], valTd, ignoreIDs);
+          renderData(kvPair[1], newValTd, ignoreIDs);
         });
       }
-    }
-
-    else if (obj[0] == 'CIRCULAR_REF') {
+    } else if (obj[0] == "CIRCULAR_REF") {
       assert(obj.length == 2);
-      jDomElt.append('<div class="circRefLabel">circular reference to id=' + obj[1] + '</div>');
-    }
-    else {
+
+      var newDiv = document.createElement("div");
+      newDiv.classList.add("circRefLabel");
+      newDiv.textContent = "circular reference to id=" + obj[1];
+      jDomElt.appendChild(newDiv);
+    } else {
       // render custom data type
       assert(obj.length == 3);
-      typeName = obj[0];
-      id = obj[1];
-      strRepr = obj[2];
+      var typeName = obj[0];
+      var id = obj[1];
+      var strRepr = obj[2];
 
       // if obj[2] is like '<generator object <genexpr> at 0x84760>',
       // then display an abbreviated version rather than the gory details
       noStrReprRE = /<.* at 0x.*>/;
       if (noStrReprRE.test(strRepr)) {
-        jDomElt.append('<span class="customObj">' + typeName + idStr + '</span>');
-      }
-      else {
-        strRepr = htmlspecialchars(strRepr); // escape strings!
+        var customObjSpan = document.createElement("span");
+        customObjSpan.className = "customObj";
+        customObjSpan.textContent = typeName + idStr;
+        jDomElt.appendChild(customObjSpan);
+      } else {
+        strRepr = htmlSpecialChars(strRepr); // escape strings!
 
         // warning: we're overloading tuple elts for custom data types
-        jDomElt.append('<div class="typeLabel">' + typeName + idStr + ':</div>');
-        jDomElt.append('<table class="tupleTbl"><tr><td class="tupleElt">' + strRepr + '</td></tr></table>');
+        var typeLabelDiv = document.createElement("div");
+        typeLabelDiv.className = "typeLabel";
+        typeLabelDiv.textContent = typeName + idStr + ":";
+        jDomElt.appendChild(typeLabelDiv);
+
+        var table = document.createElement("table");
+        table.className = "tupvarbl";
+        var row = document.createElement("tr");
+        var cell = document.createElement("td");
+        cell.className = "tupleElt";
+        cell.textContent = strRepr;
+        row.appendChild(cell);
+        table.appendChild(row);
+        jDomElt.appendChild(table);
       }
     }
   }
-  else {
-    alert("Error: renderData FAIL!");
-  }
-}
-
-String.prototype.rtrim = function () {
-  return this.replace(/\s*$/g, "");
 }
 
 function renderPyCodeOutput(codeStr) {
-  var tbl = $("#pyCodeOutput");
-  tbl.empty(); // jQuery empty() is better than .html('')
-  var lines = codeStr.rtrim().split('\n');
+  var tbl = document.getElementById("pyCodeOutput");
+  tbl.innerHTML = ""; // Clear table content
 
-  $.each(lines, function (i, cod) {
-    var lineNo = i + 1;
-    var htmlCod = htmlspecialchars(cod);
+  codeStr.split("\n").forEach((cod, i) => {
+    const newRow = document.createElement("tr");
 
-    tbl.append('<tr><td class="lineNo"></td><td class="cod"></td></tr>');
-    var curRow = tbl.find('tr:last');
-    curRow.find('td.lineNo').html(lineNo);
-    curRow.find('td.cod').html(htmlCod);
+    const lineNoTd = document.createElement("td");
+    lineNoTd.className = "lineNo";
+    lineNoTd.textContent = i + 1;
+
+    const codTd = document.createElement("td");
+    codTd.className = "cod";
+    codTd.innerHTML = htmlSpecialChars(cod.replace(/\s+$/, ""));
+
+    newRow.appendChild(lineNoTd);
+    newRow.appendChild(codTd);
+    tbl.appendChild(newRow);
+  });
+}
+
+function addTabSupport(textElement) {
+  textElement.addEventListener("keydown", (k) => {
+    //TODO: change to proper tab
+    if (k.key === "Tab") {
+      k.preventDefault();
+      var start = textElement.selectionStart;
+      var end = textElement.selectionEnd;
+
+      if (k.shiftKey) {
+        var lines = textElement.value.substring(start, end).split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith("    ")) {
+            lines[i] = lines[i].substring(4);
+          }
+        }
+        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start - 4;
+      } else {
+        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start + 4;
+      }
+    }
   });
 }
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
-  $("#jmpFirstInstr").click(function () {
+  document.getElementById("jmpFirstInstr").addEventListener("click", function () {
     curInstr = 0;
     updateOutput();
   });
 
-  $("#jmpLastInstr").click(function () {
+  document.getElementById("jmpLastInstr").addEventListener("click", function () {
     curInstr = curTrace.length - 1;
     updateOutput();
   });
 
-  $("#jmpStepBack").click(function () {
+  document.getElementById("jmp1StepBack").addEventListener("click", function () {
     if (curInstr > 0) {
       curInstr -= 1;
       updateOutput();
     }
   });
 
-  $("#jmpStepFwd").click(function () {
+  document.getElementById("jmp5StepBack").addEventListener("click", function () {
+    if (curInstr > 4) {
+      curInstr -= 5;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp25StepBack").addEventListener("click", function () {
+    if (curInstr > 24) {
+      curInstr -= 25;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp1StepFwd").addEventListener("click", function () {
     if (curInstr < curTrace.length - 1) {
       curInstr += 1;
       updateOutput();
     }
   });
 
+  document.getElementById("jmp5StepFwd").addEventListener("click", function () {
+    if (curInstr < curTrace.length - 6) {
+      curInstr += 5;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmp25StepFwd").addEventListener("click", function () {
+    if (curInstr < curTrace.length - 26) {
+      curInstr += 25;
+      updateOutput();
+    }
+  });
+
+  document.getElementById("jmpToStepBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpToStepText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let number = parseInt(inputValue) - 1;
+      if (number >= 0 && number <= curTrace.length) {
+        curInstr = number;
+        updateOutput();
+      }
+    }
+  });
+
+  document.getElementById("jmpFwdToLineBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpFwdToLineText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let lineNumber = parseInt(inputValue);
+      if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
+        curInstr += 1;
+        while (curInstr <= curTrace.length - 2 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+          curInstr += 1;
+        }
+        updateOutput();
+      }
+    }
+  });
+
+  document.getElementById("jmpBackToLineBtn").addEventListener("click", function () {
+    let inputValue = document.getElementById("jmpBackToLineText").value;
+    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+      let lineNumber = parseInt(inputValue);
+      if (lineNumber >= 1 && curInstr >= 1) {
+        curInstr -= 1;
+        while (curInstr >= 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+          curInstr -= 1;
+        }
+        updateOutput();
+      }
+    }
+  });
+
   // disable controls initially ...
-  $("#vcrControls #jmpFirstInstr").attr("disabled", true);
-  $("#vcrControls #jmpStepBack").attr("disabled", true);
-  $("#vcrControls #jmpStepFwd").attr("disabled", true);
-  $("#vcrControls #jmpLastInstr").attr("disabled", true);
+  document.getElementById("jmpFirstInstr").disabled = true;
+  document.getElementById("jmp1StepBack").disabled = true;
+  document.getElementById("jmp5StepBack").disabled = true;
+  document.getElementById("jmp25StepBack").disabled = true;
+  document.getElementById("jmp1StepFwd").disabled = true;
+  document.getElementById("jmp5StepFwd").disabled = true;
+  document.getElementById("jmp25StepFwd").disabled = true;
+  document.getElementById("jmpLastInstr").disabled = true;
 
   // set some sensible jsPlumb defaults
   jsPlumb.Defaults.Endpoint = ["Dot", { radius: 3 }];
   //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
   jsPlumb.Defaults.EndpointStyle = { fillStyle: lightGray };
   jsPlumb.Defaults.Anchors = ["RightMiddle", "LeftMiddle"];
-  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }]; /* too much 'curviness' causes lines to run together */
+  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }];
   jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
 
   // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]]
+  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]];
 
   jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
   jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
 
   // set keyboard event listeners ...
-  $(document).keydown(function (k) {
+  document.addEventListener("keydown", (k) => {
     // ONLY capture keys if we're in 'visualize code' mode:
-    if (appMode == 'visualize') {
-      if (k.keyCode == 37) { // left arrow
-        if (!$("#vcrControls #jmpStepBack").attr("disabled")) {
-          $("#jmpStepBack").trigger('click');
+    if (appMode == "visualize") {
+      if (k.key == "ArrowLeft") {
+        // left arrow
+        if (!document.getElementById("jmp1StepBack").disabled) {
+          document.getElementById("jmp1StepBack").click();
           k.preventDefault(); // don't horizontally scroll the display
         }
-      }
-      else if (k.keyCode == 39) { // right arrow
-        if (!$("#vcrControls #jmpStepFwd").attr("disabled")) {
-          $("#jmpStepFwd").trigger('click');
+      } else if (k.key == "ArrowRight") {
+        // right arrow
+        if (!document.getElementById("jmp1StepFwd").disabled) {
+          document.getElementById("jmp1StepFwd").click();
           k.preventDefault(); // don't horizontally scroll the display
         }
       }
@@ -793,26 +977,21 @@ function eduPythonCommonInit() {
   // redraw everything on window resize so that connectors are in the
   // right place
   // TODO: can be SLOW on older browsers!!!
-  $(window).resize(function () {
-    if (appMode == 'visualize') {
+  window.addEventListener("resize", function () {
+    if (appMode == "visualize") {
       updateOutput();
     }
   });
 
-  $("#stack_growth_selector").click(function () {
-    if (appMode == 'visualize') {
+  document.getElementById("stackGrowUpCheckbox").addEventListener("click", function () {
+    if (appMode == "visualize") {
       updateOutput();
     }
   });
 
-  $("#classicModeCheckbox").click(function () {
-    if (appMode == 'visualize') {
+  document.getElementById("inlineRenderingCheckbox").addEventListener("click", function () {
+    if (appMode == "visualize") {
       updateOutput();
     }
-  });
-
-  // log a generic AJAX error handler
-  $(document).ajaxError(function () {
-    alert("Uh oh, the server returned an error, boo :(  Please reload the page and try executing a different Python script.");
   });
 }
