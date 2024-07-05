@@ -23,7 +23,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // representing the user's script POST['user_script'] and receives a complete
 // execution trace, which it parses and displays to HTML.
 
-// Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
+// Pre-req: edu-python.js should be imported BEFORE this file
+
+function loadExample() {
+  const selectedOption = document.getElementById("selectExample").value;
+  if (selectedOption) {
+    fetch("../example_code/" + selectedOption)
+      .then((response) => response.text())
+      .then((data) => (document.getElementById("pyInput").value = data))
+      .catch((error) => console.error("Error fetching data:", error));
+  }
+}
 
 document.addEventListener("DOMContentLoaded", function () {
   eduPythonCommonInit(); // must call this first!

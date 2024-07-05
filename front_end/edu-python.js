@@ -249,7 +249,7 @@ function updateOutput() {
   var dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = ""; // Clear the content
 
-  // organise frames based on settings
+  // organize frames based on settings
   if (encodedFrames) {
     var orderedFrames = encodedFrames.slice();
     if (stackGrowsUp) {
@@ -812,29 +812,29 @@ function renderPyCodeOutput(codeStr) {
   });
 }
 
-function loadExample() {
-  const selectedOption = document.getElementById("selectExample").value;
-  if (selectedOption) {
-    fetch("../example_code/" + selectedOption)
-      .then((response) => response.text())
-      .then((data) => (document.getElementById("pyInput").value = data))
-      .catch((error) => console.error("Error fetching data:", error));
-  }
-}
+function addTabSupport(textElement) {
+  textElement.addEventListener("keydown", (k) => {
+    //TODO: change to proper tab
+    if (k.key === "Tab") {
+      k.preventDefault();
+      var start = textElement.selectionStart;
+      var end = textElement.selectionEnd;
 
-function loadQuestion() {
-  const selectedOption = document.getElementById("selectQuestion").value;
-  if (selectedOption) {
-    // load the questions file specified by the query string
-    fetch("../main.py", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ request: "question", question_file: selectedOption }),
-    })
-      .then((response) => response.json())
-      .then((data) => finishQuestionsInit(data))
-      .catch((error) => console.error("Error:", error));
-  }
+      if (k.shiftKey) {
+        var lines = textElement.value.substring(start, end).split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith("    ")) {
+            lines[i] = lines[i].substring(4);
+          }
+        }
+        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start - 4;
+      } else {
+        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
+        textElement.selectionStart = textElement.selectionEnd = start + 4;
+      }
+    }
+  });
 }
 
 // initialization function that should be called when the page is loaded
@@ -992,31 +992,6 @@ function eduPythonCommonInit() {
   document.getElementById("inlineRenderingCheckbox").addEventListener("click", function () {
     if (appMode == "visualize") {
       updateOutput();
-    }
-  });
-}
-
-function addTabSupport(textElement) {
-  textElement.addEventListener("keydown", (k) => {
-    //TODO: change to proper tab
-    if (k.key === "Tab") {
-      k.preventDefault();
-      var start = textElement.selectionStart;
-      var end = textElement.selectionEnd;
-
-      if (k.shiftKey) {
-        var lines = textElement.value.substring(start, end).split("\n");
-        for (var i = 0; i < lines.length; i++) {
-          if (lines[i].startsWith("    ")) {
-            lines[i] = lines[i].substring(4);
-          }
-        }
-        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
-        textElement.selectionStart = textElement.selectionEnd = start - 4;
-      } else {
-        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
-        textElement.selectionStart = textElement.selectionEnd = start + 4;
-      }
     }
   });
 }

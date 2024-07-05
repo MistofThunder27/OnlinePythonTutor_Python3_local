@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // UI for online problem sets
-// Pre-req: edu-python.js and jquery.ba-bbq.min.js should be imported BEFORE this file
+// Pre-req: edu-python.js should be imported BEFORE this file
 
 // parsed form of a questions file from questions/
 var curQuestion = null;
@@ -41,6 +41,21 @@ function resetTestResults() {
 
   assert(testResults.length > 0);
   assert(testResults.length == tests.length);
+}
+
+function loadQuestion() {
+  const selectedOption = document.getElementById("selectQuestion").value;
+  if (selectedOption) {
+    // load the questions file specified by the query string
+    fetch("../main.py", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: "question", question_file: selectedOption }),
+    })
+      .then((response) => response.json())
+      .then((data) => finishQuestionsInit(data))
+      .catch((error) => console.error("Error:", error));
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -199,8 +214,7 @@ function finishQuestionsInit(questionsDat) {
         questionsDat.skeleton.replace(/\s+$/, "").split(/\n/)
       );
       //console.log(diffResults);
-      diffResults,
-        forEach((e) => {
+      diffResults.forEach((e) => {
           if (e.file1 && e.file2) {
             // i THINK this is the right way to calculate the number of
             // changed lines ... taking the MAXIMUM of the delta lengths
