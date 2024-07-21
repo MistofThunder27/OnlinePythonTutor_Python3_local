@@ -43,6 +43,27 @@ function resetTestResults() {
   assert(testResults.length == tests.length);
 }
 
+// concatenate solution code and test code:
+function concatSolnTestCode(solnCode, testCode) {
+  return solnCode.replace(/\s+$/, "") + "\n\n# Everything below here is test code\n" + testCode;
+}
+
+function genDebugLinkHandler(failingTestIndex) {
+  return function () {
+    // Switch back to visualize mode, populating the "testCodeInput"
+    // field with the failing test case, and RE-RUN the back-end to
+    // visualize execution (this time with proper object IDs)
+    curTestIndex = failingTestIndex;
+    document.getElementById("testCodeInput").value = tests[curTestIndex];
+
+    // prevent multiple-clicking ...
+    this.innerHTML = "One sec ...";
+    this.disabled = true;
+
+    document.getElementById("executeBtn").click(); // emulate an execute button press!
+  };
+}
+
 function loadQuestion() {
   const selectedOption = document.getElementById("selectQuestion").value;
   if (selectedOption) {
@@ -53,7 +74,142 @@ function loadQuestion() {
       body: JSON.stringify({ request: "question", question_file: selectedOption }),
     })
       .then((response) => response.json())
-      .then((data) => finishQuestionsInit(data))
+      .then((data) => {
+        curQuestion = data; // initialize global
+
+        document.getElementById("ProblemName").value = data.name;
+        document.getElementById("ProblemStatement").value = data.question;
+
+        document.getElementById("showHintHref").addEventListener("click", function () {
+          document.getElementById("HintStatement").innerHTML = "<b>Hint</b>: " + data.hint;
+        });
+
+        document.getElementById("showSolutionHref").addEventListener("click", function () {
+          document.getElementById("SolutionStatement").innerHTML = "<b>Solution</b>: " + data.solution;
+        });
+
+        document.getElementById("actualCodeInput").value = data.skeleton;
+
+        // set some globals
+        tests = data.test;
+        expects = data.expect;
+        curTestIndex = 0;
+
+        resetTestResults();
+
+        document.getElementById("testCodeInput").value = tests[curTestIndex];
+
+        var executeBtn = document.getElementById("executeBtn");
+        executeBtn.disabled = false;
+        executeBtn.addEventListener("click", function () {
+          if (curQuestion.max_line_delta) {
+            // if the question has a 'max_line_delta' field, then check to see
+            // if > curQuestion.max_line_delta lines have changed from
+            // curQuestion.skeleton, and reject the attempt if that's the case
+            var numChangedLines = 0;
+
+            // split on newlines to do a line-level diff
+            // (rtrim both strings to discount the effect of trailing
+            // whitespace and newlines)
+            var diffResults = diff(
+              // TODO: remove dependacy
+              document.getElementById("actualCodeInput").value.replace(/\s+$/, "").split(/\n/),
+              data.skeleton.replace(/\s+$/, "").split(/\n/)
+            );
+            //console.log(diffResults);
+            diffResults.forEach((e) => {
+              if (e.file1 && e.file2) {
+                // i THINK this is the right way to calculate the number of
+                // changed lines ... taking the MAXIMUM of the delta lengths
+                // of e.file1 and e.file2:
+                numChangedLines += Math.max(e.file1.length, e.file2.length);
+              }
+            });
+
+            if (numChangedLines > Number(curQuestion.max_line_delta)) {
+              alert(
+                "Error: You have changed " +
+                  numChangedLines +
+                  " lines of code, but you are only allowed to change " +
+                  curQuestion.max_line_delta +
+                  " lines to solve this problem."
+              );
+              return;
+            }
+          }
+
+          this.textContent = "Please wait ... processing your code";
+          this.disabled = true;
+          document.getElementById("pyOutputPane").style.display = "none";
+
+          var submittedCode = concatSolnTestCode(
+            document.getElementById("actualCodeInput").value,
+            document.getElementById("testCodeInput").value
+          );
+
+          var postParams = { request: "execute", user_script: submittedCode };
+          if (data.max_instructions) {
+            postParams.max_instructions = data.max_instructions;
+          }
+
+          fetch("../main.py", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(postParams),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              renderPyCodeOutput(submittedCode);
+              curTrace = data;
+              location.hash = "#visualize";
+            })
+            .catch((error) => console.error("Error:", error));
+        });
+
+        document.getElementById("editBtn").addEventListener("click", function () {
+          location.hash = "#edit";
+        });
+
+        var submitBtn = document.getElementById("submitBtn");
+        submitBtn.addEventListener("click", function () {
+          this.textContent = "Please wait ... submitting ...";
+          this.disabled = true;
+
+          resetTestResults(); // prepare for a new fresh set of test results
+
+          // remember that these results come in asynchronously and probably
+          // out-of-order, so code very carefully here!!!
+          for (var i = 0; i < tests.length; i++) {
+            const ind = i;
+            var submittedCode = concatSolnTestCode(document.getElementById("actualCodeInput").value, tests[i]);
+
+            var postParams = {
+              request: "run test",
+              user_script: submittedCode,
+              expect_script: expects[i],
+            };
+            if (data.max_instructions) {
+              postParams.max_instructions = data.max_instructions;
+            }
+
+            fetch("../main.py", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(postParams),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                assert(testResults[ind] === null);
+                testResults[ind] = data;
+
+                if (testResults.every((result) => result !== null)) {
+                  location.hash = "#grade";
+                }
+              })
+              .catch((error) => console.error("Error:", error));
+          }
+        });
+      })
       .catch((error) => console.error("Error:", error));
   }
 }
@@ -140,7 +296,132 @@ document.addEventListener("DOMContentLoaded", function () {
       HintStatement.style.display = "none";
       SolutionStatement.style.display = "none";
 
-      gradeSubmission();
+      // ALL elements in testsTraces and expectsTraces should have been populated by their respective AJAX POST calls
+      document.getElementById("submittedCodePRE").innerHTML = htmlSpecialChars(
+        document.getElementById("actualCodeInput").value
+      );
+
+      const gradeMatrix = document.querySelector("#gradeMatrix tbody#gradeMatrixTbody");
+      const happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
+      const sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
+
+      testResults.forEach((result, i) => {
+        const gradeMatrixRow = document.createElement("tr");
+        gradeMatrix.appendChild(gradeMatrixRow);
+
+        const testInputCell = document.createElement("td");
+        testInputCell.className = "testInputCell";
+        gradeMatrixRow.appendChild(testInputCell);
+
+        // input_val could be null if there's a REALLY bad error :(
+        if (result.input_globals) {
+          const testInputSubTable = document.createElement("table");
+          testInputCell.appendChild(testInputSubTable);
+
+          // print out all non-function input global variables in a table
+          Object.entries(result.input_globals).forEach((entry) => {
+            const [k, v] = entry;
+            if (v == null || typeof v != "object" || v[0] != "function") {
+              const testInputVarRow = document.createElement("tr");
+              testInputSubTable.appendChild(testInputVarRow);
+
+              const testInputVarnameCell = document.createElement("td");
+              testInputVarnameCell.className = "testInputVarnameCell";
+              testInputVarnameCell.textContent = k + ":";
+              testInputVarRow.appendChild(testInputVarnameCell);
+
+              const testInputValCell = document.createElement("td");
+              testInputValCell.className = "testInputValCell";
+              testInputVarRow.appendChild(testInputValCell);
+
+              renderData(v, testInputValCell, true /* ignoreIDs */);
+            }
+          });
+        }
+
+        const testOutputCell = document.createElement("td");
+        testOutputCell.className = "testOutputCell";
+        gradeMatrixRow.appendChild(testOutputCell);
+
+        if (result.status == "error") {
+          const span1 = document.createElement("span");
+          span1.style.color = "darkRed";
+          span1.textContent = result.error_msg;
+          testOutputCell.appendChild(span1);
+        } else {
+          assert(result.status == "ok");
+          const testOutputSubTable = document.createElement("table");
+          testOutputCell.appendChild(testOutputSubTable);
+
+          const testOutputVarRow = document.createElement("tr");
+          testOutputSubTable.appendChild(testOutputVarRow);
+
+          const testOutputVarnameCell = document.createElement("td");
+          testOutputVarnameCell.className = "testOutputVarnameCell";
+          testOutputVarnameCell.textContent = result.output_var_to_compare + ":";
+          testOutputVarRow.appendChild(testOutputVarnameCell);
+
+          const testOutputValCell = document.createElement("td");
+          testOutputValCell.className = "testOutputValCell";
+          testOutputVarRow.appendChild(testOutputValCell);
+
+          renderData(result.test_val, testOutputValCell, true /* ignoreIDs */);
+        }
+
+        const statusCell = document.createElement("td");
+        statusCell.className = "statusCell";
+        gradeMatrixRow.appendChild(statusCell);
+
+        if (result.passed_test) {
+          statusCell.innerHTML = happyFaceImg;
+        } else {
+          const debugMeBtn = document.createElement("button");
+          debugMeBtn.type = "button";
+          debugMeBtn.textContent = "Debug me";
+          debugMeBtn.onclick = genDebugLinkHandler(i);
+
+          statusCell.innerHTML = sadFaceImg;
+          statusCell.appendChild(debugMeBtn);
+        }
+
+        const expectedCell = document.createElement("td");
+        expectedCell.className = "expectedCell";
+        gradeMatrixRow.appendChild(expectedCell);
+
+        const expectedSubTable = document.createElement("table");
+        expectedCell.appendChild(expectedSubTable);
+
+        const expectedVarRow = document.createElement("tr");
+        expectedSubTable.appendChild(expectedVarRow);
+
+        const expectedVarnameCell = document.createElement("td");
+        expectedVarnameCell.textContent = "Expected: ";
+        expectedVarRow.appendChild(expectedVarnameCell);
+
+        const expectedValCell = document.createElement("td");
+        expectedVarRow.appendChild(expectedValCell);
+        renderData(result.expect_val, expectedValCell, true /* ignoreIDs */);
+      });
+
+      var numPassed = 0;
+      testResults.forEach((result) => {
+        if (result.passed_test) {
+          numPassed++;
+        }
+      });
+
+      const gradeSummary = document.getElementById("gradeSummary");
+      if (numPassed < tests.length) {
+        gradeSummary.textContent =
+          "Your submitted answer passed " +
+          numPassed +
+          " out of " +
+          tests.length +
+          " tests.  Try to debug the failed tests!";
+      } else {
+        assert(numPassed == tests.length);
+        gradeSummary.textContent = "Congrats, your submitted answer passed all " + tests.length + " tests!";
+      }
     }
   });
 
@@ -149,291 +430,3 @@ document.addEventListener("DOMContentLoaded", function () {
   // loaded with.
   window.dispatchEvent(new Event("hashchange"));
 });
-
-// concatenate solution code and test code:
-function concatSolnTestCode(solnCode, testCode) {
-  return solnCode.replace(/\s+$/, "") + "\n\n# Everything below here is test code\n" + testCode;
-}
-
-function genDebugLinkHandler(failingTestIndex) {
-  return function () {
-    // Switch back to visualize mode, populating the "testCodeInput"
-    // field with the failing test case, and RE-RUN the back-end to
-    // visualize execution (this time with proper object IDs)
-    curTestIndex = failingTestIndex;
-    document.getElementById("testCodeInput").value = tests[curTestIndex];
-
-    // prevent multiple-clicking ...
-    this.innerHTML = "One sec ...";
-    this.disabled = true;
-
-    document.getElementById("executeBtn").click(); // emulate an execute button press!
-  };
-}
-
-function finishQuestionsInit(questionsDat) {
-  curQuestion = questionsDat; // initialize global
-
-  document.getElementById("ProblemName").value = questionsDat.name;
-  document.getElementById("ProblemStatement").value = questionsDat.question;
-
-  document.getElementById("showHintHref").addEventListener("click", function () {
-    document.getElementById("HintStatement").innerHTML = "<b>Hint</b>: " + questionsDat.hint;
-  });
-
-  document.getElementById("showSolutionHref").addEventListener("click", function () {
-    document.getElementById("SolutionStatement").innerHTML = "<b>Solution</b>: " + questionsDat.solution;
-  });
-
-  document.getElementById("actualCodeInput").value = questionsDat.skeleton;
-
-  // set some globals
-  tests = questionsDat.tests;
-  expects = questionsDat.expects;
-  curTestIndex = 0;
-
-  resetTestResults();
-
-  document.getElementById("testCodeInput").value = tests[curTestIndex];
-
-  var executeBtn = document.getElementById("executeBtn");
-  executeBtn.disabled = false;
-  executeBtn.addEventListener("click", function () {
-    if (curQuestion.max_line_delta) {
-      // if the question has a 'max_line_delta' field, then check to see
-      // if > curQuestion.max_line_delta lines have changed from
-      // curQuestion.skeleton, and reject the attempt if that's the case
-      var numChangedLines = 0;
-
-      // split on newlines to do a line-level diff
-      // (rtrim both strings to discount the effect of trailing
-      // whitespace and newlines)
-      var diffResults = diff(
-        // TODO: remove dependacy
-        document.getElementById("actualCodeInput").value.replace(/\s+$/, "").split(/\n/),
-        questionsDat.skeleton.replace(/\s+$/, "").split(/\n/)
-      );
-      //console.log(diffResults);
-      diffResults.forEach((e) => {
-          if (e.file1 && e.file2) {
-            // i THINK this is the right way to calculate the number of
-            // changed lines ... taking the MAXIMUM of the delta lengths
-            // of e.file1 and e.file2:
-            numChangedLines += Math.max(e.file1.length, e.file2.length);
-          }
-        });
-
-      if (numChangedLines > curQuestion.max_line_delta) {
-        alert(
-          "Error: You have changed " +
-            numChangedLines +
-            " lines of code, but you are only allowed to change " +
-            curQuestion.max_line_delta +
-            " lines to solve this problem."
-        );
-        return;
-      }
-    }
-
-    this.textContent = "Please wait ... processing your code";
-    this.disabled = true;
-    document.getElementById("pyOutputPane").style.display = "none";
-
-    var submittedCode = concatSolnTestCode(
-      document.getElementById("actualCodeInput").value,
-      document.getElementById("testCodeInput").value
-    );
-
-    var postParams = { request: "execute", user_script: submittedCode };
-    if (questionsDat.max_instructions) {
-      postParams.max_instructions = questionsDat.max_instructions;
-    }
-
-    fetch("../main.py", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(postParams),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        renderPyCodeOutput(submittedCode);
-        curTrace = data;
-        location.hash = "#visualize";
-      })
-      .catch((error) => console.error("Error:", error));
-  });
-
-  document.getElementById("editBtn").addEventListener("click", function () {
-    location.hash = "#edit";
-  });
-
-  var submitBtn = document.getElementById("submitBtn");
-  submitBtn.addEventListener("click", function () {
-    this.textContent = "Please wait ... submitting ...";
-    this.disabled = true;
-
-    resetTestResults(); // prepare for a new fresh set of test results
-
-    // remember that these results come in asynchronously and probably
-    // out-of-order, so code very carefully here!!!
-    for (var i = 0; i < tests.length; i++) {
-      const ind = i;
-      var submittedCode = concatSolnTestCode(document.getElementById("actualCodeInput").value, tests[i]);
-
-      var postParams = {
-        request: "run test",
-        user_script: submittedCode,
-        expect_script: expects[i],
-      };
-      if (questionsDat.max_instructions) {
-        postParams.max_instructions = questionsDat.max_instructions;
-      }
-
-      fetch("../main.py", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postParams),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          assert(testResults[ind] === null);
-          testResults[ind] = data;
-
-          if (testResults.every((result) => result !== null)) {
-            location.hash = "#grade";
-          }
-        })
-        .catch((error) => console.error("Error:", error));
-    }
-  });
-}
-
-// should be called after ALL elements in testsTraces and expectsTraces
-// have been populated by their respective AJAX POST calls
-function gradeSubmission() {
-  document.getElementById("submittedCodePRE").innerHTML = htmlSpecialChars(
-    document.getElementById("actualCodeInput").value
-  );
-
-  const gradeMatrix = document.querySelector("#gradeMatrix tbody#gradeMatrixTbody");
-  const happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
-  const sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
-
-  testResults.forEach((result, i) => {
-    const gradeMatrixRow = document.createElement("tr");
-    gradeMatrix.appendChild(gradeMatrixRow);
-
-    const testInputCell = document.createElement("td");
-    testInputCell.className = "testInputCell";
-    gradeMatrixRow.appendChild(testInputCell);
-
-    // input_val could be null if there's a REALLY bad error :(
-    if (result.input_globals) {
-      const testInputSubTable = document.createElement("table");
-      testInputCell.appendChild(testInputSubTable);
-
-      // print out all non-function input global variables in a table
-      Object.entries(result.input_globals).forEach((entry) => {
-        const [k, v] = entry;
-        if (v == null || typeof v != "object" || v[0] != "function") {
-          const testInputVarRow = document.createElement("tr");
-          testInputSubTable.appendChild(testInputVarRow);
-
-          const testInputVarnameCell = document.createElement("td");
-          testInputVarnameCell.className = "testInputVarnameCell";
-          testInputVarnameCell.textContent = k + ":";
-          testInputVarRow.appendChild(testInputVarnameCell);
-
-          const testInputValCell = document.createElement("td");
-          testInputValCell.className = "testInputValCell";
-          testInputVarRow.appendChild(testInputValCell);
-
-          renderData(v, testInputValCell, true /* ignoreIDs */);
-        }
-      });
-    }
-
-    const testOutputCell = document.createElement("td");
-    testOutputCell.className = "testOutputCell";
-    gradeMatrixRow.appendChild(testOutputCell);
-
-    if (result.status == "error") {
-      const span1 = document.createElement("span");
-      span1.style.color = "darkRed";
-      span1.textContent = result.error_msg;
-      testOutputCell.appendChild(span1);
-    } else {
-      assert(result.status == "ok");
-      const testOutputSubTable = document.createElement("table");
-      testOutputCell.appendChild(testOutputSubTable);
-
-      const testOutputVarRow = document.createElement("tr");
-      testOutputSubTable.appendChild(testOutputVarRow);
-
-      const testOutputVarnameCell = document.createElement("td");
-      testOutputVarnameCell.className = "testOutputVarnameCell";
-      testOutputVarnameCell.textContent = result.output_var_to_compare + ":";
-      testOutputVarRow.appendChild(testOutputVarnameCell);
-
-      const testOutputValCell = document.createElement("td");
-      testOutputValCell.className = "testOutputValCell";
-      testOutputVarRow.appendChild(testOutputValCell);
-
-      renderData(result.test_val, testOutputValCell, true /* ignoreIDs */);
-    }
-
-    const statusCell = document.createElement("td");
-    statusCell.className = "statusCell";
-    gradeMatrixRow.appendChild(statusCell);
-
-    if (result.passed_test) {
-      statusCell.innerHTML = happyFaceImg;
-    } else {
-      const debugMeBtn = document.createElement("button");
-      debugMeBtn.type = "button";
-      debugMeBtn.textContent = "Debug me";
-      debugMeBtn.onclick = genDebugLinkHandler(i);
-
-      statusCell.innerHTML = sadFaceImg;
-      statusCell.appendChild(debugMeBtn);
-    }
-
-    const expectedCell = document.createElement("td");
-    expectedCell.className = "expectedCell";
-    gradeMatrixRow.appendChild(expectedCell);
-
-    const expectedSubTable = document.createElement("table");
-    expectedCell.appendChild(expectedSubTable);
-
-    const expectedVarRow = document.createElement("tr");
-    expectedSubTable.appendChild(expectedVarRow);
-
-    const expectedVarnameCell = document.createElement("td");
-    expectedVarnameCell.textContent = "Expected: ";
-    expectedVarRow.appendChild(expectedVarnameCell);
-
-    const expectedValCell = document.createElement("td");
-    expectedVarRow.appendChild(expectedValCell);
-    renderData(result.expect_val, expectedValCell, true /* ignoreIDs */);
-  });
-
-  var numPassed = 0;
-  testResults.forEach((result) => {
-    if (result.passed_test) {
-      numPassed++;
-    }
-  });
-
-  const gradeSummary = document.getElementById("gradeSummary");
-  if (numPassed < tests.length) {
-    gradeSummary.textContent =
-      "Your submitted answer passed " +
-      numPassed +
-      " out of " +
-      tests.length +
-      " tests.  Try to debug the failed tests!";
-  } else {
-    assert(numPassed == tests.length);
-    gradeSummary.textContent = "Congrats, your submitted answer passed all " + tests.length + " tests!";
-  }
-}

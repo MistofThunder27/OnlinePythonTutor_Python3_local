@@ -1,5 +1,4 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import parse_qs
 import json
 import os
 
@@ -20,7 +19,7 @@ extension_type_mapping = {
 
 class LocalServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        requested_path = self.path.split("?")[0]
+        requested_path = self.path
         if requested_path == "/":
             requested_path = "/front_end/index.html"
 
@@ -50,8 +49,7 @@ class LocalServer(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             output_json = json.dumps(process_post(json.loads(
-                self.rfile.read(int(self.headers["Content-Length"]))
-            )))
+                self.rfile.read(int(self.headers["Content-Length"])))))
 
             with open("output.json", "w") as f:
                 f.write(output_json)
@@ -63,58 +61,44 @@ class LocalServer(BaseHTTPRequestHandler):
             self.send_error(500, f"Server error: {str(e)}")
 
 
-def process_post(post_dict):
+def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: any]]:
     request = post_dict["request"]
 
     if request == "question":
-        def process_record():
-            if cur_delimiter == "Name:":
-                ret["name"] = "\n".join(cur_parts).strip()
-            elif cur_delimiter == "Question:":
-                ret["question"] = " ".join(cur_parts).strip()
-            elif cur_delimiter == "Hint:":
-                ret["hint"] = " ".join(cur_parts).strip()
-            elif cur_delimiter == "Solution:":
-                ret["solution"] = " ".join(cur_parts).strip()
-            elif cur_delimiter == "Skeleton:":
-                ret["skeleton"] = "\n".join(cur_parts).strip()
-            elif cur_delimiter == "Test:":
-                ret["tests"].append("\n".join(cur_parts).strip())
-            elif cur_delimiter == "Expect:":
-                ret["expects"].append("\n".join(cur_parts).strip())
-
-        ret = {"tests": [], "expects": []}
+        ret = {"test": [], "expect": []}
         cur_parts = []
         cur_delimiter = None
+    
+        def process_record():
+            if cur_delimiter in {"test", "expect"}:
+                ret[cur_delimiter].append("\n".join(cur_parts).strip())
+            else:
+                ret[cur_delimiter] = "\n".join(cur_parts).strip()
 
         for line in open(f"questions/{post_dict["question_file"]}"):
-            line = line.rstrip()
-
             # comments are denoted by a leading "//", so ignore those lines.
             # Note that I don"t use "#" as the comment token since sometimes I
             # want to include Python comments in the skeleton code.
             if line.startswith("//"):
                 continue
 
-            # special-case one-liners:
-            if line.startswith("MaxLineDelta:"):
-                ret["max_line_delta"] = int(line.split(":")[1])
+            line = line.rstrip()
+            if ":" not in line:
+                cur_parts.append(line)
                 continue
 
-            if line.startswith("MaxInstructions:"):
-                ret["max_instructions"] = int(line.split(":")[1])
-                continue
-
-            if line in {"Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "Test:", "Expect:"}:
-                process_record()
-                cur_delimiter = line
-                cur_parts = []
+            for delimiter in ("Test:", "Expect:", "Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "MaxLineDelta:", "MaxInstructions:"):
+                if line.startswith(delimiter):
+                    process_record()
+                    cur_delimiter = delimiter[:-1].lower()
+                    cur_parts = [line[len(delimiter):]]
+                    break
             else:
                 cur_parts.append(line)
 
         # don"t forget to process the FINAL record
         process_record()
-        assert len(ret["tests"]) == len(ret["expects"])
+        assert len(ret["test"]) == len(ret["expect"])
         return ret
 
     # =================================================================================
@@ -155,9 +139,9 @@ def process_post(post_dict):
     # NB: This means that you can't call any functions to initialize
     # your input data, since the FIRST function call must be the function
     # that you're testing.
-    for e in user_trace:
-        if e.get('caller_info'):
-            ret['input_globals'] = e['encoded_frames'][0][-1]
+    for entry in user_trace:
+        if entry.get('caller_info'):
+            ret['input_globals'] = entry['encoded_frames'][0][-1]
             break
 
     user_trace_final_entry = user_trace[-1]

@@ -360,7 +360,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
       table.id = divID + "_table";
       stackDiv.appendChild(table);
 
-      encodedVars.forEach(function (entry) {
+      encodedVars.forEach((entry) => {
         var [varname, val] = entry;
 
         var tr = document.createElement("tr");

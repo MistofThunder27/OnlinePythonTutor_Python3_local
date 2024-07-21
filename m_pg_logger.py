@@ -31,11 +31,159 @@ class PGLogger(bdb.Bdb):
         bdb.Bdb.__init__(self)
         # all variables declared in self.runscript
 
+    # The main method that sets up then runs the debugger and returns the final execution trace list
+    def runscript(self, script_str: str, max_executed_lines: int, ignore_id: bool) -> list:
+        # create an execution trace list where each entry contains a dict with the information for a single executed line
+        self.trace = []
+        # if True, don't print out a custom ID for each object (used only for regression testing)
+        self.ignore_id = ignore_id
+        # upper-bound of executed lines, to guard against infinite loops
+        self.max_executed_lines = max_executed_lines
+
+        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
+        self.real_to_small_IDs = {}
+        self.cur_small_id = 1
+
+        self.calling_function_info = []
+        self.relative_position_shifts = [[]]
+
+        self.script_lines = script_str.split("\n")
+        self.line_groups = self.create_line_groups()
+
+        # redirect stdout of the user program to a memory buffer
+        user_stdout = io.StringIO()
+        sys.stdout = user_stdout
+        user_globals = {"__name__": "__main__",
+                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
+                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
+                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
+                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
+                        "__stdout__": user_stdout}
+
+        try:
+            self.run(script_str, user_globals, user_globals)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+
+            trace_entry = {
+                "event": "uncaught_exception",
+                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
+            }
+
+            if hasattr(exc, "lineno"):
+                trace_entry["line_group"] = self.get_current_line_group(
+                    exc.lineno)
+            if hasattr(exc, "offset"):
+                trace_entry["offset"] = exc.offset
+
+            self.trace.append(trace_entry)
+
+        # finalize results
+        sys.stdout = sys.__stdout__
+        assert len(self.trace) <= (max_executed_lines + 1)
+
+        # Post-processing
+        final_trace = []
+        last_entry = {}
+        visited_lines = set()
+
+        for entry in self.trace:
+            if entry != last_entry:
+                final_trace.append(entry)
+            last_entry = entry.copy()
+
+            entry["visited_lines"] = list(visited_lines)
+            # added after assigning as currently highlighted line has not been processed yet
+            visited_lines.update(set(entry.get("line_group", visited_lines)))
+
+        return final_trace
+
+    def create_line_groups(self):
+        line_groups = []
+
+        def line_is_complete(s):  # TODO: improve and test
+            # Initialize variables
+            in_string = False
+            in_triple_string = False
+            skip_char = False
+            in_comment = False
+            string_type = ''
+            open_brackets = 0
+            open_square = 0
+            open_curly = 0
+
+            # Define valid string delimiters
+            string_delimiters = {'"', "'", "'''", '"""'}
+
+            # Iterate through each character in the string
+            for i, char in enumerate(s):
+                if in_comment:
+                    # Check for newline to exit the comment
+                    if skip_char and char == "\n":
+                        in_comment = False
+                    skip_char = False
+                elif skip_char:
+                    skip_char = False
+                else:
+                    if not in_string:
+                        # Update bracket counts
+                        if char == "(":
+                            open_brackets += 1
+                        elif char == ")":
+                            open_brackets -= 1
+                        elif char == "[":
+                            open_square += 1
+                        elif char == "]":
+                            open_square -= 1
+                        elif char == "{":
+                            open_curly += 1
+                        elif char == "}":
+                            open_curly -= 1
+                        elif char in string_delimiters:
+                            # Enter string literal
+                            in_string = True
+                            string_type = char
+                            if char * 3 in s[i:i + 3]:
+                                in_triple_string = True
+                    else:
+                        # Check for end of string literal
+                        if s[i:i + len(string_type)] == string_type:
+                            if not in_triple_string or (i > 1 and s[i - 2:i + 1] == string_type * 3):
+                                in_string = False
+                                in_triple_string = False
+
+                    # Check for comment
+                    if char == "#":
+                        in_comment = True
+                    elif char == "\\":
+                        skip_char = True
+
+            # Check if the line is complete
+            return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
+
+        # Group lines to make line_groups list
+        j = 1
+        place_holder = ""
+        for i, line in enumerate(self.script_lines, 1):
+            place_holder += f"\n{line}"
+            if line_is_complete(place_holder):
+                line_groups.append(range(j, i + 1))
+                place_holder = ""
+                j = i + 1
+
+        return line_groups
+
+    def get_current_line_group(self, line_no):
+        for group in self.line_groups:
+            if line_no in group:
+                return list(group)
+
     # Override Bdb methods
     def user_call(self, frame, argument_list):
         calling_frame = frame.f_back
 
-        # true positions
+        # find true positions of the function on the last frame
         positions = inspect.getframeinfo(calling_frame).positions
         start_line = positions.lineno
         start_offset = positions.col_offset
@@ -53,7 +201,8 @@ class PGLogger(bdb.Bdb):
 
         code_so_far = "\n".join(
             [code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
-        relative_end_position = len(code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
+        relative_end_position = len(
+            code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
 
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             code_so_far = "\n".join(
@@ -242,149 +391,3 @@ class PGLogger(bdb.Bdb):
             return [data_type.__name__, my_small_id, str(data)]
 
         return recursive_encode(outer_data, set())
-
-    def runscript(self, script_str, max_executed_lines, ignore_id):
-        self.trace = []  # each entry contains a dict with the information for a single executed line
-        # don"t print out a custom ID for each object (for regression testing)
-        self.ignore_id = ignore_id
-        # upper-bound of executed lines, to guard against infinite loops
-        self.max_executed_lines = max_executed_lines
-
-        # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
-        self.real_to_small_IDs = {}
-        self.cur_small_id = 1
-
-        self.calling_function_info = []
-        self.relative_position_shifts = [[]]
-
-        self.script_lines = script_str.split("\n")
-        self.line_groups = self.create_line_groups()
-
-        # redirect stdout of the user program to a memory buffer
-        user_stdout = io.StringIO()
-        sys.stdout = user_stdout
-        user_globals = {"__name__": "__main__",
-                        # try to "sandbox" the user script by not allowing certain potentially dangerous operations:
-                        "__builtins__": {k: v for k, v in __builtins__.items() if k not in
-                                         {"reload", "input", "apply", "open", "compile", "__import__", "file", "eval",
-                                          "execfile", "exit", "quit", "raw_input", "dir", "globals", "locals", "vars"}},
-                        "__stdout__": user_stdout}
-
-        try:
-            self.run(script_str, user_globals, user_globals)
-        except Exception as exc:
-            import traceback
-            traceback.print_exc()
-
-            trace_entry = {
-                "event": "uncaught_exception",
-                "exception_msg": f"Error: {exc.msg}" if hasattr(exc, "msg") else "Unknown error"
-            }
-
-            if hasattr(exc, "lineno"):
-                trace_entry["line_group"] = self.get_current_line_group(
-                    exc.lineno)
-            if hasattr(exc, "offset"):
-                trace_entry["offset"] = exc.offset
-
-            self.trace.append(trace_entry)
-
-        # finalize results
-        sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (max_executed_lines + 1)
-
-        # Post-processing
-        final_trace = []
-        last_entry = {}
-        visited_lines = set()
-
-        for entry in self.trace:
-            if entry != last_entry:
-                final_trace.append(entry)
-            last_entry = entry.copy()
-
-            entry["visited_lines"] = list(visited_lines)
-            # added after assigning as currently highlighted line has not been processed yet
-            visited_lines.update(set(entry.get("line_group", visited_lines)))
-
-        return final_trace
-
-    def create_line_groups(self):
-        line_groups = []
-
-        def line_is_complete(s):  # TODO: improve and test
-            # Initialize variables
-            in_string = False
-            in_triple_string = False
-            skip_char = False
-            in_comment = False
-            string_type = ''
-            open_brackets = 0
-            open_square = 0
-            open_curly = 0
-
-            # Define valid string delimiters
-            string_delimiters = {'"', "'", "'''", '"""'}
-
-            # Iterate through each character in the string
-            for i, char in enumerate(s):
-                if in_comment:
-                    # Check for newline to exit the comment
-                    if skip_char and char == "\n":
-                        in_comment = False
-                    skip_char = False
-                elif skip_char:
-                    skip_char = False
-                else:
-                    if not in_string:
-                        # Update bracket counts
-                        if char == "(":
-                            open_brackets += 1
-                        elif char == ")":
-                            open_brackets -= 1
-                        elif char == "[":
-                            open_square += 1
-                        elif char == "]":
-                            open_square -= 1
-                        elif char == "{":
-                            open_curly += 1
-                        elif char == "}":
-                            open_curly -= 1
-                        elif char in string_delimiters:
-                            # Enter string literal
-                            in_string = True
-                            string_type = char
-                            if char * 3 in s[i:i + 3]:
-                                in_triple_string = True
-                    else:
-                        # Check for end of string literal
-                        if s[i:i + len(string_type)] == string_type:
-                            if not in_triple_string or (i > 1 and s[i - 2:i + 1] == string_type * 3):
-                                in_string = False
-                                in_triple_string = False
-
-                    # Check for comment
-                    if char == "#":
-                        in_comment = True
-                    elif char == "\\":
-                        skip_char = True
-
-            # Check if the line is complete
-            return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
-
-        # Group lines to make line_groups list
-        j = 1
-        place_holder = ""
-        for i, line in enumerate(self.script_lines, 1):
-            place_holder += f"\n{line}"
-            if line_is_complete(place_holder):
-                line_groups.append(range(j, i + 1))
-                place_holder = ""
-                j = i + 1
-
-        return line_groups
-
-    def get_current_line_group(self, line_no):
-        for group in self.line_groups:
-            if line_no in group:
-                return list(group)
