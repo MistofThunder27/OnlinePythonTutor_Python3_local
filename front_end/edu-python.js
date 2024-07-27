@@ -172,7 +172,7 @@ function updateOutput() {
     var {
       code: evaluatedCode,
       line_group: callingLines,
-      true_positions: [[startLine, startIndex], [endLine, endIndex]],
+      true_positions: [startLine, startIndex, endLine, endIndex],
       relative_positions: [relativeStart, relativeEnd],
     } = callerInfo;
 
@@ -577,7 +577,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("tupvarbl");
+        table.classList.add("tupleTbl");
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
         var headerTr = table.querySelector("tr:first-child");
@@ -778,7 +778,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(typeLabelDiv);
 
         var table = document.createElement("table");
-        table.className = "tupvarbl";
+        table.className = "tupleTbl";
         var row = document.createElement("tr");
         var cell = document.createElement("td");
         cell.className = "tupleElt";

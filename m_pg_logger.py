@@ -47,8 +47,22 @@ class PGLogger(bdb.Bdb):
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
 
-        self.script_lines = script_str.split("\n")
-        self.line_groups = self.create_line_groups()
+        script_lines = script_str.split("\n")
+        line_groups = []
+        group_starting_line_no = 1
+        line_group_content_so_far = ""
+        for line_no, line_content in enumerate(script_lines, 1):
+            line_group_content_so_far += f"\n{line_content}"
+            if self.line_is_complete(line_group_content_so_far):
+                line_groups.append(range(group_starting_line_no, line_no + 1))
+                line_group_content_so_far = ""
+                group_starting_line_no = line_no + 1
+        else:
+            line_groups.append(range(group_starting_line_no, line_no + 1))
+
+        self.script_lines = script_lines
+        self.line_groups = line_groups
+        self.visited_lines = set()
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
@@ -79,100 +93,70 @@ class PGLogger(bdb.Bdb):
 
             self.trace.append(trace_entry)
 
-        # finalize results
+        # clean up
         sys.stdout = sys.__stdout__
         assert len(self.trace) <= (max_executed_lines + 1)
+        return self.trace
 
-        # Post-processing
-        final_trace = []
-        last_entry = {}
-        visited_lines = set()
+    @staticmethod
+    def line_is_complete(s):  # TODO: improve and test
+        # Initialize variables
+        in_string = False
+        in_triple_string = False
+        in_comment = False
+        skip_char = False
+        string_type = ""
+        unclosed_normal_brackets = 0
+        unclosed_square_brackets = 0
+        unclosed_curly_brackets = 0
 
-        for entry in self.trace:
-            if entry != last_entry:
-                final_trace.append(entry)
-            last_entry = entry.copy()
-
-            entry["visited_lines"] = list(visited_lines)
-            # added after assigning as currently highlighted line has not been processed yet
-            visited_lines.update(set(entry.get("line_group", visited_lines)))
-
-        return final_trace
-
-    def create_line_groups(self):
-        line_groups = []
-
-        def line_is_complete(s):  # TODO: improve and test
-            # Initialize variables
-            in_string = False
-            in_triple_string = False
-            skip_char = False
-            in_comment = False
-            string_type = ''
-            open_brackets = 0
-            open_square = 0
-            open_curly = 0
-
-            # Define valid string delimiters
-            string_delimiters = {'"', "'", "'''", '"""'}
-
-            # Iterate through each character in the string
-            for i, char in enumerate(s):
-                if in_comment:
-                    # Check for newline to exit the comment
-                    if skip_char and char == "\n":
-                        in_comment = False
-                    skip_char = False
-                elif skip_char:
-                    skip_char = False
-                else:
-                    if not in_string:
-                        # Update bracket counts
-                        if char == "(":
-                            open_brackets += 1
-                        elif char == ")":
-                            open_brackets -= 1
-                        elif char == "[":
-                            open_square += 1
-                        elif char == "]":
-                            open_square -= 1
-                        elif char == "{":
-                            open_curly += 1
-                        elif char == "}":
-                            open_curly -= 1
-                        elif char in string_delimiters:
-                            # Enter string literal
-                            in_string = True
-                            string_type = char
-                            if char * 3 in s[i:i + 3]:
-                                in_triple_string = True
+        # Iterate through each character in the string
+        for i, char in enumerate(s):
+            if in_comment:
+                # Check for newline to exit the comment
+                if skip_char and char == "\n":
+                    in_comment = False
+                skip_char = False
+            elif skip_char:
+                skip_char = False
+            elif not in_string:
+                # Check for comment
+                if char == "#":
+                    in_comment = True
+                elif char == "\\":
+                    skip_char = True
+                # Update bracket counts
+                elif char == "(":
+                    unclosed_normal_brackets += 1
+                elif char == ")":
+                    unclosed_normal_brackets -= 1
+                elif char == "[":
+                    unclosed_square_brackets += 1
+                elif char == "]":
+                    unclosed_square_brackets -= 1
+                elif char == "{":
+                    unclosed_curly_brackets += 1
+                elif char == "}":
+                    unclosed_curly_brackets -= 1
+                elif char in {'"', "'"}:
+                    # Enter string literal
+                    in_string = True
+                    string_type = char
+                    if char * 3 in s[i:i + 3]:
+                        in_triple_string = True
+                        string_type = char*3
+            else:
+                # Check for end of string literal
+                if char in {'"', "'"}:
+                    if not in_triple_string:
+                        in_string = False
                     else:
-                        # Check for end of string literal
-                        if s[i:i + len(string_type)] == string_type:
-                            if not in_triple_string or (i > 1 and s[i - 2:i + 1] == string_type * 3):
-                                in_string = False
-                                in_triple_string = False
+                        if len(s) - i >= 3 and s[i:i + len(string_type)] == string_type:
+                            in_string = False
+                            in_triple_string = False
 
-                    # Check for comment
-                    if char == "#":
-                        in_comment = True
-                    elif char == "\\":
-                        skip_char = True
-
-            # Check if the line is complete
-            return not in_string and open_brackets == 0 and open_square == 0 and open_curly == 0
-
-        # Group lines to make line_groups list
-        j = 1
-        place_holder = ""
-        for i, line in enumerate(self.script_lines, 1):
-            place_holder += f"\n{line}"
-            if line_is_complete(place_holder):
-                line_groups.append(range(j, i + 1))
-                place_holder = ""
-                j = i + 1
-
-        return line_groups
+        # Check if the line is complete
+        return not in_string and unclosed_normal_brackets == 0 and unclosed_square_brackets == 0 and unclosed_curly_brackets == 0
 
     def get_current_line_group(self, line_no):
         for group in self.line_groups:
@@ -212,7 +196,7 @@ class PGLogger(bdb.Bdb):
                 "calling_frame_id": id(calling_frame),
                 "code": code_so_far,
                 "line_group": line_group,
-                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
+                "true_positions": [start_line, start_offset, end_line, end_offset],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
@@ -224,7 +208,7 @@ class PGLogger(bdb.Bdb):
                     relative_end_position -= diff
 
             self.calling_function_info[-1].update({
-                "true_positions": [[start_line, start_offset], [end_line, end_offset]],
+                "true_positions": [start_line, start_offset, end_line, end_offset],
                 "relative_positions": [relative_start_position, relative_end_position]
             })
 
@@ -267,15 +251,19 @@ class PGLogger(bdb.Bdb):
 
     # General interaction function
     def interaction(self, frame, event_type, exception_info=None):
+        line_group = self.get_current_line_group(frame.f_lineno)
         trace_entry = {
-            "line_group": self.get_current_line_group(frame.f_lineno),
-            "event": event_type, "scope_name": frame.f_code.co_name,
+            "line_group": line_group, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
                 ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
             ],
-            "stdout": frame.f_globals["__stdout__"].getvalue()
+            "stdout": frame.f_globals["__stdout__"].getvalue(),
+            "visited_lines": list(self.visited_lines)
         }
+
+        # done after assigning as currently highlighted line has not been processed yet
+        self.visited_lines.update(set(line_group))
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -306,6 +294,11 @@ class PGLogger(bdb.Bdb):
             cur_frame = cur_frame.f_back
 
         trace_entry["encoded_frames"].extend(encoded_frames[::-1])
+
+        # Do not add duplicate frames
+        if trace_entry == self.trace[-1]:
+            # print("duplicate frame", trace_entry)
+            return
 
         self.trace.append(trace_entry)
 

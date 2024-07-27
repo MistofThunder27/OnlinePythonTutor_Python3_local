@@ -67,8 +67,8 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     if request == "question":
         ret = {"test": [], "expect": []}
         cur_parts = []
-        cur_delimiter = None
-    
+        cur_delimiter = "name"
+
         def process_record():
             if cur_delimiter in {"test", "expect"}:
                 ret[cur_delimiter].append("\n".join(cur_parts).strip())
