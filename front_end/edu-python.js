@@ -535,7 +535,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty list" + idStr;
         jDomElt.appendChild(newDiv);
@@ -544,7 +544,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("listTbl");
+        table.className = "listTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
         var headerTr = table.querySelector("tr:first-child");
@@ -552,12 +552,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
           var headerCell = document.createElement("td");
-          headerCell.classList.add("listHeader");
+          headerCell.className = "listHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
           var contentCell = document.createElement("td");
-          contentCell.classList.add("listElt");
+          contentCell.className = "listElt";
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
@@ -568,7 +568,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty tuple" + idStr;
         jDomElt.appendChild(newDiv);
@@ -577,7 +577,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("tupleTbl");
+        table.className = "tupleTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
         var headerTr = table.querySelector("tr:first-child");
@@ -585,12 +585,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
           var headerCell = document.createElement("td");
-          headerCell.classList.add("tupleHeader");
+          headerCell.className = "tupleHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
           var contentCell = document.createElement("td");
-          contentCell.classList.add("tupleElt");
+          contentCell.className = "tupleElt";
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
@@ -601,7 +601,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty set" + idStr;
         jDomElt.appendChild(newDiv);
@@ -610,7 +610,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("setTbl");
+        table.className = "setTbl";
         jDomElt.appendChild(table);
         // create an R x C matrix:
         var numElts = obj.length - 2;
@@ -635,7 +635,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           var curTr = table.querySelector("tr:last-child");
           var newTd = document.createElement("td");
-          newTd.classList.add("setElt");
+          newTd.className = "setElt";
           curTr.appendChild(newTd);
           renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
         });
@@ -644,7 +644,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty dict" + idStr;
         jDomElt.appendChild(newDiv);
@@ -653,17 +653,17 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("dictTbl");
+        table.className = "dictTbl";
         jDomElt.appendChild(table);
         obj.slice(2).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("dictKey");
+          newKeyTd.className = "dictKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("dictVal");
+          newValTd.className = "dictVal";
 
           var newDictTr = document.createElement("tr");
-          newDictTr.classList.add("dictEntry");
+          newDictTr.className = "dictEntry";
           newDictTr.appendChild(newKeyTd);
           newDictTr.appendChild(newValTd);
 
@@ -677,23 +677,23 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       newDiv.textContent = obj[1] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
         var table = document.createElement("table");
-        table.classList.add("instTbl");
+        table.className = "instTbl";
         jDomElt.appendChild(table);
         obj.slice(3).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("instKey");
+          newKeyTd.className = "instKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("instVal");
+          newValTd.className = "instVal";
 
           var newInstTr = document.createElement("tr");
-          newInstTr.classList.add("instEntry");
+          newInstTr.className = "instEntry";
           newInstTr.appendChild(newKeyTd);
           newInstTr.appendChild(newValTd);
 
@@ -711,7 +711,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 4);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       var superclassStr = "";
       if (obj[3].length > 0) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
@@ -722,17 +722,17 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
       if (obj.length > 4) {
         var table = document.createElement("table");
-        table.classList.add("classTbl");
+        table.className = "classTbl";
         jDomElt.appendChild(table);
         obj.slice(4).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("classKey");
+          newKeyTd.className = "classKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("classVal");
+          newValTd.className = "classVal";
 
           var newClassTr = document.createElement("tr");
-          newClassTr.classList.add("classEntry");
+          newClassTr.className = "classEntry";
           newClassTr.appendChild(newKeyTd);
           newClassTr.appendChild(newValTd);
 
@@ -750,7 +750,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length == 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("circRefLabel");
+      newDiv.className = "circRefLabel";
       newDiv.textContent = "circular reference to id=" + obj[1];
       jDomElt.appendChild(newDiv);
     } else {

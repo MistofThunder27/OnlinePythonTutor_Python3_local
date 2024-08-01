@@ -1,0 +1,135 @@
+- fix keep forward, when line is not visited
+- Please load a question ... does not update
+- at the end of grading, loading a new question does not work
+- make all paths robust
+
+---
+2010-09-29
+
+Chas Leichner (chaoslichen@gmail.com) emailed me to show me his related
+project:
+
+  http://www.youtube.com/watch?v=ZiS4MZF5eDQ
+  http://code.google.com/p/idlecarpentry/
+
+He had an interesting idea of annotating lines of code with special
+comments, and those comments would display when those lines were being
+executed.  That way, you can have sorta like 'literate programming
+tutorials' that intermix code and comments.  I could think about
+implementing something similar within my Online Python Tutor.
+
+e.g.,
+
+#> declare a variable
+x = 5
+
+#> an if statement tests a condition
+if x < 5:
+  y = x + 5
+else:
+  y = x - 5
+
+the appropriate annotations would display when you stepped through the
+line of code immediately below each annotation.
+
+---
+2011-09-24
+
+Ron's suggestion:
+
+Ron Yeh - Feedback: It'd be nice if (for longer programs) the text
+window would auto scroll to the current line. For your "Philip's
+10-minute intro to Python" example, I was stepping through your code but
+then the current line went off screen. I had to manually scroll down a
+few times.
+
+Philip Guo - great idea! do you know if there's any jQuery or other js
+tricks to do this sort of scrolling?
+
+Ron Yeh - Pretty sure I've done this before, a while back. Basicaly you
+just need a named div or anchor in your document, and then you can
+scroll to it. This page might help:
+http://css-tricks.com/snippets/jquery/smooth-scrolling/
+
+(also auto-scroll the program's stdout output as well as the code
+display ... that one is easy --- always auto-scroll to BOTTOM!)
+
+---
+2011-09-26
+
+A subset of the suggestions from MIT folks (see more in my private notes
+file):
+
+- what if the user accidentally (or purposefully) creates a HUGE list or
+  other data structure?  how will the visualization handle this?  right
+  now it might croak.
+  - one idea is to LIMIT the size of the returned JSON data from the
+    back-end???
+
+---
+2011-10-05 feedback from Imran:
+
+'''
+ok, here's a super artificial example that actually is really confusing
+in the standard Python REPL as well:
+
+cA = type("A",(object,),{})
+cA2 = type("A",(object,),{})
+
+a=cA()
+a2=cA2()
+
+If you visualize this program, it's actually better than CPython because
+it shows that the two class objects have different ids even though they
+have the same __name__, but then a and a2 are just shown as instances of
+"A", which is now ambiguous.
+
+you're well within your rights to call this example bad code (because
+holy hell, it is) and out of the scope of your project, but one way to
+handle it might be to keep a separate column for type objects, or to
+include the class id along with the class __name__ when identifying the
+type of an object.
+
+also, if you modify the OOP example to make A and B new-style classes
+inheriting from object, the class visualization shows the __dict__ and
+__weakref__ fields in the A and B type objects, with no useful repr for
+them. Do you really want those shown?
+
+can you tell i've been doing crazy python oop stuff recently?
+
+ps here's an even more painful instance of the bug report:
+
+x=[1,2,3]
+wtfpwn = type('list',(list,),{})
+INCEPTION = [wtfpwn()]
+print x
+
+which "list" is which???
+'''
+
+---
+2011-10-12
+
+Code snippets from Adam Hartz for time-limiting a Python child process:
+
+def setlimits():
+   """
+   Helper to set CPU time limit for check_code, so that infinite loops
+   in submitted code get caught instead of running forever.
+   """
+   resource.setrlimit(resource.RLIMIT_CPU, (10, 10))
+
+def check_python_code(code):
+   #TODO: Investigate pypy for sandboxing
+   """
+   Run the given code; outputs a tuple containing:
+   the program's output (stdout), error messages (stderr)
+   """
+   python = subprocess.Popen(["python"],stdin=subprocess.PIPE,\
+                                        stdout=subprocess.PIPE,\
+                                        stderr=subprocess.PIPE,\
+                                        preexec_fn=setlimits)
+   PY_PROCESS_LOCK.acquire()
+   output = python.communicate(code)
+   PY_PROCESS_LOCK.release()
+   return output

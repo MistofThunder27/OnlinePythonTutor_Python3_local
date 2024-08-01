@@ -39,6 +39,7 @@ class PGLogger(bdb.Bdb):
         self.ignore_id = ignore_id
         # upper-bound of executed lines, to guard against infinite loops
         self.max_executed_lines = max_executed_lines
+        self.duplicate_frames_no = 0
 
         # Key: real ID from id(), Value: a small integer for greater readability, set by cur_small_id
         self.real_to_small_IDs = {}
@@ -63,6 +64,7 @@ class PGLogger(bdb.Bdb):
         self.script_lines = script_lines
         self.line_groups = line_groups
         self.visited_lines = set()
+        self.last_trace_entry = {}
 
         # redirect stdout of the user program to a memory buffer
         user_stdout = io.StringIO()
@@ -114,17 +116,12 @@ class PGLogger(bdb.Bdb):
         for i, char in enumerate(s):
             if in_comment:
                 # Check for newline to exit the comment
-                if skip_char and char == "\n":
+                if char == "\n":
                     in_comment = False
-                skip_char = False
-            elif skip_char:
-                skip_char = False
             elif not in_string:
                 # Check for comment
                 if char == "#":
                     in_comment = True
-                elif char == "\\":
-                    skip_char = True
                 # Update bracket counts
                 elif char == "(":
                     unclosed_normal_brackets += 1
@@ -146,14 +143,19 @@ class PGLogger(bdb.Bdb):
                         in_triple_string = True
                         string_type = char*3
             else:
+                if char == "\\":
+                    skip_char = True
                 # Check for end of string literal
-                if char in {'"', "'"}:
-                    if not in_triple_string:
+                elif char in {'"', "'"}:
+                    if skip_char:
+                        skip_char = False
+                    elif not in_triple_string:
                         in_string = False
-                    else:
-                        if len(s) - i >= 3 and s[i:i + len(string_type)] == string_type:
-                            in_string = False
-                            in_triple_string = False
+                    elif len(s) - i >= 3 and s[i:i + len(string_type)] == string_type:
+                        in_string = False
+                        in_triple_string = False
+                elif skip_char:
+                    skip_char = False
 
         # Check if the line is complete
         return not in_string and unclosed_normal_brackets == 0 and unclosed_square_brackets == 0 and unclosed_curly_brackets == 0
@@ -228,6 +230,15 @@ class PGLogger(bdb.Bdb):
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
+        
+        # erase function calls during class definitions
+        class_name = frame.f_locals.get("__qualname__")
+        if class_name:
+            while self.trace[-1]["encoded_frames"][-1][0] == class_name:
+                self.trace.pop()
+            else:
+                self.trace[-1]["line_group"] = list(self.visited_lines.difference(self.trace[-1]["visited_lines"]))
+            return
 
         if self.calling_function_info:
             last_caller = self.calling_function_info[-1]
@@ -259,11 +270,7 @@ class PGLogger(bdb.Bdb):
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
             ],
             "stdout": frame.f_globals["__stdout__"].getvalue(),
-            "visited_lines": list(self.visited_lines)
         }
-
-        # done after assigning as currently highlighted line has not been processed yet
-        self.visited_lines.update(set(line_group))
 
         if self.calling_function_info:
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
@@ -296,13 +303,18 @@ class PGLogger(bdb.Bdb):
         trace_entry["encoded_frames"].extend(encoded_frames[::-1])
 
         # Do not add duplicate frames
-        if trace_entry == self.trace[-1]:
+        if trace_entry == self.last_trace_entry:
+            self.duplicate_frames_no += 1
             # print("duplicate frame", trace_entry)
-            return
+        else:
+            self.duplicate_frames_no = 0
+            self.last_trace_entry = trace_entry.copy()
+            trace_entry["visited_lines"] = list(self.visited_lines)
+            # done after assigning as currently highlighted line has not been processed yet
+            self.visited_lines.update(line_group)
+            self.trace.append(trace_entry)
 
-        self.trace.append(trace_entry)
-
-        if len(self.trace) >= self.max_executed_lines:
+        if len(self.trace) >= self.max_executed_lines or self.duplicate_frames_no >= self.max_executed_lines:
             self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
