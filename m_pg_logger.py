@@ -236,8 +236,7 @@ class PGLogger(bdb.Bdb):
         if class_name:
             while self.trace[-1]["encoded_frames"][-1][0] == class_name:
                 self.trace.pop()
-            else:
-                self.trace[-1]["line_group"] = list(self.visited_lines.difference(self.trace[-1]["visited_lines"]))
+            self.trace[-1]["line_group"] = list(self.visited_lines.difference(self.trace[-1]["visited_lines"]))
             return
 
         if self.calling_function_info:
