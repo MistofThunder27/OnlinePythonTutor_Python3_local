@@ -101,7 +101,7 @@ class PGLogger(bdb.Bdb):
         return self.trace
 
     @staticmethod
-    def line_is_complete(s):  # TODO: improve and test
+    def line_is_complete(s: str) -> bool:  # TODO: improve and test
         # Initialize variables
         in_string = False
         in_triple_string = False
@@ -190,6 +190,7 @@ class PGLogger(bdb.Bdb):
         relative_end_position = len(
             code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
 
+        # new function call
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             code_so_far = "\n".join(
                 [code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
@@ -202,6 +203,7 @@ class PGLogger(bdb.Bdb):
                 "relative_positions": [relative_start_position, relative_end_position]
             })
             self.relative_position_shifts.append([])
+        # function call immediately after a return of another function call
         else:
             for pos, diff in self.relative_position_shifts[-1]:
                 if relative_start_position > pos:
@@ -214,7 +216,10 @@ class PGLogger(bdb.Bdb):
                 "relative_positions": [relative_start_position, relative_end_position]
             })
 
+        # Do not call interaction as the user_line call immediately after will cover the same information
+
     def user_line(self, frame):
+        # if just returned from a function call
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
             if frame.f_lineno in self.calling_function_info[-1]["line_group"]:
                 return
@@ -227,18 +232,21 @@ class PGLogger(bdb.Bdb):
         if frame.f_back.f_code.co_filename != "<string>":
             self.set_quit()
 
+        # return immediately after another return
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
-        
+
         # erase function calls during class definitions
         class_name = frame.f_locals.get("__qualname__")
         if class_name:
             while self.trace[-1]["encoded_frames"][-1][0] == class_name:
                 self.trace.pop()
-            self.trace[-1]["line_group"] = list(self.visited_lines.difference(self.trace[-1]["visited_lines"]))
+            self.trace[-1]["line_group"] = list(
+                self.visited_lines.difference(self.trace[-1]["visited_lines"]))
             return
 
+        # normal return, do not pop call information as a second function call might happen immediately
         if self.calling_function_info:
             last_caller = self.calling_function_info[-1]
             code = last_caller["code"]
@@ -333,8 +341,8 @@ class PGLogger(bdb.Bdb):
         #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
         #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
         #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
-        #   * instance - ["INSTANCE", class name, unique_id, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-        #   * class    - ["CLASS", class name, unique_id, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+        #   * instance - ["INSTANCE", unique_id, class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+        #   * class    - ["CLASS", unique_id, class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
         #   * circular reference - ["CIRCULAR_REF", unique_id]
         #   * other    - [<type name>, unique_id, string representation of object]
         #
@@ -375,9 +383,9 @@ class PGLogger(bdb.Bdb):
                 ]]
             if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
                 if "." in str(data_type):
-                    ret = ["INSTANCE", data.__class__.__name__, my_small_id]
+                    ret = ["INSTANCE", my_small_id, data.__class__.__name__]
                 else:
-                    ret = ["CLASS", data.__name__, my_small_id,
+                    ret = ["CLASS", my_small_id, data.__name__,
                            [e.__name__ for e in data.__bases__]]
 
                 # traverse inside its __dict__ to grab attributes

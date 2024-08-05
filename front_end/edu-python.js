@@ -401,7 +401,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           tr.querySelector("td.stackFrameValue").appendChild(divElement);
 
           if (connectionEndpointIDs[varDivID] === undefined) {
-            connectionEndpointIDs[varDivID] = "heap_object_" + getObjectID(val);
+            connectionEndpointIDs[varDivID] = "heap_object_" + val[1]; // val[1] is object ID
           }
         }
       });
@@ -423,7 +423,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
       var val = entry[1];
       // primitive types are already rendered in the stack
       if (typeof val == "object" && val != null) {
-        var objectID = getObjectID(val);
+        var objectID = val[1];
 
         if (!alreadyRenderedObjectIDs.has(objectID)) {
           var heapObjID = "heap_object_" + objectID;
@@ -494,18 +494,6 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   }
 }
 
-function getObjectID(obj) {
-  // pre-condition
-  assert(typeof obj == "object" && obj != null);
-  assert(Array.isArray(obj));
-
-  if (obj[0] == "INSTANCE" || obj[0] == "CLASS") {
-    return obj[2];
-  } else {
-    return obj[1];
-  }
-}
-
 // render the JS data object obj inside of jDomElt,
 // which is a jQuery wrapped DOM object
 // (obj is in a format encoded by back_end/pg_encoder.py)
@@ -528,7 +516,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
   } else if (typ == "object") {
     var idStr = "";
     if (!ignoreIDs) {
-      idStr = " (id=" + getObjectID(obj) + ")";
+      idStr = " (id=" + obj[1] + ")";
     }
 
     if (obj[0] == "LIST") {
