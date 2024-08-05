@@ -115,19 +115,25 @@ function updateOutput() {
         : "Program has terminated"
       : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
-  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmp1StepBack").disabled =
-    curInstr === 0;
+  vcrControls.querySelector("#jmpFirstInstr").disabled =
+    vcrControls.querySelector("#jmp1StepBack").disabled = curInstr === 0;
   vcrControls.querySelector("#jmp5StepBack").disabled = curInstr < 5;
   vcrControls.querySelector("#jmp25StepBack").disabled = curInstr < 25;
-  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmp1StepFwd").disabled =
-    curInstr === totalInstrs - 1;
-  vcrControls.querySelector("#jmp5StepFwd").disabled = curInstr > totalInstrs - 6;
-  vcrControls.querySelector("#jmp25StepFwd").disabled = curInstr > totalInstrs - 26;
+  vcrControls.querySelector("#jmpLastInstr").disabled =
+    vcrControls.querySelector("#jmp1StepFwd").disabled =
+      curInstr === totalInstrs - 1;
+  vcrControls.querySelector("#jmp5StepFwd").disabled =
+    curInstr > totalInstrs - 6;
+  vcrControls.querySelector("#jmp25StepFwd").disabled =
+    curInstr > totalInstrs - 26;
 
   // render error (if applicable):
   const errorOutput = document.getElementById("errorOutput");
   var hasError;
-  if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
+  if (
+    curEntry.event === "exception" ||
+    curEntry.event === "uncaught_exception"
+  ) {
     assert(curEntry.exception_msg);
     errorOutput.innerHTML = htmlSpecialChars(curEntry.exception_msg);
     errorOutput.style.display = "block";
@@ -148,7 +154,9 @@ function updateOutput() {
   // Reset background color of code lines
   tbl.querySelectorAll("td.cod").forEach((line) => {
     line.style.backgroundColor = "";
-    line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
+    line.innerHTML = line.innerHTML
+      .replace(/<br\/?>.*$/g, "")
+      .replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
   var {
@@ -176,9 +184,11 @@ function updateOutput() {
       relative_positions: [relativeStart, relativeEnd],
     } = callerInfo;
 
-    let callingLineColor = encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    let callingLineColor =
+      encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     callingLines.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = callingLineColor;
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
+        callingLineColor;
     });
 
     var cell, content;
@@ -202,7 +212,10 @@ function updateOutput() {
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
         cell = tbl.querySelectorAll("td.cod")[line - 1];
-        cell.innerHTML = '<span style="background-color: orange;">' + cell.textContent + "</span>";
+        cell.innerHTML =
+          '<span style="background-color: orange;">' +
+          cell.textContent +
+          "</span>";
       }
 
       cell = tbl.querySelectorAll("td.cod")[endLine - 1];
@@ -214,7 +227,9 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tbl.querySelectorAll("td.cod")[callingLines[callingLines.length - 1] - 1].innerHTML +=
+    tbl.querySelectorAll("td.cod")[
+      callingLines[callingLines.length - 1] - 1
+    ].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -263,25 +278,28 @@ function updateOutput() {
         vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlSpecialChars(
           frame[0]
         )}</span> variables:`;
+        vizFrame.appendChild(document.createElement("br"));
         dataViz.appendChild(vizFrame);
 
         var encodedVars = Object.entries(frame[1]);
         if (encodedVars.length > 0) {
           var frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
-          vizFrame.appendChild(document.createElement("br"));
           vizFrame.appendChild(frameDataViz);
 
           encodedVars.forEach((entry) => {
             var [varname, val] = entry;
             var tr = document.createElement("tr");
-            tr.innerHTML = `<td>${
+            var td1 = document.createElement("td");
+            var td2 = document.createElement("td");
+            td1.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
-                : varname
-            }</td><td></td>`;
+                : varname;
+            tr.appendChild(td1)
+            tr.appendChild(td2)
             frameDataViz.appendChild(tr);
-            renderData(val, tr.querySelector("td:last-child"), false);
+            renderData(val, td2, false);
           });
 
           var lastRow = frameDataViz.lastElementChild;
@@ -368,13 +386,17 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
         // that the function is about to return to its caller
         if (varname == "__return__") {
           assert(curEntry.event == "return"); // sanity check
-          tr.innerHTML = '<td colspan="2" class="returnWarning">About to return to caller</td>';
+          tr.innerHTML =
+            '<td colspan="2" class="returnWarning">About to return to caller</td>';
           table.appendChild(tr);
           tr = document.createElement("tr");
           tr.innerHTML =
             '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
         } else {
-          tr.innerHTML = '<td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td>';
+          tr.innerHTML =
+            '<td class="stackFrameVar">' +
+            varname +
+            '</td><td class="stackFrameValue"></td>';
         }
         table.appendChild(tr);
 
@@ -394,7 +416,12 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
           //
           // TODO: what other characters are illegal???
-          var varDivID = divID + "__" + varname.replace(/[\[{|(<>]/g, "LeftB_").replace(/[\]}|)<>]/g, "_RightB");
+          var varDivID =
+            divID +
+            "__" +
+            varname
+              .replace(/[\[{|(<>]/g, "LeftB_")
+              .replace(/[\]}|)<>]/g, "_RightB");
           var divElement = document.createElement("div");
           divElement.id = varDivID;
           divElement.innerHTML = "&nbsp;";
@@ -427,7 +454,8 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
         if (!alreadyRenderedObjectIDs.has(objectID)) {
           var heapObjID = "heap_object_" + objectID;
-          dataViz.querySelector("#heap").innerHTML += '<div class="heapObject" id="' + heapObjID + '"></div>';
+          dataViz.querySelector("#heap").innerHTML +=
+            '<div class="heapObject" id="' + heapObjID + '"></div>';
           renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
 
           alreadyRenderedObjectIDs.add(objectID);
@@ -490,7 +518,9 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   if (stackGrowsUp) {
     document.getElementById("stack_header0").click();
   } else {
-    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
+    document
+      .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
+      .click();
   }
 }
 
@@ -512,7 +542,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
       jDomElt.innerHTML = '<span class="boolObj">False</span>';
     }
   } else if (typ == "string") {
-    jDomElt.innerHTML = '<span class="stringObj">"' + htmlSpecialChars(obj).replaceAll('"', '\\"') + '"</span>';
+    jDomElt.innerHTML =
+      '<span class="stringObj">"' +
+      htmlSpecialChars(obj).replaceAll('"', '\\"') +
+      '"</span>';
   } else if (typ == "object") {
     var idStr = "";
     if (!ignoreIDs) {
@@ -689,7 +722,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML +=
+            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -728,7 +762,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML +=
+            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -815,10 +850,16 @@ function addTabSupport(textElement) {
             lines[i] = lines[i].substring(4);
           }
         }
-        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
+        textElement.value =
+          textElement.value.substring(0, start) +
+          lines.join("\n") +
+          textElement.value.substring(end);
         textElement.selectionStart = textElement.selectionEnd = start - 4;
       } else {
-        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
+        textElement.value =
+          textElement.value.substring(0, start) +
+          "    " +
+          textElement.value.substring(end);
         textElement.selectionStart = textElement.selectionEnd = start + 4;
       }
     }
@@ -827,36 +868,46 @@ function addTabSupport(textElement) {
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
-  document.getElementById("jmpFirstInstr").addEventListener("click", function () {
-    curInstr = 0;
-    updateOutput();
-  });
-
-  document.getElementById("jmpLastInstr").addEventListener("click", function () {
-    curInstr = curTrace.length - 1;
-    updateOutput();
-  });
-
-  document.getElementById("jmp1StepBack").addEventListener("click", function () {
-    if (curInstr > 0) {
-      curInstr -= 1;
+  document
+    .getElementById("jmpFirstInstr")
+    .addEventListener("click", function () {
+      curInstr = 0;
       updateOutput();
-    }
-  });
+    });
 
-  document.getElementById("jmp5StepBack").addEventListener("click", function () {
-    if (curInstr > 4) {
-      curInstr -= 5;
+  document
+    .getElementById("jmpLastInstr")
+    .addEventListener("click", function () {
+      curInstr = curTrace.length - 1;
       updateOutput();
-    }
-  });
+    });
 
-  document.getElementById("jmp25StepBack").addEventListener("click", function () {
-    if (curInstr > 24) {
-      curInstr -= 25;
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("jmp1StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 0) {
+        curInstr -= 1;
+        updateOutput();
+      }
+    });
+
+  document
+    .getElementById("jmp5StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 4) {
+        curInstr -= 5;
+        updateOutput();
+      }
+    });
+
+  document
+    .getElementById("jmp25StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 24) {
+        curInstr -= 25;
+        updateOutput();
+      }
+    });
 
   document.getElementById("jmp1StepFwd").addEventListener("click", function () {
     if (curInstr < curTrace.length - 1) {
@@ -872,51 +923,65 @@ function eduPythonCommonInit() {
     }
   });
 
-  document.getElementById("jmp25StepFwd").addEventListener("click", function () {
-    if (curInstr < curTrace.length - 26) {
-      curInstr += 25;
-      updateOutput();
-    }
-  });
-
-  document.getElementById("jmpToStepBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpToStepText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let number = parseInt(inputValue) - 1;
-      if (number >= 0 && number <= curTrace.length) {
-        curInstr = number;
+  document
+    .getElementById("jmp25StepFwd")
+    .addEventListener("click", function () {
+      if (curInstr < curTrace.length - 26) {
+        curInstr += 25;
         updateOutput();
       }
-    }
-  });
+    });
 
-  document.getElementById("jmpFwdToLineBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpFwdToLineText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
-        curInstr += 1;
-        while (curInstr <= curTrace.length - 2 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+  document
+    .getElementById("jmpToStepBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpToStepText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let number = parseInt(inputValue) - 1;
+        if (number >= 0 && number <= curTrace.length) {
+          curInstr = number;
+          updateOutput();
+        }
+      }
+    });
+
+  document
+    .getElementById("jmpFwdToLineBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpFwdToLineText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let lineNumber = parseInt(inputValue);
+        if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
           curInstr += 1;
+          while (
+            curInstr <= curTrace.length - 2 &&
+            !curTrace[curInstr].line_group.includes(lineNumber)
+          ) {
+            curInstr += 1;
+          }
+          updateOutput();
         }
-        updateOutput();
       }
-    }
-  });
+    });
 
-  document.getElementById("jmpBackToLineBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpBackToLineText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 1 && curInstr >= 1) {
-        curInstr -= 1;
-        while (curInstr >= 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+  document
+    .getElementById("jmpBackToLineBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpBackToLineText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let lineNumber = parseInt(inputValue);
+        if (lineNumber >= 1 && curInstr >= 1) {
           curInstr -= 1;
+          while (
+            curInstr >= 1 &&
+            !curTrace[curInstr].line_group.includes(lineNumber)
+          ) {
+            curInstr -= 1;
+          }
+          updateOutput();
         }
-        updateOutput();
       }
-    }
-  });
+    });
 
   // disable controls initially ...
   document.getElementById("jmpFirstInstr").disabled = true;
@@ -937,7 +1002,9 @@ function eduPythonCommonInit() {
   jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
 
   // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]];
+  jsPlumb.Defaults.Overlays = [
+    ["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }],
+  ];
 
   jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
   jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
@@ -971,15 +1038,19 @@ function eduPythonCommonInit() {
     }
   });
 
-  document.getElementById("stackGrowUpCheckbox").addEventListener("click", function () {
-    if (appMode == "visualize") {
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("stackGrowUpCheckbox")
+    .addEventListener("click", function () {
+      if (appMode == "visualize") {
+        updateOutput();
+      }
+    });
 
-  document.getElementById("inlineRenderingCheckbox").addEventListener("click", function () {
-    if (appMode == "visualize") {
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("inlineRenderingCheckbox")
+    .addEventListener("click", function () {
+      if (appMode == "visualize") {
+        updateOutput();
+      }
+    });
 }

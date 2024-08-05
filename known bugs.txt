@@ -2,6 +2,8 @@
 - Please load a question ... does not update
 - at the end of grading, loading a new question does not work
 - make all paths robust
+- removing class calls from trace fails if there is a function call during initialisation
+- make function rendering better by showing arguments???
 
 ---
 2010-09-29
