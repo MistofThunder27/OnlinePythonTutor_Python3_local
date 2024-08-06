@@ -327,9 +327,8 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
     header.removeEventListener("click", handleClick);
   });
 
-  // VERY VERY IMPORTANT --- and reset ALL jsPlumb state to prevent
-  // weird mis-behavior!!!
-  jsPlumb.reset();
+  const canvas = document.getElementById("connectorCanvas");
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
@@ -474,40 +473,79 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
     });
   });
 
-  // finally connect stack variables to heap objects via connectors
-  Object.entries(connectionEndpointIDs).forEach((entry) => {
-    jsPlumb.connect({ source: entry[0], target: entry[1] });
-  });
+  // finally connect stack variables to heap objects
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // Function to draw a line between two points
+  function drawLine(fromX, fromY, toX, toY, highlight = false) {
+    // Calculate the midpoint
+    const midX = (fromX + toX) / 2;
+    const midY = (fromY + toY) / 2;
+    const lineColor = highlight ? "darkBlue" : "lightGray";
+
+    // Calculate the angle of the line at mid point - found and simplified mathematically
+    const angle = Math.atan2(2 * (toY - fromY), toX - fromX);
+
+    // Draw the curved line
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.bezierCurveTo(midX, fromY, midX, toY, toX, toY);
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = highlight ? 2 : 1;
+    ctx.stroke();
+
+    // Draw the arrowhead at the midpoint
+    const size = 10; // Arrowhead size
+
+    // Calculate the points for the arrowhead
+    const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
+    const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
+
+    const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
+    const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
+
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(midX, midY);
+    ctx.lineTo(arrowX1, arrowY1);
+    ctx.lineTo(arrowX2, arrowY2);
+    ctx.closePath();
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+  }
 
   // add an on-click listener to all stack frame headers
   document.querySelectorAll(".stackFrameHeader").forEach((header) => {
     header.addEventListener("click", function () {
-      var enclosingStackFrame = this.parentNode;
-      var enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
+      const selectedEnclosingStackFrame = this.parentNode;
+      const selectedEnclosingStackFrameID =
+        selectedEnclosingStackFrame.getAttribute("id");
 
-      var allConnections = jsPlumb.getConnections();
-      allConnections.forEach((connection) => {
-        var element = connection.source;
-        while (element.attr("class") != "stackFrame") {
-          element = element.parent();
-        }
+      // Draw connections based on the connectionEndpointIDs object
+      Object.entries(connectionEndpointIDs).forEach(([sourceID, targetID]) => {
+        const sourceElem = document.getElementById(sourceID);
+        const sourceRect = sourceElem.getBoundingClientRect();
+        const targetRect = document
+          .getElementById(targetID)
+          .getBoundingClientRect();
 
-        // if this connector starts in the selected stack frame ...
-        if (element.attr("id") == enclosingStackFrameID) {
-          // then HIGHLIGHT IT!
-          connection.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
-          connection.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
-          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
+        // Find the parent stack frame of the source element
+        // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
+        const enclosingStackFrame =
+          sourceElem.parentElement.parentElement.parentElement.parentElement;
 
-          // ... and move it to the VERY FRONT
-          connection.canvas.style.zIndex = 1000;
-        } else {
-          // else unhighlight it
-          connection.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
-          connection.endpoints[0].setPaintStyle({ fillStyle: lightGray });
-          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
-          connection.canvas.style.zIndex = 0;
-        }
+        // Draw a line from the source element to the target element
+        drawLine(
+          sourceRect.left + sourceRect.width / 2,
+          sourceRect.top + sourceRect.height / 2,
+          targetRect.left,
+          targetRect.top + targetRect.height / 2,
+          // Highlight if the stack frame ID matches the selected stack frame ID
+          enclosingStackFrame &&
+            enclosingStackFrame.id === selectedEnclosingStackFrameID
+        );
       });
 
       // clear everything, then just activate $(this) one ...
@@ -518,7 +556,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
         header.classList.add("inactiveStackFrameHeader");
       });
 
-      enclosingStackFrame.classList.add("selectedStackFrame");
+      selectedEnclosingStackFrame.classList.add("selectedStackFrame");
       this.classList.remove("inactiveStackFrameHeader");
     });
   });
@@ -1002,22 +1040,6 @@ function eduPythonCommonInit() {
   document.getElementById("jmp5StepFwd").disabled = true;
   document.getElementById("jmp25StepFwd").disabled = true;
   document.getElementById("jmpLastInstr").disabled = true;
-
-  // set some sensible jsPlumb defaults
-  jsPlumb.Defaults.Endpoint = ["Dot", { radius: 3 }];
-  //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
-  jsPlumb.Defaults.EndpointStyle = { fillStyle: lightGray };
-  jsPlumb.Defaults.Anchors = ["RightMiddle", "LeftMiddle"];
-  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }];
-  jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
-
-  // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [
-    ["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }],
-  ];
-
-  jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
-  jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
 
   // set keyboard event listeners ...
   document.addEventListener("keydown", (k) => {
