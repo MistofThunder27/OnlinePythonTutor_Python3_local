@@ -291,13 +291,13 @@ function updateOutput() {
             var [varname, val] = entry;
             var tr = document.createElement("tr");
             var td1 = document.createElement("td");
-            var td2 = document.createElement("td");
             td1.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
                 : varname;
-            tr.appendChild(td1)
-            tr.appendChild(td2)
+            tr.appendChild(td1);
+            var td2 = document.createElement("td");
+            tr.appendChild(td2);
             frameDataViz.appendChild(tr);
             renderData(val, td2, false);
           });
@@ -333,24 +333,31 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
 
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
-  var stack_td = document.createElement("td");
-  stack_td.id = "stack_td";
-  stack_td.innerHTML = '<div id="stack"></div>';
-
-  var heap_td = document.createElement("td");
-  heap_td.id = "heap_td";
-  heap_td.innerHTML = '<div id="heap"></div>';
-
-  var tr = document.createElement("tr");
-  tr.appendChild(stack_td);
-  tr.appendChild(heap_td);
+  var dataViz = document.getElementById("dataViz");
+  dataViz.innerHTML = "";
 
   var stackHeapTable = document.createElement("table");
   stackHeapTable.id = "stackHeapTable";
-  stackHeapTable.appendChild(tr);
 
-  var dataViz = document.getElementById("dataViz");
-  dataViz.innerHTML = "";
+  var tr = document.createElement("tr");
+
+  var stack_td = document.createElement("td");
+  stack_td.id = "stack_td";
+
+  var stack_master_div = document.createElement("div");
+  stack_master_div.id = "stack";
+  stack_td.appendChild(stack_master_div);
+  tr.appendChild(stack_td);
+
+  var heap_td = document.createElement("td");
+  heap_td.id = "heap_td";
+
+  var heap_master_div = document.createElement("div");
+  heap_master_div.id = "heap";
+  heap_td.appendChild(heap_master_div);
+  tr.appendChild(heap_td);
+
+  stackHeapTable.appendChild(tr);
   dataViz.appendChild(stackHeapTable);
 
   // Key:   CSS ID of the div element representing the variable
@@ -363,7 +370,7 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
     var divID = "stack" + i;
     stackDiv.className = "stackFrame";
     stackDiv.id = divID;
-    document.getElementById("stack").appendChild(stackDiv);
+    stack_master_div.appendChild(stackDiv);
 
     var headerDiv = document.createElement("div");
     headerDiv.id = "stack_header" + i;
@@ -436,7 +443,10 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   });
 
   // then render the heap
-  dataViz.querySelector("#heap").innerHTML += '<div id="heapHeader">Heap</div>';
+  var heapHeaderDiv = document.createElement("div");
+  heapHeaderDiv.id = "heapHeader";
+  heapHeaderDiv.textContent = "Heap";
+  heap_master_div.appendChild(heapHeaderDiv);
 
   // if there are multiple aliases to the same object, we want to render
   // the one deepest in the stack, so that we can hopefully prevent
