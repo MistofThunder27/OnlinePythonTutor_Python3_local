@@ -261,7 +261,7 @@ function updateOutput() {
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
-  var dataViz = document.getElementById("dataViz");
+  const dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = ""; // Clear the content
 
   // organize frames based on settings
@@ -273,318 +273,322 @@ function updateOutput() {
 
     if (inlineRendering) {
       orderedFrames.forEach((frame) => {
-        var vizFrame = document.createElement("div");
+        const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
-        vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlSpecialChars(
-          frame[0]
-        )}</span> variables:`;
+        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:"
         vizFrame.appendChild(document.createElement("br"));
-        dataViz.appendChild(vizFrame);
 
         var encodedVars = Object.entries(frame[1]);
         if (encodedVars.length > 0) {
-          var frameDataViz = document.createElement("table");
+          const frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
           vizFrame.appendChild(frameDataViz);
 
           encodedVars.forEach((entry) => {
-            var [varname, val] = entry;
-            var tr = document.createElement("tr");
-            var td1 = document.createElement("td");
-            td1.innerHTML =
+            const tr = document.createElement("tr");
+            frameDataViz.appendChild(tr);
+        
+            const varnameTd = document.createElement("td");
+            tr.appendChild(varnameTd);
+            varnameTd.className = "varname"
+            const varname = entry[0];
+            varnameTd.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
                 : varname;
-            tr.appendChild(td1);
-            var td2 = document.createElement("td");
-            tr.appendChild(td2);
-            frameDataViz.appendChild(tr);
-            renderData(val, td2, false);
+            
+            const valTd = document.createElement("td");
+            tr.appendChild(valTd);
+            valTd.className = "val"
+            renderData(entry[1], valTd, false);
           });
 
-          var lastRow = frameDataViz.lastElementChild;
+          const lastRow = frameDataViz.lastElementChild;
           lastRow.querySelector("td:first-child").style.borderBottom = "0px";
           lastRow.querySelector("td:last-child").style.borderBottom = "0px";
         } else {
-          vizFrame.innerHTML += "<i>none</i>";
+          const noneText = document.createElement("i")
+          noneText.innerText = "none"
+          vizFrame.appendChild(noneText);
         }
+        dataViz.appendChild(vizFrame);
       });
     } else {
-      renderDataStructuresVersion2(curEntry, orderedFrames);
-    }
-  }
-}
-
-// The "2.0" version of renderDataStructures, which renders variables in
-// a stack and values in a separate heap, with data structure aliasing
-// explicitly represented via line connectors (thanks to jsPlumb lib).
-//
-// This version was originally created in September 2011
-function renderDataStructuresVersion2(curEntry, orderedFrames) {
-  // before we wipe out the old state of the visualization, CLEAR all
-  // the click listeners first
-  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-    header.removeEventListener("click", handleClick);
-  });
-
-  // create a tabular layout for stack and heap side-by-side
-  // TODO: figure out how to do this using CSS in a robust way!
-  var dataViz = document.getElementById("dataViz");
-  dataViz.innerHTML = "";
-
-  var stackHeapTable = document.createElement("table");
-  stackHeapTable.id = "stackHeapTable";
-
-  var tr = document.createElement("tr");
-
-  var stack_td = document.createElement("td");
-  stack_td.id = "stack_td";
-
-  var stack_master_div = document.createElement("div");
-  stack_master_div.id = "stack";
-  stack_td.appendChild(stack_master_div);
-  tr.appendChild(stack_td);
-
-  var heap_td = document.createElement("td");
-  heap_td.id = "heap_td";
-
-  var heap_master_div = document.createElement("div");
-  heap_master_div.id = "heap";
-  heap_td.appendChild(heap_master_div);
-  tr.appendChild(heap_td);
-
-  stackHeapTable.appendChild(tr);
-  dataViz.appendChild(stackHeapTable);
-
-  // Key:   CSS ID of the div element representing the variable
-  // Value: CSS ID of the div element representing the value rendered in the heap
-  var connectionEndpointIDs = {};
-
-  // first render the vars
-  orderedFrames.forEach((frame, i) => {
-    var stackDiv = document.createElement("div");
-    var divID = "stack" + i;
-    stackDiv.className = "stackFrame";
-    stackDiv.id = divID;
-    stack_master_div.appendChild(stackDiv);
-
-    var headerDiv = document.createElement("div");
-    headerDiv.id = "stack_header" + i;
-    headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
-    headerDiv.innerHTML = htmlSpecialChars(frame[0]);
-    stackDiv.appendChild(headerDiv);
-
-    var encodedVars = Object.entries(frame[1]);
-    if (encodedVars.length > 0) {
-      var table = document.createElement("table");
-      table.className = "stackFrameVarTable";
-      table.id = divID + "_table";
-      stackDiv.appendChild(table);
-
-      encodedVars.forEach((entry) => {
-        var [varname, val] = entry;
-
-        var tr = document.createElement("tr");
-        // special treatment for displaying return value and indicating
-        // that the function is about to return to its caller
-        if (varname == "__return__") {
-          assert(curEntry.event == "return"); // sanity check
-          tr.innerHTML =
-            '<td colspan="2" class="returnWarning">About to return to caller</td>';
-          table.appendChild(tr);
-          tr = document.createElement("tr");
-          tr.innerHTML =
-            '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
-        } else {
-          tr.innerHTML =
-            '<td class="stackFrameVar">' +
-            varname +
-            '</td><td class="stackFrameValue"></td>';
-        }
-        table.appendChild(tr);
-
-        // render primitives inline and compound types on the heap
-        if (val == null || typeof val != "object") {
-          renderData(val, tr.querySelector("td.stackFrameValue"), false);
-        } else {
-          // add a stub so that we can connect it with a connector later.
-          // IE needs this div to be NON-EMPTY in order to properly
-          // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
-
-          // make sure varname doesn't contain any weird
-          // characters that are illegal for CSS ID's ...
-          //
-          // I know for a fact that iterator tmp variables named '_[1]'
-          // are NOT legal names for CSS ID's.
-          // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
-          //
-          // TODO: what other characters are illegal???
-          var varDivID =
-            divID +
-            "__" +
-            varname
-              .replace(/[\[{|(<>]/g, "LeftB_")
-              .replace(/[\]}|)<>]/g, "_RightB");
-          var divElement = document.createElement("div");
-          divElement.id = varDivID;
-          divElement.innerHTML = "&nbsp;";
-          tr.querySelector("td.stackFrameValue").appendChild(divElement);
-
-          if (connectionEndpointIDs[varDivID] === undefined) {
-            connectionEndpointIDs[varDivID] = "heap_object_" + val[1]; // val[1] is object ID
-          }
-        }
-      });
-    }
-  });
-
-  // then render the heap
-  var heapHeaderDiv = document.createElement("div");
-  heapHeaderDiv.id = "heapHeader";
-  heapHeaderDiv.textContent = "Heap";
-  heap_master_div.appendChild(heapHeaderDiv);
-
-  // if there are multiple aliases to the same object, we want to render
-  // the one deepest in the stack, so that we can hopefully prevent
-  // objects from jumping around as functions are called and returned.
-  // e.g., if a list L appears as a global variable and as a local in a
-  // function, we want to render L when rendering the global frame.
-
-  var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
-  curEntry.encoded_frames.forEach((frame) => {
-    Object.entries(frame[1]).forEach((entry) => {
-      var val = entry[1];
-      // primitive types are already rendered in the stack
-      if (typeof val == "object" && val != null) {
-        var objectID = val[1];
-
-        if (!alreadyRenderedObjectIDs.has(objectID)) {
-          var heapObjID = "heap_object_" + objectID;
-          dataViz.querySelector("#heap").innerHTML +=
-            '<div class="heapObject" id="' + heapObjID + '"></div>';
-          renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
-
-          alreadyRenderedObjectIDs.add(objectID);
-        }
-      }
-    });
-  });
-
-  // finally connect stack variables to heap objects
-  // add an on-click listener to all stack frame headers
-  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-    header.addEventListener("click", function () {
-      const selectedEnclosingStackFrame = this.parentNode;
-
-      //Clear all canvases
-      document.querySelectorAll("canvas").forEach((oldCanvas) => {
-        document.body.removeChild(oldCanvas);
-      });
-
-      // Draw connections based on the connectionEndpointIDs object
-      Object.entries(connectionEndpointIDs).forEach(([sourceID, targetID]) => {
-        const sourceElem = document.getElementById(sourceID);
-        const sourceRect = sourceElem.getBoundingClientRect();
-        const targetRect = document
-          .getElementById(targetID)
-          .getBoundingClientRect();
-
-        // Find the parent stack frame of the source element
-        // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
-        const enclosingStackFrame =
-          sourceElem.parentElement.parentElement.parentElement.parentElement;
-
-        // Draw a line from the source element to the target element
-        // add 5 pixels of buffer on both sides
-        const fromX = sourceRect.left + sourceRect.width / 2 - 5;
-        const toX = targetRect.left + 5;
-        const diffX = toX - fromX;
-        const midX = diffX / 2;
-
-        // Highlight if the stack frame ID matches the selected stack frame ID
-        const highlight =
-          enclosingStackFrame.id ===
-          selectedEnclosingStackFrame.getAttribute("id");
-
-        const lineColor = highlight ? "darkBlue" : "lightGray";
-
-        const canvas = document.createElement("canvas");
-        canvas.style.left = fromX + "px";
-        canvas.width = diffX;
-
-        // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
-        const fromY = sourceRect.top + sourceRect.height / 2;
-        const toY = targetRect.top + targetRect.height / 2;
-        if (fromY < toY) {
-          var diffY = toY - fromY + 10;
-          canvas.style.top = fromY - 5 + "px";
-        } else {
-          var diffY = fromY - toY + 10;
-          canvas.style.top = toY - 5 + "px";
-        }
-        const midY = diffY / 2;
-        canvas.height = diffY;
-
-        // Draw the curved line
-        const ctx = canvas.getContext("2d");
-        ctx.beginPath();
-        if (fromY < toY) {
-          ctx.moveTo(5, 5);
-          ctx.bezierCurveTo(midX, 5, midX, diffY - 5, diffX - 5, diffY - 5);
-        } else {
-          ctx.moveTo(5, diffY - 5);
-          ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
-        }
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = highlight ? 2 : 1;
-        ctx.stroke();
-
-        // Draw the arrowhead at the midpoint
-        const size = 10; // Arrowhead size
-
-        // Calculate the angle of the line at mid point - found and simplified mathematically
-        const angle = Math.atan2(2 * (toY - fromY), diffX - 10);
-
-        // Calculate the points for the arrowhead
-        const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
-        const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
-
-        const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
-        const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
-
-        // Draw the arrowhead
-        ctx.beginPath();
-        ctx.moveTo(midX, midY);
-        ctx.lineTo(arrowX1, arrowY1);
-        ctx.lineTo(arrowX2, arrowY2);
-        ctx.closePath();
-        ctx.fillStyle = lineColor;
-        ctx.fill();
-
-        document.body.appendChild(canvas);
-      });
-
-      // clear everything, then just activate selectedEnclosingStackFrame
-      document.querySelectorAll(".stackFrame").forEach((frame) => {
-        frame.classList.remove("selectedStackFrame");
-      });
+      // before we wipe out the old state of the visualization, CLEAR all
+      // the click listeners first
       document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-        header.classList.add("inactiveStackFrameHeader");
+        header.removeEventListener("click", handleClick);
       });
 
-      selectedEnclosingStackFrame.classList.add("selectedStackFrame");
-      this.classList.remove("inactiveStackFrameHeader");
-    });
-  });
+      var stackHeapTable = document.createElement("table");
+      stackHeapTable.id = "stackHeapTable";
 
-  // 'click' on the top-most stack frame if available,
-  // or on "Global variables" otherwise
-  if (stackGrowsUp) {
-    document.getElementById("stack_header0").click();
-  } else {
-    document
-      .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
-      .click();
+      var tr = document.createElement("tr");
+
+      var stack_td = document.createElement("td");
+      stack_td.id = "stack_td";
+
+      var stack_master_div = document.createElement("div");
+      stack_master_div.id = "stack";
+      stack_td.appendChild(stack_master_div);
+      tr.appendChild(stack_td);
+
+      var heap_td = document.createElement("td");
+      heap_td.id = "heap_td";
+
+      var heap_master_div = document.createElement("div");
+      heap_master_div.id = "heap";
+      heap_td.appendChild(heap_master_div);
+      tr.appendChild(heap_td);
+
+      stackHeapTable.appendChild(tr);
+      dataViz.appendChild(stackHeapTable);
+
+      // Key:   CSS ID of the div element representing the variable
+      // Value: CSS ID of the div element representing the value rendered in the heap
+      var connectionEndpointIDs = {};
+
+      // first render the vars
+      orderedFrames.forEach((frame, i) => {
+        var stackDiv = document.createElement("div");
+        var divID = "stack" + i;
+        stackDiv.className = "stackFrame";
+        stackDiv.id = divID;
+        stack_master_div.appendChild(stackDiv);
+
+        var headerDiv = document.createElement("div");
+        headerDiv.id = "stack_header" + i;
+        headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
+        headerDiv.innerHTML = htmlSpecialChars(frame[0]);
+        stackDiv.appendChild(headerDiv);
+
+        var encodedVars = Object.entries(frame[1]);
+        if (encodedVars.length > 0) {
+          var table = document.createElement("table");
+          table.className = "stackFrameVarTable";
+          table.id = divID + "_table";
+          stackDiv.appendChild(table);
+
+          encodedVars.forEach((entry) => {
+            var [varname, val] = entry;
+
+            var tr = document.createElement("tr");
+            // special treatment for displaying return value and indicating
+            // that the function is about to return to its caller
+            if (varname == "__return__") {
+              assert(curEntry.event == "return"); // sanity check
+              tr.innerHTML =
+                '<td colspan="2" class="returnWarning">About to return to caller</td>';
+              table.appendChild(tr);
+              tr = document.createElement("tr");
+              tr.innerHTML =
+                '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
+            } else {
+              tr.innerHTML =
+                '<td class="stackFrameVar">' +
+                varname +
+                '</td><td class="stackFrameValue"></td>';
+            }
+            table.appendChild(tr);
+
+            // render primitives inline and compound types on the heap
+            if (val == null || typeof val != "object") {
+              renderData(val, tr.querySelector("td.stackFrameValue"), false);
+            } else {
+              // add a stub so that we can connect it with a connector later.
+              // IE needs this div to be NON-EMPTY in order to properly
+              // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
+
+              // make sure varname doesn't contain any weird
+              // characters that are illegal for CSS ID's ...
+              //
+              // I know for a fact that iterator tmp variables named '_[1]'
+              // are NOT legal names for CSS ID's.
+              // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
+              //
+              // TODO: what other characters are illegal???
+              var varDivID =
+                divID +
+                "__" +
+                varname
+                  .replace(/[\[{|(<>]/g, "LeftB_")
+                  .replace(/[\]}|)<>]/g, "_RightB");
+              var divElement = document.createElement("div");
+              divElement.id = varDivID;
+              divElement.innerHTML = "&nbsp;";
+              tr.querySelector("td.stackFrameValue").appendChild(divElement);
+
+              if (connectionEndpointIDs[varDivID] === undefined) {
+                connectionEndpointIDs[varDivID] = "heap_object_" + val[1]; // val[1] is object ID
+              }
+            }
+          });
+        }
+      });
+
+      // then render the heap
+      var heapHeaderDiv = document.createElement("div");
+      heapHeaderDiv.id = "heapHeader";
+      heapHeaderDiv.textContent = "Heap";
+      heap_master_div.appendChild(heapHeaderDiv);
+
+      // if there are multiple aliases to the same object, we want to render
+      // the one deepest in the stack, so that we can hopefully prevent
+      // objects from jumping around as functions are called and returned.
+      // e.g., if a list L appears as a global variable and as a local in a
+      // function, we want to render L when rendering the global frame.
+
+      var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
+      curEntry.encoded_frames.forEach((frame) => {
+        Object.entries(frame[1]).forEach((entry) => {
+          var val = entry[1];
+          // primitive types are already rendered in the stack
+          if (typeof val == "object" && val != null) {
+            var objectID = val[1];
+
+            if (!alreadyRenderedObjectIDs.has(objectID)) {
+              var heapObjID = "heap_object_" + objectID;
+              dataViz.querySelector("#heap").innerHTML +=
+                '<div class="heapObject" id="' + heapObjID + '"></div>';
+              renderData(
+                val,
+                dataViz.querySelector("#heap #" + heapObjID),
+                false
+              );
+
+              alreadyRenderedObjectIDs.add(objectID);
+            }
+          }
+        });
+      });
+
+      // finally connect stack variables to heap objects
+      // add an on-click listener to all stack frame headers
+      document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+        header.addEventListener("click", function () {
+          const selectedEnclosingStackFrame = this.parentNode;
+
+          //Clear all canvases
+          document.querySelectorAll("canvas").forEach((oldCanvas) => {
+            dataViz.removeChild(oldCanvas);
+          });
+
+          // Draw connections based on the connectionEndpointIDs object
+          Object.entries(connectionEndpointIDs).forEach(
+            ([sourceID, targetID]) => {
+              const sourceElem = document.getElementById(sourceID);
+              const sourceRect = sourceElem.getBoundingClientRect();
+              const targetRect = document
+                .getElementById(targetID)
+                .getBoundingClientRect();
+
+              // Find the parent stack frame of the source element
+              // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
+              const enclosingStackFrame =
+                sourceElem.parentElement.parentElement.parentElement
+                  .parentElement;
+
+              // Draw a line from the source element to the target element
+              // add 5 pixels of buffer on both sides
+              const fromX = sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
+              const toX = targetRect.left + 5 + window.scrollX;
+              const diffX = toX - fromX;
+              const midX = diffX / 2;
+
+              // Highlight if the stack frame ID matches the selected stack frame ID
+              const highlight =
+                enclosingStackFrame.id ===
+                selectedEnclosingStackFrame.getAttribute("id");
+
+              const lineColor = highlight ? "darkBlue" : "lightGray";
+
+              const canvas = document.createElement("canvas");
+              canvas.style.left = fromX + "px";
+              canvas.width = diffX;
+
+              // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
+              const fromY = sourceRect.top + sourceRect.height / 2  + window.scrollY;
+              const toY = targetRect.top + targetRect.height / 2  + window.scrollY;
+              if (fromY < toY) {
+                var diffY = toY - fromY + 10;
+                canvas.style.top = fromY - 5 + "px";
+              } else {
+                var diffY = fromY - toY + 10;
+                canvas.style.top = toY - 5 + "px";
+              }
+              const midY = diffY / 2;
+              canvas.height = diffY;
+
+              // Draw the curved line
+              const ctx = canvas.getContext("2d");
+              ctx.beginPath();
+              if (fromY < toY) {
+                ctx.moveTo(5, 5);
+                ctx.bezierCurveTo(
+                  midX,
+                  5,
+                  midX,
+                  diffY - 5,
+                  diffX - 5,
+                  diffY - 5
+                );
+              } else {
+                ctx.moveTo(5, diffY - 5);
+                ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
+              }
+              ctx.strokeStyle = lineColor;
+              ctx.lineWidth = highlight ? 2 : 1;
+              ctx.stroke();
+
+              // Draw the arrowhead at the midpoint
+              const size = 10; // Arrowhead size
+
+              // Calculate the angle of the line at mid point - found and simplified mathematically
+              const angle = Math.atan2(2 * (toY - fromY), diffX - 10);
+
+              // Calculate the points for the arrowhead
+              const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
+              const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
+
+              const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
+              const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
+
+              // Draw the arrowhead
+              ctx.beginPath();
+              ctx.moveTo(midX, midY);
+              ctx.lineTo(arrowX1, arrowY1);
+              ctx.lineTo(arrowX2, arrowY2);
+              ctx.closePath();
+              ctx.fillStyle = lineColor;
+              ctx.fill();
+
+              dataViz.appendChild(canvas);
+            }
+          );
+
+          // clear everything, then just activate selectedEnclosingStackFrame
+          document.querySelectorAll(".stackFrame").forEach((frame) => {
+            frame.classList.remove("selectedStackFrame");
+          });
+          document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+            header.classList.add("inactiveStackFrameHeader");
+          });
+
+          selectedEnclosingStackFrame.classList.add("selectedStackFrame");
+          this.classList.remove("inactiveStackFrameHeader");
+        });
+      });
+
+      // 'click' on the top-most stack frame if available,
+      // or on "Global variables" otherwise
+      if (stackGrowsUp) {
+        document.getElementById("stack_header0").click();
+      } else {
+        document
+          .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
+          .click();
+      }
+    }
   }
 }
 
