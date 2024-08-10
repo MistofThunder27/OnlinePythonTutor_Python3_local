@@ -327,9 +327,6 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
     header.removeEventListener("click", handleClick);
   });
 
-  const canvas = document.getElementById("connectorCanvas");
-  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-
   // create a tabular layout for stack and heap side-by-side
   // TODO: figure out how to do this using CSS in a robust way!
   var dataViz = document.getElementById("dataViz");
@@ -474,54 +471,15 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
   });
 
   // finally connect stack variables to heap objects
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  // Function to draw a line between two points
-  function drawLine(fromX, fromY, toX, toY, highlight = false) {
-    // Calculate the midpoint
-    const midX = (fromX + toX) / 2;
-    const midY = (fromY + toY) / 2;
-    const lineColor = highlight ? "darkBlue" : "lightGray";
-
-    // Calculate the angle of the line at mid point - found and simplified mathematically
-    const angle = Math.atan2(2 * (toY - fromY), toX - fromX);
-
-    // Draw the curved line
-    ctx.beginPath();
-    ctx.moveTo(fromX, fromY);
-    ctx.bezierCurveTo(midX, fromY, midX, toY, toX, toY);
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = highlight ? 2 : 1;
-    ctx.stroke();
-
-    // Draw the arrowhead at the midpoint
-    const size = 10; // Arrowhead size
-
-    // Calculate the points for the arrowhead
-    const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
-    const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
-
-    const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
-    const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
-
-    // Draw the arrowhead
-    ctx.beginPath();
-    ctx.moveTo(midX, midY);
-    ctx.lineTo(arrowX1, arrowY1);
-    ctx.lineTo(arrowX2, arrowY2);
-    ctx.closePath();
-    ctx.fillStyle = lineColor;
-    ctx.fill();
-  }
-
   // add an on-click listener to all stack frame headers
   document.querySelectorAll(".stackFrameHeader").forEach((header) => {
     header.addEventListener("click", function () {
       const selectedEnclosingStackFrame = this.parentNode;
-      const selectedEnclosingStackFrameID =
-        selectedEnclosingStackFrame.getAttribute("id");
+
+      //Clear all canvases
+      document.querySelectorAll("canvas").forEach((oldCanvas) => {
+        document.body.removeChild(oldCanvas);
+      });
 
       // Draw connections based on the connectionEndpointIDs object
       Object.entries(connectionEndpointIDs).forEach(([sourceID, targetID]) => {
@@ -537,18 +495,76 @@ function renderDataStructuresVersion2(curEntry, orderedFrames) {
           sourceElem.parentElement.parentElement.parentElement.parentElement;
 
         // Draw a line from the source element to the target element
-        drawLine(
-          sourceRect.left + sourceRect.width / 2,
-          sourceRect.top + sourceRect.height / 2,
-          targetRect.left,
-          targetRect.top + targetRect.height / 2,
-          // Highlight if the stack frame ID matches the selected stack frame ID
-          enclosingStackFrame &&
-            enclosingStackFrame.id === selectedEnclosingStackFrameID
-        );
+        // add 5 pixels of buffer on both sides
+        const fromX = sourceRect.left + sourceRect.width / 2 - 5;
+        const toX = targetRect.left + 5;
+        const diffX = toX - fromX;
+        const midX = diffX / 2;
+
+        // Highlight if the stack frame ID matches the selected stack frame ID
+        const highlight =
+          enclosingStackFrame.id ===
+          selectedEnclosingStackFrame.getAttribute("id");
+
+        const lineColor = highlight ? "darkBlue" : "lightGray";
+
+        const canvas = document.createElement("canvas");
+        canvas.style.left = fromX + "px";
+        canvas.width = diffX;
+
+        // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
+        const fromY = sourceRect.top + sourceRect.height / 2;
+        const toY = targetRect.top + targetRect.height / 2;
+        if (fromY < toY) {
+          var diffY = toY - fromY + 10;
+          canvas.style.top = fromY - 5 + "px";
+        } else {
+          var diffY = fromY - toY + 10;
+          canvas.style.top = toY - 5 + "px";
+        }
+        const midY = diffY / 2;
+        canvas.height = diffY;
+
+        // Draw the curved line
+        const ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        if (fromY < toY) {
+          ctx.moveTo(5, 5);
+          ctx.bezierCurveTo(midX, 5, midX, diffY - 5, diffX - 5, diffY - 5);
+        } else {
+          ctx.moveTo(5, diffY - 5);
+          ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
+        }
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = highlight ? 2 : 1;
+        ctx.stroke();
+
+        // Draw the arrowhead at the midpoint
+        const size = 10; // Arrowhead size
+
+        // Calculate the angle of the line at mid point - found and simplified mathematically
+        const angle = Math.atan2(2 * (toY - fromY), diffX - 10);
+
+        // Calculate the points for the arrowhead
+        const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
+        const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
+
+        const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
+        const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
+
+        // Draw the arrowhead
+        ctx.beginPath();
+        ctx.moveTo(midX, midY);
+        ctx.lineTo(arrowX1, arrowY1);
+        ctx.lineTo(arrowX2, arrowY2);
+        ctx.closePath();
+        ctx.fillStyle = lineColor;
+        ctx.fill();
+
+        document.body.appendChild(canvas);
       });
 
-      // clear everything, then just activate $(this) one ...
+      // clear everything, then just activate selectedEnclosingStackFrame
       document.querySelectorAll(".stackFrame").forEach((frame) => {
         frame.classList.remove("selectedStackFrame");
       });

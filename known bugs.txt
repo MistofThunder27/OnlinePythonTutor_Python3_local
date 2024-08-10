@@ -4,6 +4,7 @@
 - make all paths robust
 - removing class calls from trace fails if there is a function call during initialisation
 - make function rendering better by showing arguments???
+- delete canvas on exit
 
 ---
 2010-09-29
