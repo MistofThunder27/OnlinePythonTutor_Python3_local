@@ -261,14 +261,6 @@ async def async_func():
 
 asyncio.run(async_func())
 
-# File handling
-with open('example.txt', 'w') as f:
-    f.write("Hello, file!")
-
-with open('example.txt', 'r') as f:
-    content = f.read()
-    print(content)
-
 # Built-in functions and methods
 length = len(lst)
 mapped = list(map(lambda x: x * 2, lst))
