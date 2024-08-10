@@ -275,7 +275,7 @@ function updateOutput() {
       orderedFrames.forEach((frame) => {
         const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
-        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:"
+        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:";
         vizFrame.appendChild(document.createElement("br"));
 
         var encodedVars = Object.entries(frame[1]);
@@ -287,19 +287,19 @@ function updateOutput() {
           encodedVars.forEach((entry) => {
             const tr = document.createElement("tr");
             frameDataViz.appendChild(tr);
-        
+
             const varnameTd = document.createElement("td");
             tr.appendChild(varnameTd);
-            varnameTd.className = "varname"
+            varnameTd.className = "varname";
             const varname = entry[0];
             varnameTd.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
                 : varname;
-            
+
             const valTd = document.createElement("td");
             tr.appendChild(valTd);
-            valTd.className = "val"
+            valTd.className = "val";
             renderData(entry[1], valTd, false);
           });
 
@@ -307,8 +307,8 @@ function updateOutput() {
           lastRow.querySelector("td:first-child").style.borderBottom = "0px";
           lastRow.querySelector("td:last-child").style.borderBottom = "0px";
         } else {
-          const noneText = document.createElement("i")
-          noneText.innerText = "none"
+          const noneText = document.createElement("i");
+          noneText.innerText = "none";
           vizFrame.appendChild(noneText);
         }
         dataViz.appendChild(vizFrame);
@@ -482,33 +482,35 @@ function updateOutput() {
                 .getElementById(targetID)
                 .getBoundingClientRect();
 
-              // Find the parent stack frame of the source element
+              // Find the parent stackFrame of the source element and highlight if
+              // the stackFrame ID matches the selectedStackFrame ID
               // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
-              const enclosingStackFrame =
+              const isSelectedFrame =
                 sourceElem.parentElement.parentElement.parentElement
-                  .parentElement;
+                  .parentElement.id ===
+                selectedEnclosingStackFrame.getAttribute("id");
 
               // Draw a line from the source element to the target element
               // add 5 pixels of buffer on both sides
-              const fromX = sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
+              const fromX =
+                sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
               const toX = targetRect.left + 5 + window.scrollX;
               const diffX = toX - fromX;
               const midX = diffX / 2;
 
-              // Highlight if the stack frame ID matches the selected stack frame ID
-              const highlight =
-                enclosingStackFrame.id ===
-                selectedEnclosingStackFrame.getAttribute("id");
-
-              const lineColor = highlight ? "darkBlue" : "lightGray";
+              const lineColor = isSelectedFrame ? "darkBlue" : "lightGray";
 
               const canvas = document.createElement("canvas");
+              canvas.style.zIndex = isSelectedFrame ? 1 : 0;
+
               canvas.style.left = fromX + "px";
               canvas.width = diffX;
 
               // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
-              const fromY = sourceRect.top + sourceRect.height / 2  + window.scrollY;
-              const toY = targetRect.top + targetRect.height / 2  + window.scrollY;
+              const fromY =
+                sourceRect.top + sourceRect.height / 2 + window.scrollY;
+              const toY =
+                targetRect.top + targetRect.height / 2 + window.scrollY;
               if (fromY < toY) {
                 var diffY = toY - fromY + 10;
                 canvas.style.top = fromY - 5 + "px";
@@ -537,7 +539,7 @@ function updateOutput() {
                 ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
               }
               ctx.strokeStyle = lineColor;
-              ctx.lineWidth = highlight ? 2 : 1;
+              ctx.lineWidth = isSelectedFrame ? 2 : 1;
               ctx.stroke();
 
               // Draw the arrowhead at the midpoint
