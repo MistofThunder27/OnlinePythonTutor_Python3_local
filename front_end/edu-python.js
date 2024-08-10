@@ -115,19 +115,25 @@ function updateOutput() {
         : "Program has terminated"
       : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
 
-  vcrControls.querySelector("#jmpFirstInstr").disabled = vcrControls.querySelector("#jmp1StepBack").disabled =
-    curInstr === 0;
+  vcrControls.querySelector("#jmpFirstInstr").disabled =
+    vcrControls.querySelector("#jmp1StepBack").disabled = curInstr === 0;
   vcrControls.querySelector("#jmp5StepBack").disabled = curInstr < 5;
   vcrControls.querySelector("#jmp25StepBack").disabled = curInstr < 25;
-  vcrControls.querySelector("#jmpLastInstr").disabled = vcrControls.querySelector("#jmp1StepFwd").disabled =
-    curInstr === totalInstrs - 1;
-  vcrControls.querySelector("#jmp5StepFwd").disabled = curInstr > totalInstrs - 6;
-  vcrControls.querySelector("#jmp25StepFwd").disabled = curInstr > totalInstrs - 26;
+  vcrControls.querySelector("#jmpLastInstr").disabled =
+    vcrControls.querySelector("#jmp1StepFwd").disabled =
+      curInstr === totalInstrs - 1;
+  vcrControls.querySelector("#jmp5StepFwd").disabled =
+    curInstr > totalInstrs - 6;
+  vcrControls.querySelector("#jmp25StepFwd").disabled =
+    curInstr > totalInstrs - 26;
 
   // render error (if applicable):
   const errorOutput = document.getElementById("errorOutput");
   var hasError;
-  if (curEntry.event === "exception" || curEntry.event === "uncaught_exception") {
+  if (
+    curEntry.event === "exception" ||
+    curEntry.event === "uncaught_exception"
+  ) {
     assert(curEntry.exception_msg);
     errorOutput.innerHTML = htmlSpecialChars(curEntry.exception_msg);
     errorOutput.style.display = "block";
@@ -148,7 +154,9 @@ function updateOutput() {
   // Reset background color of code lines
   tbl.querySelectorAll("td.cod").forEach((line) => {
     line.style.backgroundColor = "";
-    line.innerHTML = line.innerHTML.replace(/<br\/?>.*$/g, "").replace(/<span.*?>(.*?)<\/span>/g, "$1");
+    line.innerHTML = line.innerHTML
+      .replace(/<br\/?>.*$/g, "")
+      .replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
   var {
@@ -172,13 +180,15 @@ function updateOutput() {
     var {
       code: evaluatedCode,
       line_group: callingLines,
-      true_positions: [[startLine, startIndex], [endLine, endIndex]],
+      true_positions: [startLine, startIndex, endLine, endIndex],
       relative_positions: [relativeStart, relativeEnd],
     } = callerInfo;
 
-    let callingLineColor = encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
+    let callingLineColor =
+      encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     callingLines.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = callingLineColor;
+      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
+        callingLineColor;
     });
 
     var cell, content;
@@ -202,7 +212,10 @@ function updateOutput() {
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
         cell = tbl.querySelectorAll("td.cod")[line - 1];
-        cell.innerHTML = '<span style="background-color: orange;">' + cell.textContent + "</span>";
+        cell.innerHTML =
+          '<span style="background-color: orange;">' +
+          cell.textContent +
+          "</span>";
       }
 
       cell = tbl.querySelectorAll("td.cod")[endLine - 1];
@@ -214,7 +227,9 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tbl.querySelectorAll("td.cod")[callingLines[callingLines.length - 1] - 1].innerHTML +=
+    tbl.querySelectorAll("td.cod")[
+      callingLines[callingLines.length - 1] - 1
+    ].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -246,7 +261,7 @@ function updateOutput() {
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
-  var dataViz = document.getElementById("dataViz");
+  const dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = ""; // Clear the content
 
   // organize frames based on settings
@@ -258,251 +273,322 @@ function updateOutput() {
 
     if (inlineRendering) {
       orderedFrames.forEach((frame) => {
-        var vizFrame = document.createElement("div");
+        const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
-        vizFrame.innerHTML = `<span style="font-family: Andale mono, monospace;">${htmlSpecialChars(
-          frame[0]
-        )}</span> variables:`;
-        dataViz.appendChild(vizFrame);
+        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:"
+        vizFrame.appendChild(document.createElement("br"));
 
         var encodedVars = Object.entries(frame[1]);
         if (encodedVars.length > 0) {
-          var frameDataViz = document.createElement("table");
+          const frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
-          vizFrame.appendChild(document.createElement("br"));
           vizFrame.appendChild(frameDataViz);
 
           encodedVars.forEach((entry) => {
-            var [varname, val] = entry;
-            var tr = document.createElement("tr");
-            tr.innerHTML = `<td>${
+            const tr = document.createElement("tr");
+            frameDataViz.appendChild(tr);
+        
+            const varnameTd = document.createElement("td");
+            tr.appendChild(varnameTd);
+            varnameTd.className = "varname"
+            const varname = entry[0];
+            varnameTd.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
-                : varname
-            }</td><td></td>`;
-            frameDataViz.appendChild(tr);
-            renderData(val, tr.querySelector("td:last-child"), false);
+                : varname;
+            
+            const valTd = document.createElement("td");
+            tr.appendChild(valTd);
+            valTd.className = "val"
+            renderData(entry[1], valTd, false);
           });
 
-          var lastRow = frameDataViz.lastElementChild;
+          const lastRow = frameDataViz.lastElementChild;
           lastRow.querySelector("td:first-child").style.borderBottom = "0px";
           lastRow.querySelector("td:last-child").style.borderBottom = "0px";
         } else {
-          vizFrame.innerHTML += "<i>none</i>";
+          const noneText = document.createElement("i")
+          noneText.innerText = "none"
+          vizFrame.appendChild(noneText);
         }
+        dataViz.appendChild(vizFrame);
       });
     } else {
-      renderDataStructuresVersion2(curEntry, orderedFrames);
-    }
-  }
-}
-
-// The "2.0" version of renderDataStructures, which renders variables in
-// a stack and values in a separate heap, with data structure aliasing
-// explicitly represented via line connectors (thanks to jsPlumb lib).
-//
-// This version was originally created in September 2011
-function renderDataStructuresVersion2(curEntry, orderedFrames) {
-  // before we wipe out the old state of the visualization, CLEAR all
-  // the click listeners first
-  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-    header.removeEventListener("click", handleClick);
-  });
-
-  // VERY VERY IMPORTANT --- and reset ALL jsPlumb state to prevent
-  // weird mis-behavior!!!
-  jsPlumb.reset();
-
-  // create a tabular layout for stack and heap side-by-side
-  // TODO: figure out how to do this using CSS in a robust way!
-  var stack_td = document.createElement("td");
-  stack_td.id = "stack_td";
-  stack_td.innerHTML = '<div id="stack"></div>';
-
-  var heap_td = document.createElement("td");
-  heap_td.id = "heap_td";
-  heap_td.innerHTML = '<div id="heap"></div>';
-
-  var tr = document.createElement("tr");
-  tr.appendChild(stack_td);
-  tr.appendChild(heap_td);
-
-  var stackHeapTable = document.createElement("table");
-  stackHeapTable.id = "stackHeapTable";
-  stackHeapTable.appendChild(tr);
-
-  var dataViz = document.getElementById("dataViz");
-  dataViz.innerHTML = "";
-  dataViz.appendChild(stackHeapTable);
-
-  // Key:   CSS ID of the div element representing the variable
-  // Value: CSS ID of the div element representing the value rendered in the heap
-  var connectionEndpointIDs = {};
-
-  // first render the vars
-  orderedFrames.forEach((frame, i) => {
-    var stackDiv = document.createElement("div");
-    var divID = "stack" + i;
-    stackDiv.className = "stackFrame";
-    stackDiv.id = divID;
-    document.getElementById("stack").appendChild(stackDiv);
-
-    var headerDiv = document.createElement("div");
-    headerDiv.id = "stack_header" + i;
-    headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
-    headerDiv.innerHTML = htmlSpecialChars(frame[0]);
-    stackDiv.appendChild(headerDiv);
-
-    var encodedVars = Object.entries(frame[1]);
-    if (encodedVars.length > 0) {
-      var table = document.createElement("table");
-      table.className = "stackFrameVarTable";
-      table.id = divID + "_table";
-      stackDiv.appendChild(table);
-
-      encodedVars.forEach(function (entry) {
-        var [varname, val] = entry;
-
-        var tr = document.createElement("tr");
-        // special treatment for displaying return value and indicating
-        // that the function is about to return to its caller
-        if (varname == "__return__") {
-          assert(curEntry.event == "return"); // sanity check
-          tr.innerHTML = '<td colspan="2" class="returnWarning">About to return to caller</td>';
-          table.appendChild(tr);
-          tr = document.createElement("tr");
-          tr.innerHTML =
-            '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
-        } else {
-          tr.innerHTML = '<td class="stackFrameVar">' + varname + '</td><td class="stackFrameValue"></td>';
-        }
-        table.appendChild(tr);
-
-        // render primitives inline and compound types on the heap
-        if (val == null || typeof val != "object") {
-          renderData(val, tr.querySelector("td.stackFrameValue"), false);
-        } else {
-          // add a stub so that we can connect it with a connector later.
-          // IE needs this div to be NON-EMPTY in order to properly
-          // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
-
-          // make sure varname doesn't contain any weird
-          // characters that are illegal for CSS ID's ...
-          //
-          // I know for a fact that iterator tmp variables named '_[1]'
-          // are NOT legal names for CSS ID's.
-          // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
-          //
-          // TODO: what other characters are illegal???
-          var varDivID = divID + "__" + varname.replace(/[\[{|(<>]/g, "LeftB_").replace(/[\]}|)<>]/g, "_RightB");
-          var divElement = document.createElement("div");
-          divElement.id = varDivID;
-          divElement.innerHTML = "&nbsp;";
-          tr.querySelector("td.stackFrameValue").appendChild(divElement);
-
-          if (connectionEndpointIDs[varDivID] === undefined) {
-            connectionEndpointIDs[varDivID] = "heap_object_" + getObjectID(val);
-          }
-        }
-      });
-    }
-  });
-
-  // then render the heap
-  dataViz.querySelector("#heap").innerHTML += '<div id="heapHeader">Heap</div>';
-
-  // if there are multiple aliases to the same object, we want to render
-  // the one deepest in the stack, so that we can hopefully prevent
-  // objects from jumping around as functions are called and returned.
-  // e.g., if a list L appears as a global variable and as a local in a
-  // function, we want to render L when rendering the global frame.
-
-  var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
-  curEntry.encoded_frames.forEach((frame) => {
-    Object.entries(frame[1]).forEach((entry) => {
-      var val = entry[1];
-      // primitive types are already rendered in the stack
-      if (typeof val == "object" && val != null) {
-        var objectID = getObjectID(val);
-
-        if (!alreadyRenderedObjectIDs.has(objectID)) {
-          var heapObjID = "heap_object_" + objectID;
-          dataViz.querySelector("#heap").innerHTML += '<div class="heapObject" id="' + heapObjID + '"></div>';
-          renderData(val, dataViz.querySelector("#heap #" + heapObjID), false);
-
-          alreadyRenderedObjectIDs.add(objectID);
-        }
-      }
-    });
-  });
-
-  // finally connect stack variables to heap objects via connectors
-  Object.entries(connectionEndpointIDs).forEach((entry) => {
-    jsPlumb.connect({ source: entry[0], target: entry[1] });
-  });
-
-  // add an on-click listener to all stack frame headers
-  document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-    header.addEventListener("click", function () {
-      var enclosingStackFrame = this.parentNode;
-      var enclosingStackFrameID = enclosingStackFrame.getAttribute("id");
-
-      var allConnections = jsPlumb.getConnections();
-      allConnections.forEach((connection) => {
-        var element = connection.source;
-        while (element.attr("class") != "stackFrame") {
-          element = element.parent();
-        }
-
-        // if this connector starts in the selected stack frame ...
-        if (element.attr("id") == enclosingStackFrameID) {
-          // then HIGHLIGHT IT!
-          connection.setPaintStyle({ lineWidth: 2, strokeStyle: darkBlue });
-          connection.endpoints[0].setPaintStyle({ fillStyle: darkBlue });
-          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
-
-          // ... and move it to the VERY FRONT
-          connection.canvas.style.zIndex = 1000;
-        } else {
-          // else unhighlight it
-          connection.setPaintStyle({ lineWidth: 1, strokeStyle: lightGray });
-          connection.endpoints[0].setPaintStyle({ fillStyle: lightGray });
-          connection.endpoints[1].setVisible(false, true, true); // JUST set right endpoint to be invisible
-          connection.canvas.style.zIndex = 0;
-        }
-      });
-
-      // clear everything, then just activate $(this) one ...
-      document.querySelectorAll(".stackFrame").forEach((frame) => {
-        frame.classList.remove("selectedStackFrame");
-      });
+      // before we wipe out the old state of the visualization, CLEAR all
+      // the click listeners first
       document.querySelectorAll(".stackFrameHeader").forEach((header) => {
-        header.classList.add("inactiveStackFrameHeader");
+        header.removeEventListener("click", handleClick);
       });
 
-      enclosingStackFrame.classList.add("selectedStackFrame");
-      this.classList.remove("inactiveStackFrameHeader");
-    });
-  });
+      var stackHeapTable = document.createElement("table");
+      stackHeapTable.id = "stackHeapTable";
 
-  // 'click' on the top-most stack frame if available,
-  // or on "Global variables" otherwise
-  if (stackGrowsUp) {
-    document.getElementById("stack_header0").click();
-  } else {
-    document.getElementById("stack_header" + (curEntry.encoded_frames.length - 1)).click();
-  }
-}
+      var tr = document.createElement("tr");
 
-function getObjectID(obj) {
-  // pre-condition
-  assert(typeof obj == "object" && obj != null);
-  assert(Array.isArray(obj));
+      var stack_td = document.createElement("td");
+      stack_td.id = "stack_td";
 
-  if (obj[0] == "INSTANCE" || obj[0] == "CLASS") {
-    return obj[2];
-  } else {
-    return obj[1];
+      var stack_master_div = document.createElement("div");
+      stack_master_div.id = "stack";
+      stack_td.appendChild(stack_master_div);
+      tr.appendChild(stack_td);
+
+      var heap_td = document.createElement("td");
+      heap_td.id = "heap_td";
+
+      var heap_master_div = document.createElement("div");
+      heap_master_div.id = "heap";
+      heap_td.appendChild(heap_master_div);
+      tr.appendChild(heap_td);
+
+      stackHeapTable.appendChild(tr);
+      dataViz.appendChild(stackHeapTable);
+
+      // Key:   CSS ID of the div element representing the variable
+      // Value: CSS ID of the div element representing the value rendered in the heap
+      var connectionEndpointIDs = {};
+
+      // first render the vars
+      orderedFrames.forEach((frame, i) => {
+        var stackDiv = document.createElement("div");
+        var divID = "stack" + i;
+        stackDiv.className = "stackFrame";
+        stackDiv.id = divID;
+        stack_master_div.appendChild(stackDiv);
+
+        var headerDiv = document.createElement("div");
+        headerDiv.id = "stack_header" + i;
+        headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
+        headerDiv.innerHTML = htmlSpecialChars(frame[0]);
+        stackDiv.appendChild(headerDiv);
+
+        var encodedVars = Object.entries(frame[1]);
+        if (encodedVars.length > 0) {
+          var table = document.createElement("table");
+          table.className = "stackFrameVarTable";
+          table.id = divID + "_table";
+          stackDiv.appendChild(table);
+
+          encodedVars.forEach((entry) => {
+            var [varname, val] = entry;
+
+            var tr = document.createElement("tr");
+            // special treatment for displaying return value and indicating
+            // that the function is about to return to its caller
+            if (varname == "__return__") {
+              assert(curEntry.event == "return"); // sanity check
+              tr.innerHTML =
+                '<td colspan="2" class="returnWarning">About to return to caller</td>';
+              table.appendChild(tr);
+              tr = document.createElement("tr");
+              tr.innerHTML =
+                '<td class="stackFrameVar"><span class="retval">Return value:</span></td><td class="stackFrameValue"></td>';
+            } else {
+              tr.innerHTML =
+                '<td class="stackFrameVar">' +
+                varname +
+                '</td><td class="stackFrameValue"></td>';
+            }
+            table.appendChild(tr);
+
+            // render primitives inline and compound types on the heap
+            if (val == null || typeof val != "object") {
+              renderData(val, tr.querySelector("td.stackFrameValue"), false);
+            } else {
+              // add a stub so that we can connect it with a connector later.
+              // IE needs this div to be NON-EMPTY in order to properly
+              // render jsPlumb endpoints, so that's why we add an "&nbsp;"!
+
+              // make sure varname doesn't contain any weird
+              // characters that are illegal for CSS ID's ...
+              //
+              // I know for a fact that iterator tmp variables named '_[1]'
+              // are NOT legal names for CSS ID's.
+              // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
+              //
+              // TODO: what other characters are illegal???
+              var varDivID =
+                divID +
+                "__" +
+                varname
+                  .replace(/[\[{|(<>]/g, "LeftB_")
+                  .replace(/[\]}|)<>]/g, "_RightB");
+              var divElement = document.createElement("div");
+              divElement.id = varDivID;
+              divElement.innerHTML = "&nbsp;";
+              tr.querySelector("td.stackFrameValue").appendChild(divElement);
+
+              if (connectionEndpointIDs[varDivID] === undefined) {
+                connectionEndpointIDs[varDivID] = "heap_object_" + val[1]; // val[1] is object ID
+              }
+            }
+          });
+        }
+      });
+
+      // then render the heap
+      var heapHeaderDiv = document.createElement("div");
+      heapHeaderDiv.id = "heapHeader";
+      heapHeaderDiv.textContent = "Heap";
+      heap_master_div.appendChild(heapHeaderDiv);
+
+      // if there are multiple aliases to the same object, we want to render
+      // the one deepest in the stack, so that we can hopefully prevent
+      // objects from jumping around as functions are called and returned.
+      // e.g., if a list L appears as a global variable and as a local in a
+      // function, we want to render L when rendering the global frame.
+
+      var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
+      curEntry.encoded_frames.forEach((frame) => {
+        Object.entries(frame[1]).forEach((entry) => {
+          var val = entry[1];
+          // primitive types are already rendered in the stack
+          if (typeof val == "object" && val != null) {
+            var objectID = val[1];
+
+            if (!alreadyRenderedObjectIDs.has(objectID)) {
+              var heapObjID = "heap_object_" + objectID;
+              dataViz.querySelector("#heap").innerHTML +=
+                '<div class="heapObject" id="' + heapObjID + '"></div>';
+              renderData(
+                val,
+                dataViz.querySelector("#heap #" + heapObjID),
+                false
+              );
+
+              alreadyRenderedObjectIDs.add(objectID);
+            }
+          }
+        });
+      });
+
+      // finally connect stack variables to heap objects
+      // add an on-click listener to all stack frame headers
+      document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+        header.addEventListener("click", function () {
+          const selectedEnclosingStackFrame = this.parentNode;
+
+          //Clear all canvases
+          document.querySelectorAll("canvas").forEach((oldCanvas) => {
+            dataViz.removeChild(oldCanvas);
+          });
+
+          // Draw connections based on the connectionEndpointIDs object
+          Object.entries(connectionEndpointIDs).forEach(
+            ([sourceID, targetID]) => {
+              const sourceElem = document.getElementById(sourceID);
+              const sourceRect = sourceElem.getBoundingClientRect();
+              const targetRect = document
+                .getElementById(targetID)
+                .getBoundingClientRect();
+
+              // Find the parent stack frame of the source element
+              // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
+              const enclosingStackFrame =
+                sourceElem.parentElement.parentElement.parentElement
+                  .parentElement;
+
+              // Draw a line from the source element to the target element
+              // add 5 pixels of buffer on both sides
+              const fromX = sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
+              const toX = targetRect.left + 5 + window.scrollX;
+              const diffX = toX - fromX;
+              const midX = diffX / 2;
+
+              // Highlight if the stack frame ID matches the selected stack frame ID
+              const highlight =
+                enclosingStackFrame.id ===
+                selectedEnclosingStackFrame.getAttribute("id");
+
+              const lineColor = highlight ? "darkBlue" : "lightGray";
+
+              const canvas = document.createElement("canvas");
+              canvas.style.left = fromX + "px";
+              canvas.width = diffX;
+
+              // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
+              const fromY = sourceRect.top + sourceRect.height / 2  + window.scrollY;
+              const toY = targetRect.top + targetRect.height / 2  + window.scrollY;
+              if (fromY < toY) {
+                var diffY = toY - fromY + 10;
+                canvas.style.top = fromY - 5 + "px";
+              } else {
+                var diffY = fromY - toY + 10;
+                canvas.style.top = toY - 5 + "px";
+              }
+              const midY = diffY / 2;
+              canvas.height = diffY;
+
+              // Draw the curved line
+              const ctx = canvas.getContext("2d");
+              ctx.beginPath();
+              if (fromY < toY) {
+                ctx.moveTo(5, 5);
+                ctx.bezierCurveTo(
+                  midX,
+                  5,
+                  midX,
+                  diffY - 5,
+                  diffX - 5,
+                  diffY - 5
+                );
+              } else {
+                ctx.moveTo(5, diffY - 5);
+                ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
+              }
+              ctx.strokeStyle = lineColor;
+              ctx.lineWidth = highlight ? 2 : 1;
+              ctx.stroke();
+
+              // Draw the arrowhead at the midpoint
+              const size = 10; // Arrowhead size
+
+              // Calculate the angle of the line at mid point - found and simplified mathematically
+              const angle = Math.atan2(2 * (toY - fromY), diffX - 10);
+
+              // Calculate the points for the arrowhead
+              const arrowX1 = midX - size * Math.cos(angle - Math.PI / 6);
+              const arrowY1 = midY - size * Math.sin(angle - Math.PI / 6);
+
+              const arrowX2 = midX - size * Math.cos(angle + Math.PI / 6);
+              const arrowY2 = midY - size * Math.sin(angle + Math.PI / 6);
+
+              // Draw the arrowhead
+              ctx.beginPath();
+              ctx.moveTo(midX, midY);
+              ctx.lineTo(arrowX1, arrowY1);
+              ctx.lineTo(arrowX2, arrowY2);
+              ctx.closePath();
+              ctx.fillStyle = lineColor;
+              ctx.fill();
+
+              dataViz.appendChild(canvas);
+            }
+          );
+
+          // clear everything, then just activate selectedEnclosingStackFrame
+          document.querySelectorAll(".stackFrame").forEach((frame) => {
+            frame.classList.remove("selectedStackFrame");
+          });
+          document.querySelectorAll(".stackFrameHeader").forEach((header) => {
+            header.classList.add("inactiveStackFrameHeader");
+          });
+
+          selectedEnclosingStackFrame.classList.add("selectedStackFrame");
+          this.classList.remove("inactiveStackFrameHeader");
+        });
+      });
+
+      // 'click' on the top-most stack frame if available,
+      // or on "Global variables" otherwise
+      if (stackGrowsUp) {
+        document.getElementById("stack_header0").click();
+      } else {
+        document
+          .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
+          .click();
+      }
+    }
   }
 }
 
@@ -524,18 +610,21 @@ function renderData(obj, jDomElt, ignoreIDs) {
       jDomElt.innerHTML = '<span class="boolObj">False</span>';
     }
   } else if (typ == "string") {
-    jDomElt.innerHTML = '<span class="stringObj">"' + htmlSpecialChars(obj).replaceAll('"', '\\"') + '"</span>';
+    jDomElt.innerHTML =
+      '<span class="stringObj">"' +
+      htmlSpecialChars(obj).replaceAll('"', '\\"') +
+      '"</span>';
   } else if (typ == "object") {
     var idStr = "";
     if (!ignoreIDs) {
-      idStr = " (id=" + getObjectID(obj) + ")";
+      idStr = " (id=" + obj[1] + ")";
     }
 
     if (obj[0] == "LIST") {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty list" + idStr;
         jDomElt.appendChild(newDiv);
@@ -544,7 +633,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("listTbl");
+        table.className = "listTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
         var headerTr = table.querySelector("tr:first-child");
@@ -552,12 +641,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
           var headerCell = document.createElement("td");
-          headerCell.classList.add("listHeader");
+          headerCell.className = "listHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
           var contentCell = document.createElement("td");
-          contentCell.classList.add("listElt");
+          contentCell.className = "listElt";
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
@@ -568,7 +657,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty tuple" + idStr;
         jDomElt.appendChild(newDiv);
@@ -577,7 +666,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("tupvarbl");
+        table.className = "tupleTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
         var headerTr = table.querySelector("tr:first-child");
@@ -585,12 +674,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
           var headerCell = document.createElement("td");
-          headerCell.classList.add("tupleHeader");
+          headerCell.className = "tupleHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
           var contentCell = document.createElement("td");
-          contentCell.classList.add("tupleElt");
+          contentCell.className = "tupleElt";
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
@@ -601,7 +690,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty set" + idStr;
         jDomElt.appendChild(newDiv);
@@ -610,7 +699,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("setTbl");
+        table.className = "setTbl";
         jDomElt.appendChild(table);
         // create an R x C matrix:
         var numElts = obj.length - 2;
@@ -635,7 +724,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           var curTr = table.querySelector("tr:last-child");
           var newTd = document.createElement("td");
-          newTd.classList.add("setElt");
+          newTd.className = "setElt";
           curTr.appendChild(newTd);
           renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
         });
@@ -644,7 +733,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty dict" + idStr;
         jDomElt.appendChild(newDiv);
@@ -653,17 +742,17 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(newDiv);
 
         var table = document.createElement("table");
-        table.classList.add("dictTbl");
+        table.className = "dictTbl";
         jDomElt.appendChild(table);
         obj.slice(2).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("dictKey");
+          newKeyTd.className = "dictKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("dictVal");
+          newValTd.className = "dictVal";
 
           var newDictTr = document.createElement("tr");
-          newDictTr.classList.add("dictEntry");
+          newDictTr.className = "dictEntry";
           newDictTr.appendChild(newKeyTd);
           newDictTr.appendChild(newValTd);
 
@@ -677,23 +766,23 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       newDiv.textContent = obj[1] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
         var table = document.createElement("table");
-        table.classList.add("instTbl");
+        table.className = "instTbl";
         jDomElt.appendChild(table);
         obj.slice(3).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("instKey");
+          newKeyTd.className = "instKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("instVal");
+          newValTd.className = "instVal";
 
           var newInstTr = document.createElement("tr");
-          newInstTr.classList.add("instEntry");
+          newInstTr.className = "instEntry";
           newInstTr.appendChild(newKeyTd);
           newInstTr.appendChild(newValTd);
 
@@ -701,7 +790,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML +=
+            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -711,7 +801,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length >= 4);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("typeLabel");
+      newDiv.className = "typeLabel";
       var superclassStr = "";
       if (obj[3].length > 0) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
@@ -722,17 +812,17 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
       if (obj.length > 4) {
         var table = document.createElement("table");
-        table.classList.add("classTbl");
+        table.className = "classTbl";
         jDomElt.appendChild(table);
         obj.slice(4).forEach((kvPair) => {
           var newKeyTd = document.createElement("td");
-          newKeyTd.classList.add("classKey");
+          newKeyTd.className = "classKey";
 
           var newValTd = document.createElement("td");
-          newValTd.classList.add("classVal");
+          newValTd.className = "classVal";
 
           var newClassTr = document.createElement("tr");
-          newClassTr.classList.add("classEntry");
+          newClassTr.className = "classEntry";
           newClassTr.appendChild(newKeyTd);
           newClassTr.appendChild(newValTd);
 
@@ -740,7 +830,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           // the keys should always be strings, so render them directly (and without quotes):
           assert(typeof kvPair[0] == "string");
-          newKeyTd.innerHTML += '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+          newKeyTd.innerHTML +=
+            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
 
           // values can be arbitrary objects, so recurse:
           renderData(kvPair[1], newValTd, ignoreIDs);
@@ -750,7 +841,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
       assert(obj.length == 2);
 
       var newDiv = document.createElement("div");
-      newDiv.classList.add("circRefLabel");
+      newDiv.className = "circRefLabel";
       newDiv.textContent = "circular reference to id=" + obj[1];
       jDomElt.appendChild(newDiv);
     } else {
@@ -778,7 +869,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         jDomElt.appendChild(typeLabelDiv);
 
         var table = document.createElement("table");
-        table.className = "tupvarbl";
+        table.className = "tupleTbl";
         var row = document.createElement("tr");
         var cell = document.createElement("td");
         cell.className = "tupleElt";
@@ -827,10 +918,16 @@ function addTabSupport(textElement) {
             lines[i] = lines[i].substring(4);
           }
         }
-        textElement.value = textElement.value.substring(0, start) + lines.join("\n") + textElement.value.substring(end);
+        textElement.value =
+          textElement.value.substring(0, start) +
+          lines.join("\n") +
+          textElement.value.substring(end);
         textElement.selectionStart = textElement.selectionEnd = start - 4;
       } else {
-        textElement.value = textElement.value.substring(0, start) + "    " + textElement.value.substring(end);
+        textElement.value =
+          textElement.value.substring(0, start) +
+          "    " +
+          textElement.value.substring(end);
         textElement.selectionStart = textElement.selectionEnd = start + 4;
       }
     }
@@ -839,36 +936,46 @@ function addTabSupport(textElement) {
 
 // initialization function that should be called when the page is loaded
 function eduPythonCommonInit() {
-  document.getElementById("jmpFirstInstr").addEventListener("click", function () {
-    curInstr = 0;
-    updateOutput();
-  });
-
-  document.getElementById("jmpLastInstr").addEventListener("click", function () {
-    curInstr = curTrace.length - 1;
-    updateOutput();
-  });
-
-  document.getElementById("jmp1StepBack").addEventListener("click", function () {
-    if (curInstr > 0) {
-      curInstr -= 1;
+  document
+    .getElementById("jmpFirstInstr")
+    .addEventListener("click", function () {
+      curInstr = 0;
       updateOutput();
-    }
-  });
+    });
 
-  document.getElementById("jmp5StepBack").addEventListener("click", function () {
-    if (curInstr > 4) {
-      curInstr -= 5;
+  document
+    .getElementById("jmpLastInstr")
+    .addEventListener("click", function () {
+      curInstr = curTrace.length - 1;
       updateOutput();
-    }
-  });
+    });
 
-  document.getElementById("jmp25StepBack").addEventListener("click", function () {
-    if (curInstr > 24) {
-      curInstr -= 25;
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("jmp1StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 0) {
+        curInstr -= 1;
+        updateOutput();
+      }
+    });
+
+  document
+    .getElementById("jmp5StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 4) {
+        curInstr -= 5;
+        updateOutput();
+      }
+    });
+
+  document
+    .getElementById("jmp25StepBack")
+    .addEventListener("click", function () {
+      if (curInstr > 24) {
+        curInstr -= 25;
+        updateOutput();
+      }
+    });
 
   document.getElementById("jmp1StepFwd").addEventListener("click", function () {
     if (curInstr < curTrace.length - 1) {
@@ -884,51 +991,65 @@ function eduPythonCommonInit() {
     }
   });
 
-  document.getElementById("jmp25StepFwd").addEventListener("click", function () {
-    if (curInstr < curTrace.length - 26) {
-      curInstr += 25;
-      updateOutput();
-    }
-  });
-
-  document.getElementById("jmpToStepBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpToStepText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let number = parseInt(inputValue) - 1;
-      if (number >= 0 && number <= curTrace.length) {
-        curInstr = number;
+  document
+    .getElementById("jmp25StepFwd")
+    .addEventListener("click", function () {
+      if (curInstr < curTrace.length - 26) {
+        curInstr += 25;
         updateOutput();
       }
-    }
-  });
+    });
 
-  document.getElementById("jmpFwdToLineBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpFwdToLineText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
-        curInstr += 1;
-        while (curInstr <= curTrace.length - 2 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+  document
+    .getElementById("jmpToStepBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpToStepText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let number = parseInt(inputValue) - 1;
+        if (number >= 0 && number <= curTrace.length) {
+          curInstr = number;
+          updateOutput();
+        }
+      }
+    });
+
+  document
+    .getElementById("jmpFwdToLineBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpFwdToLineText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let lineNumber = parseInt(inputValue);
+        if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
           curInstr += 1;
+          while (
+            curInstr <= curTrace.length - 2 &&
+            !curTrace[curInstr].line_group.includes(lineNumber)
+          ) {
+            curInstr += 1;
+          }
+          updateOutput();
         }
-        updateOutput();
       }
-    }
-  });
+    });
 
-  document.getElementById("jmpBackToLineBtn").addEventListener("click", function () {
-    let inputValue = document.getElementById("jmpBackToLineText").value;
-    if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-      let lineNumber = parseInt(inputValue);
-      if (lineNumber >= 1 && curInstr >= 1) {
-        curInstr -= 1;
-        while (curInstr >= 1 && !curTrace[curInstr].line_group.includes(lineNumber)) {
+  document
+    .getElementById("jmpBackToLineBtn")
+    .addEventListener("click", function () {
+      let inputValue = document.getElementById("jmpBackToLineText").value;
+      if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
+        let lineNumber = parseInt(inputValue);
+        if (lineNumber >= 1 && curInstr >= 1) {
           curInstr -= 1;
+          while (
+            curInstr >= 1 &&
+            !curTrace[curInstr].line_group.includes(lineNumber)
+          ) {
+            curInstr -= 1;
+          }
+          updateOutput();
         }
-        updateOutput();
       }
-    }
-  });
+    });
 
   // disable controls initially ...
   document.getElementById("jmpFirstInstr").disabled = true;
@@ -939,20 +1060,6 @@ function eduPythonCommonInit() {
   document.getElementById("jmp5StepFwd").disabled = true;
   document.getElementById("jmp25StepFwd").disabled = true;
   document.getElementById("jmpLastInstr").disabled = true;
-
-  // set some sensible jsPlumb defaults
-  jsPlumb.Defaults.Endpoint = ["Dot", { radius: 3 }];
-  //jsPlumb.Defaults.Endpoint = ["Rectangle", {width:3, height:3}];
-  jsPlumb.Defaults.EndpointStyle = { fillStyle: lightGray };
-  jsPlumb.Defaults.Anchors = ["RightMiddle", "LeftMiddle"];
-  jsPlumb.Defaults.Connector = ["Bezier", { curviness: 15 }];
-  jsPlumb.Defaults.PaintStyle = { lineWidth: 1, strokeStyle: lightGray };
-
-  // experiment with arrows ...
-  jsPlumb.Defaults.Overlays = [["Arrow", { length: 14, width: 10, foldback: 0.55, location: 0.35 }]];
-
-  jsPlumb.Defaults.EndpointHoverStyle = { fillStyle: pinkish };
-  jsPlumb.Defaults.HoverPaintStyle = { lineWidth: 2, strokeStyle: pinkish };
 
   // set keyboard event listeners ...
   document.addEventListener("keydown", (k) => {
@@ -983,15 +1090,19 @@ function eduPythonCommonInit() {
     }
   });
 
-  document.getElementById("stackGrowUpCheckbox").addEventListener("click", function () {
-    if (appMode == "visualize") {
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("stackGrowUpCheckbox")
+    .addEventListener("click", function () {
+      if (appMode == "visualize") {
+        updateOutput();
+      }
+    });
 
-  document.getElementById("inlineRenderingCheckbox").addEventListener("click", function () {
-    if (appMode == "visualize") {
-      updateOutput();
-    }
-  });
+  document
+    .getElementById("inlineRenderingCheckbox")
+    .addEventListener("click", function () {
+      if (appMode == "visualize") {
+        updateOutput();
+      }
+    });
 }

@@ -79,6 +79,10 @@ span {
   padding: 0px;
 }
 
+canvas {
+  position: absolute;
+}
+
 .codeInputPane {
   font-size: 12pt;
   font-family: Andale mono, monospace;

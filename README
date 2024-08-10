@@ -21,7 +21,7 @@ The full version of the original author message is in original_readme.
 This version of the repository has been updated to python 3 and is being
 changed significantly to work exclusively as a standalone program running
 on a custom local python server. This is part of a personal project and
-so changes made will prioritise specific use cases over general ones.
+so changes made will prioritize specific use cases over general ones.
 
 This repository was forked on Github from hcientist/OnlinePythonTutor
 This program remains under the GNU General Public License version 3
@@ -30,8 +30,8 @@ This program remains under the GNU General Public License version 3
 Introduction:
 This program a web application running on a local server where you can
 type Python scripts directly into your web browser, execute those scripts,
-and single-step FORWARDS AND BACKWARDS through execution in order to view
-the run-time state of all data structures.
+and single-step and multiple-step FORWARDS AND BACKWARDS through
+execution in order to view the run-time state of all data structures.
 
 Using this tool, teachers and students can write small Python code
 snippets together and see what happens to the data structures when the

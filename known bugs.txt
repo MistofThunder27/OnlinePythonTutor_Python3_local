@@ -1,53 +1,7 @@
-A disorganized collection of TODOs, bug reports, and friends' suggestions
----
-
-January/Feb 2010 (notes from initial release)
-
-
-Maybe don't display boilerplate code when classes are being initialized?
-
-
-Hubert's suggestions for permalinks:
-'''
-Hubert: 1) It would be cool to have the ability to link directly to an
-execution point, so that when I send you a link, you could see the code
-I'd written and the point in execution that I want to discuss.
-
-me: good suggestion.  that also requires me to save your code in
-something other than a regular POST variable, which i'm not doing right
-now.  then i could send links of the following form:
-
-  http://python.pgrind.com/code_id=20#4 (for line 4 of code snippet 20)
-
-Hubert: yup, yeah the problem lies in storing the code, which brings in
-a whole can of worms.  but suppose you did, consider a RESTful approach
-(which I am drilling into deeply, hence it's on my mind):
-
-http://python.pgrind.com/pg/code/20#4
-
-...quite easy to do and manage in a framework like Django.
-'''
-
-
-Cory McLean: 'Might be nice to be able to automatically jump to particular step
-# rather than just inc/decrement and jump to ends, particular if the
-number of steps executed is significant.'
-
-
-Related work:
-  - PyWhip: http://pywhip.appspot.com/
-    - also powered by Google App Engine
-  - Crunchy: http://code.google.com/p/crunchy/
-
----
-2010-09-05
-
-From Hacker News feedback:
-
-- support for raw_input() sounds like something reasonable to include,
-  though, since it could simply pop up a text box and ask the user to
-  input a string e.g., javascript:alert("hello, " + prompt("what is your
-  name?"))
+- fix keep forward, when line is not visited
+- removing class calls from trace fails if there is a function call during initialisation
+- make function rendering better by showing arguments???
+- assertion fails with questions
 
 ---
 2010-09-29
@@ -77,25 +31,6 @@ else:
 
 the appropriate annotations would display when you stepped through the
 line of code immediately below each annotation.
-
----
-2011-09-15
-
-- Integrate Peter's Python 3 fork into one unified application, and
-  perhaps deploy online on WebFaction, since they offer both Python 2.X
-  and Python 3.X on their servers.
-
-
----
-2011-09-23
-
-- The BACKEND can easily print out a nice list of variables in each
-  stack frame (and globals) by order of their APPEARANCE in the original
-  program execution ... that way, the front-end doesn't have to "guess"
-  an optimal order and can simply use the order that the backend has
-  pre-computed.  e.g., list local stack variables by their order of
-  definition in the original program execution.
-
 
 ---
 2011-09-24
@@ -130,18 +65,6 @@ file):
   now it might croak.
   - one idea is to LIMIT the size of the returned JSON data from the
     back-end???
-
-- to make it easier to jump to certain points in execution rather than
-  tediously single-step through execution.  e.g., could imagine adding a
-  scrubber (like for video playback) combined with pointing at line of
-  code to jump to the NEXT or PREV time that line of code as executed.
-
----
-2011-09-29
-
-Upgrade to Python 2.7 after moving over to Webfaction, so that I can use
-the default standard library "import json"
-
 
 ---
 2011-10-05 feedback from Imran:
@@ -210,14 +133,3 @@ def check_python_code(code):
    output = python.communicate(code)
    PY_PROCESS_LOCK.release()
    return output
-
----
-2011-10-17
-
-Bug report from user ... problems with utf-8 in non-commented code:
-
-# coding = utf-8
-x = [1, 2, 3] # čęė  - OK
-y = x
-y = u"asdęė"  # problem
-

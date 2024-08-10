@@ -2,5 +2,5 @@
 .vscode/
 __pycache__/
 output.json
-known bugs.txt
 scratch.py
+example_code/aaatest2.py
