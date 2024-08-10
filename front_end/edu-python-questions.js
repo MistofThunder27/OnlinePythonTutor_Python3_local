@@ -45,7 +45,11 @@ function resetTestResults() {
 
 // concatenate solution code and test code:
 function concatSolnTestCode(solnCode, testCode) {
-  return solnCode.replace(/\s+$/, "") + "\n\n# Everything below here is test code\n" + testCode;
+  return (
+    solnCode.replace(/\s+$/, "") +
+    "\n\n# Everything below here is test code\n" +
+    testCode
+  );
 }
 
 function genDebugLinkHandler(failingTestIndex) {
@@ -67,26 +71,43 @@ function genDebugLinkHandler(failingTestIndex) {
 function loadQuestion() {
   const selectedOption = document.getElementById("selectQuestion").value;
   if (selectedOption) {
+    if (location.hash != "#edit") {
+      location.hash = "#edit";
+    }
+
     // load the questions file specified by the query string
     fetch("../main.py", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ request: "question", question_file: selectedOption }),
+      body: JSON.stringify({
+        request: "question",
+        question_file: selectedOption,
+      }),
     })
       .then((response) => response.json())
       .then((data) => {
         curQuestion = data; // initialize global
 
-        document.getElementById("ProblemName").value = data.name;
-        document.getElementById("ProblemStatement").value = data.question;
+        document.getElementById("ProblemName").innerText = data.name;
+        document.getElementById("ProblemStatement").innerText = data.question;
 
-        document.getElementById("showHintHref").addEventListener("click", function () {
-          document.getElementById("HintStatement").innerHTML = "<b>Hint</b>: " + data.hint;
-        });
+        HintStatement.innerHTML = '<a href="#" id="showHintHref">Show hint</a>';
+        SolutionStatement.innerHTML =
+          '<a href="#" id="showSolutionHref">Show solution</a>';
 
-        document.getElementById("showSolutionHref").addEventListener("click", function () {
-          document.getElementById("SolutionStatement").innerHTML = "<b>Solution</b>: " + data.solution;
-        });
+        document
+          .getElementById("showHintHref")
+          .addEventListener("click", function () {
+            document.getElementById("HintStatement").innerHTML =
+              "<b>Hint</b>: " + data.hint;
+          });
+
+        document
+          .getElementById("showSolutionHref")
+          .addEventListener("click", function () {
+            document.getElementById("SolutionStatement").innerHTML =
+              "<b>Solution</b>: " + data.solution;
+          });
 
         document.getElementById("actualCodeInput").value = data.skeleton;
 
@@ -113,7 +134,10 @@ function loadQuestion() {
             // whitespace and newlines)
             var diffResults = diff(
               // TODO: remove dependacy
-              document.getElementById("actualCodeInput").value.replace(/\s+$/, "").split(/\n/),
+              document
+                .getElementById("actualCodeInput")
+                .value.replace(/\s+$/, "")
+                .split(/\n/),
               data.skeleton.replace(/\s+$/, "").split(/\n/)
             );
             //console.log(diffResults);
@@ -166,9 +190,11 @@ function loadQuestion() {
             .catch((error) => console.error("Error:", error));
         });
 
-        document.getElementById("editBtn").addEventListener("click", function () {
-          location.hash = "#edit";
-        });
+        document
+          .getElementById("editBtn")
+          .addEventListener("click", function () {
+            location.hash = "#edit";
+          });
 
         var submitBtn = document.getElementById("submitBtn");
         submitBtn.addEventListener("click", function () {
@@ -181,7 +207,10 @@ function loadQuestion() {
           // out-of-order, so code very carefully here!!!
           for (var i = 0; i < tests.length; i++) {
             const ind = i;
-            var submittedCode = concatSolnTestCode(document.getElementById("actualCodeInput").value, tests[i]);
+            var submittedCode = concatSolnTestCode(
+              document.getElementById("actualCodeInput").value,
+              tests[i]
+            );
 
             var postParams = {
               request: "run test",
@@ -281,7 +310,10 @@ document.addEventListener("DOMContentLoaded", function () {
       // don't let the user submit answer when there's an error
       for (var i = 0; i < curTrace.length; i++) {
         var curEntry = curTrace[i];
-        if (curEntry.event == "exception" || curEntry.event == "uncaught_exception") {
+        if (
+          curEntry.event == "exception" ||
+          curEntry.event == "uncaught_exception"
+        ) {
           submitBtn.disabled = true;
           break;
         }
@@ -301,9 +333,13 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("actualCodeInput").value
       );
 
-      const gradeMatrix = document.querySelector("#gradeMatrix tbody#gradeMatrixTbody");
-      const happyFaceImg = '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
-      const sadFaceImg = '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
+      const gradeMatrix = document.querySelector(
+        "#gradeMatrix tbody#gradeMatrixTbody"
+      );
+      const happyFaceImg =
+        '<img style="vertical-align: middle;" src="yellow-happy-face.png"/>';
+      const sadFaceImg =
+        '<img style="vertical-align: middle; margin-right: 8px;" src="red-sad-face.jpg"/>';
 
       testResults.forEach((result, i) => {
         const gradeMatrixRow = document.createElement("tr");
@@ -358,7 +394,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
           const testOutputVarnameCell = document.createElement("td");
           testOutputVarnameCell.className = "testOutputVarnameCell";
-          testOutputVarnameCell.textContent = result.output_var_to_compare + ":";
+          testOutputVarnameCell.textContent =
+            result.output_var_to_compare + ":";
           testOutputVarRow.appendChild(testOutputVarnameCell);
 
           const testOutputValCell = document.createElement("td");
@@ -420,7 +457,10 @@ document.addEventListener("DOMContentLoaded", function () {
           " tests.  Try to debug the failed tests!";
       } else {
         assert(numPassed == tests.length);
-        gradeSummary.textContent = "Congrats, your submitted answer passed all " + tests.length + " tests!";
+        gradeSummary.textContent =
+          "Congrats, your submitted answer passed all " +
+          tests.length +
+          " tests!";
       }
     }
   });
