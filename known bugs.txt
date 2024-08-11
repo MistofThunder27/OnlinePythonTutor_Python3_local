@@ -1,4 +1,3 @@
-- fix keep forward, when line is not visited
 - removing class calls from trace fails if there is a function call during initialisation
 - make function rendering better by showing arguments???
 - assertion fails with questions

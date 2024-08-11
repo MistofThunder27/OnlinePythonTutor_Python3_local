@@ -23,9 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 var appMode = "edit"; // 'edit', 'visualize', or 'grade' (only for question.html)
 
-var inlineRendering;
-var stackGrowsUp;
-
 /* colors - see edu-python.css */
 var lightLineColor = "#FFE536";
 var errorColor = "#F87D76";
@@ -43,6 +40,7 @@ var darkRed = "#9D1E18";
 // ugh globals!
 var curTrace = null;
 var curInstr = 0;
+var encodedFrames;
 
 // true iff trace ended prematurely since maximum instruction limit has been reached
 var instrLimitReached = false;
@@ -98,9 +96,7 @@ function updateOutput() {
     return;
   }
 
-  inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
-  stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
-  var curEntry = curTrace[curInstr];
+  const curEntry = curTrace[curInstr];
   const totalInstrs = curTrace.length;
 
   // render VCR controls:
@@ -145,31 +141,34 @@ function updateOutput() {
 
   // render code output: --
   const tbl = document.querySelector("table#pyCodeOutput");
+  const tblAllLineNo = tbl.querySelectorAll("td.lineNo");
+  const tblAllCod = tbl.querySelectorAll("td.cod");
 
   // Reset color and font-weight of line number cells
-  tbl.querySelectorAll("td.lineNo").forEach((cell) => {
+  tblAllLineNo.forEach((cell) => {
     cell.style.color = "";
     cell.style.fontWeight = "";
   });
   // Reset background color of code lines
-  tbl.querySelectorAll("td.cod").forEach((line) => {
+  tblAllCod.forEach((line) => {
     line.style.backgroundColor = "";
     line.innerHTML = line.innerHTML
       .replace(/<br\/?>.*$/g, "")
       .replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
-  var {
+  const {
     line_group: lineGroup,
-    encoded_frames: encodedFrames,
     caller_info: callerInfo,
     visited_lines: visitedLines,
   } = curEntry;
+  // to make global
+  encodedFrames = curEntry.encoded_frames
 
   // Set visited lines
   if (visitedLines) {
     visitedLines.forEach((line) => {
-      var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
+      const lineNoCell = tblAllLineNo[line - 1];
       lineNoCell.style.color = visitedLineColor;
       lineNoCell.style.fontWeight = "bold";
     });
@@ -177,23 +176,22 @@ function updateOutput() {
 
   // Highlight and duplicate calling function:
   if (callerInfo) {
-    var {
+    const {
       code: evaluatedCode,
       line_group: callingLines,
       true_positions: [startLine, startIndex, endLine, endIndex],
       relative_positions: [relativeStart, relativeEnd],
     } = callerInfo;
 
-    let callingLineColor =
+    const callingLineColor =
       encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     callingLines.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
-        callingLineColor;
+      tblAllCod[line - 1].style.backgroundColor = callingLineColor;
     });
 
     var cell, content;
     if (startLine === endLine) {
-      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      cell = tblAllCod[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -202,7 +200,7 @@ function updateOutput() {
         "</span>" +
         content.substring(endIndex);
     } else {
-      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      cell = tblAllCod[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -211,14 +209,14 @@ function updateOutput() {
         "</span>";
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
-        cell = tbl.querySelectorAll("td.cod")[line - 1];
+        cell = tblAllCod[line - 1];
         cell.innerHTML =
           '<span style="background-color: orange;">' +
           cell.textContent +
           "</span>";
       }
 
-      cell = tbl.querySelectorAll("td.cod")[endLine - 1];
+      cell = tblAllCod[endLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         '<span style="background-color: orange;">' +
@@ -227,9 +225,7 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tbl.querySelectorAll("td.cod")[
-      callingLines[callingLines.length - 1] - 1
-    ].innerHTML +=
+    tblAllCod[callingLines[callingLines.length - 1] - 1].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -242,7 +238,7 @@ function updateOutput() {
   // Highlight curLineGroup:
   if (lineGroup) {
     lineGroup.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
+      tblAllCod[line - 1].style.backgroundColor = hasError
         ? errorColor
         : !instrLimitReached && curInstr === totalInstrs - 1
         ? terminatingColor
@@ -251,16 +247,23 @@ function updateOutput() {
   }
 
   // render stdout:
-  var stdoutElement = document.getElementById("pyStdout");
+  const stdoutElement = document.getElementById("pyStdout");
 
   // keep original horizontal scroll level:
-  var oldLeft = stdoutElement.scrollLeft;
+  const oldLeft = stdoutElement.scrollLeft;
   stdoutElement.value = curEntry.stdout;
   stdoutElement.scrollLeft = oldLeft;
   // scroll to bottom, though:
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
+  renderDataVizDiv()
+}
+
+function renderDataVizDiv() {
+  const inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
+  const stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
+
   const dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = ""; // Clear the content
 
@@ -278,7 +281,7 @@ function updateOutput() {
         vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:";
         vizFrame.appendChild(document.createElement("br"));
 
-        var encodedVars = Object.entries(frame[1]);
+        const encodedVars = Object.entries(frame[1]);
         if (encodedVars.length > 0) {
           const frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
@@ -376,7 +379,6 @@ function updateOutput() {
             // special treatment for displaying return value and indicating
             // that the function is about to return to its caller
             if (varname == "__return__") {
-              assert(curEntry.event == "return"); // sanity check
               tr.innerHTML =
                 '<td colspan="2" class="returnWarning">About to return to caller</td>';
               table.appendChild(tr);
@@ -439,7 +441,7 @@ function updateOutput() {
       // function, we want to render L when rendering the global frame.
 
       var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
-      curEntry.encoded_frames.forEach((frame) => {
+      encodedFrames.forEach((frame) => {
         Object.entries(frame[1]).forEach((entry) => {
           var val = entry[1];
           // primitive types are already rendered in the stack
@@ -587,7 +589,7 @@ function updateOutput() {
         document.getElementById("stack_header0").click();
       } else {
         document
-          .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
+          .getElementById("stack_header" + (encodedFrames.length - 1))
           .click();
       }
     }
@@ -1005,10 +1007,10 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpToStepBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpToStepText").value;
+      const inputValue = document.getElementById("jmpToStepText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let number = parseInt(inputValue) - 1;
-        if (number >= 0 && number <= curTrace.length) {
+        const number = parseInt(inputValue) - 1;
+        if (number >= 0 && number <= curTrace.length - 1) {
           curInstr = number;
           updateOutput();
         }
@@ -1018,9 +1020,9 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpFwdToLineBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpFwdToLineText").value;
+      const inputValue = document.getElementById("jmpFwdToLineText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let lineNumber = parseInt(inputValue);
+        const lineNumber = parseInt(inputValue);
         if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
           curInstr += 1;
           while (
@@ -1037,9 +1039,9 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpBackToLineBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpBackToLineText").value;
+      const inputValue = document.getElementById("jmpBackToLineText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let lineNumber = parseInt(inputValue);
+        const lineNumber = parseInt(inputValue);
         if (lineNumber >= 1 && curInstr >= 1) {
           curInstr -= 1;
           while (
@@ -1088,7 +1090,7 @@ function eduPythonCommonInit() {
   // TODO: can be SLOW on older browsers!!!
   window.addEventListener("resize", function () {
     if (appMode == "visualize") {
-      updateOutput();
+      renderDataVizDiv();
     }
   });
 
@@ -1096,7 +1098,7 @@ function eduPythonCommonInit() {
     .getElementById("stackGrowUpCheckbox")
     .addEventListener("click", function () {
       if (appMode == "visualize") {
-        updateOutput();
+        renderDataVizDiv();
       }
     });
 
@@ -1104,7 +1106,7 @@ function eduPythonCommonInit() {
     .getElementById("inlineRenderingCheckbox")
     .addEventListener("click", function () {
       if (appMode == "visualize") {
-        updateOutput();
+        renderDataVizDiv();
       }
     });
 }

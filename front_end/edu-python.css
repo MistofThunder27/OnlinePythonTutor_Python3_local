@@ -234,18 +234,9 @@ button.medBtn {
   color: #555555;
 }
 
-.numberObj {
-}
-
-.boolObj {
-}
-
 .stringObj {
   /* don't add a color since strings need to be rendered against various backgrounds */
   font-family: Andale mono, monospace;
-}
-
-.keyObj {
 }
 
 .customObj {
@@ -478,9 +469,6 @@ td.stackFrameValue {
   padding-top: 3px;
   padding-left: 3px;
   padding-bottom: 3px;
-}
-
-.stackFrameVarTable tr {
 }
 
 .stackFrameVarTable {
