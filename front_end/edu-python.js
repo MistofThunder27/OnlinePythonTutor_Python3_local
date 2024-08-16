@@ -163,7 +163,7 @@ function updateOutput() {
     visited_lines: visitedLines,
   } = curEntry;
   // to make global
-  encodedFrames = curEntry.encoded_frames
+  encodedFrames = curEntry.encoded_frames;
 
   // Set visited lines
   if (visitedLines) {
@@ -257,11 +257,13 @@ function updateOutput() {
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
-  renderDataVizDiv()
+  renderDataVizDiv();
 }
 
 function renderDataVizDiv() {
-  const inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
+  const inlineRendering = document.getElementById(
+    "inlineRenderingCheckbox"
+  ).checked;
   const stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
 
   const dataViz = document.getElementById("dataViz");
@@ -275,26 +277,25 @@ function renderDataVizDiv() {
     }
 
     if (inlineRendering) {
-      orderedFrames.forEach((frame) => {
+      orderedFrames.forEach(([frameName, frameContent]) => {
         const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
-        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:";
+        vizFrame.innerText = htmlSpecialChars(frameName) + " variables:";
         vizFrame.appendChild(document.createElement("br"));
 
-        const encodedVars = Object.entries(frame[1]);
+        const encodedVars = Object.entries(frameContent);
         if (encodedVars.length > 0) {
           const frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
           vizFrame.appendChild(frameDataViz);
 
-          encodedVars.forEach((entry) => {
+          encodedVars.forEach(([varname, val]) => {
             const tr = document.createElement("tr");
             frameDataViz.appendChild(tr);
 
             const varnameTd = document.createElement("td");
             tr.appendChild(varnameTd);
             varnameTd.className = "varname";
-            const varname = entry[0];
             varnameTd.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
@@ -303,7 +304,7 @@ function renderDataVizDiv() {
             const valTd = document.createElement("td");
             tr.appendChild(valTd);
             valTd.className = "val";
-            renderData(entry[1], valTd, false);
+            renderData(val, valTd, false);
           });
 
           const lastRow = frameDataViz.lastElementChild;
@@ -352,7 +353,7 @@ function renderDataVizDiv() {
       var connectionEndpointIDs = {};
 
       // first render the vars
-      orderedFrames.forEach((frame, i) => {
+      orderedFrames.forEach(([frameName, frameContent], i) => {
         var stackDiv = document.createElement("div");
         var divID = "stack" + i;
         stackDiv.className = "stackFrame";
@@ -362,19 +363,17 @@ function renderDataVizDiv() {
         var headerDiv = document.createElement("div");
         headerDiv.id = "stack_header" + i;
         headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
-        headerDiv.innerHTML = htmlSpecialChars(frame[0]);
+        headerDiv.innerHTML = htmlSpecialChars(frameName);
         stackDiv.appendChild(headerDiv);
 
-        var encodedVars = Object.entries(frame[1]);
+        var encodedVars = Object.entries(frameContent);
         if (encodedVars.length > 0) {
           var table = document.createElement("table");
           table.className = "stackFrameVarTable";
           table.id = divID + "_table";
           stackDiv.appendChild(table);
 
-          encodedVars.forEach((entry) => {
-            var [varname, val] = entry;
-
+          encodedVars.forEach(([varname, val]) => {
             var tr = document.createElement("tr");
             // special treatment for displaying return value and indicating
             // that the function is about to return to its caller
@@ -748,7 +747,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         var table = document.createElement("table");
         table.className = "dictTbl";
         jDomElt.appendChild(table);
-        obj.slice(2).forEach((kvPair) => {
+        obj.slice(2).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "dictKey";
 
@@ -762,23 +761,64 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           table.appendChild(newDictTr);
 
-          renderData(kvPair[0], newKeyTd, ignoreIDs);
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(key, newKeyTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
+      }
+    } else if (obj[0] == "FUNC") {
+      assert(obj.length >= 3);
+
+      var newDiv = document.createElement("div");
+      newDiv.className = "typeLabel";
+      newDiv.textContent = "function" + idStr;
+      jDomElt.appendChild(newDiv);
+
+      if (obj.length > 3) {
+        var table = document.createElement("table");
+        table.className = "funcTbl";
+        jDomElt.appendChild(table);
+        const tr = document.createElement("tr");
+        table.appendChild(tr);
+        obj.slice(3).forEach(([arg, annotation, def]) => {
+          const td = document.createElement("td");
+          td.className = "funcArg";
+          td.innerHTML =
+            '<span class="keyObj">' + htmlSpecialChars(arg) + "</span>";
+          if (annotation) {
+            td.innerHTML +=
+              " <span style='color: red;'>(" + annotation + ")</span>";
+          }
+          if (def) {
+            td.appendChild(document.createElement("br"));
+            td.innerHTML += "defaults to: ";
+            defaultDiv = document.createElement("div");
+            defaultDiv.className = "funcDef";
+            td.appendChild(defaultDiv);
+            renderData(def, defaultDiv, ignoreIDs);
+          }
+          tr.appendChild(td);
+        });
+        if (obj[2]) {
+          returnsTd = document.createElement("td");
+          returnsTd.className = "funcArg";
+          returnsTd.innerHTML =
+            "returns: <span style='color: red;'>(" + obj[2] + ")</span>";
+          tr.appendChild(returnsTd);
+        }
       }
     } else if (obj[0] == "INSTANCE") {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
-      newDiv.textContent = obj[1] + " instance" + idStr;
+      newDiv.textContent = obj[2] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
         var table = document.createElement("table");
         table.className = "instTbl";
         jDomElt.appendChild(table);
-        obj.slice(3).forEach((kvPair) => {
+        obj.slice(3).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "instKey";
 
@@ -793,12 +833,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
           table.appendChild(newInstTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
+          assert(typeof key == "string");
           newKeyTd.innerHTML +=
-            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+            '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CLASS") {
@@ -811,14 +851,14 @@ function renderData(obj, jDomElt, ignoreIDs) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
 
-      newDiv.textContent = obj[1] + " class " + superclassStr + idStr;
+      newDiv.textContent = obj[2] + " class " + superclassStr + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
         var table = document.createElement("table");
         table.className = "classTbl";
         jDomElt.appendChild(table);
-        obj.slice(4).forEach((kvPair) => {
+        obj.slice(4).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "classKey";
 
@@ -833,12 +873,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
           table.appendChild(newClassTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
+          assert(typeof key == "string");
           newKeyTd.innerHTML +=
-            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+            '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CIRCULAR_REF") {

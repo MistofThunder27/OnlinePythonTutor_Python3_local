@@ -389,6 +389,25 @@ table.instTbl td.instVal {
   vertical-align: center;
 }
 
+table.funcTbl {
+  border-collapse: collapse;
+  border-spacing: 2px;
+}
+
+table.funcTbl td.funcArg {
+  background-color: #b2f3f3;
+  border: 1px #111111 solid;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 8px;
+  text-align: left;
+}
+
+table.funcTbl div.funcDef {
+  text-align: center;
+}
+
 .typeLabel {
   font-size: 8pt;
   color: #222222;

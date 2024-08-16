@@ -19,6 +19,10 @@ import bdb
 import sys
 import io
 import inspect
+inspect_param = inspect.Parameter
+inspect_position = inspect_param.VAR_POSITIONAL
+inspect_keyword = inspect_param.VAR_KEYWORD
+inspect_empty = inspect_param.empty
 
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
@@ -48,7 +52,7 @@ class PGLogger(bdb.Bdb):
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
 
-        script_lines = script_str.split("\n")
+        script_lines = script_str.splitlines()
         line_groups = []
         group_starting_line_no = 1
         line_group_content_so_far = ""
@@ -341,6 +345,7 @@ class PGLogger(bdb.Bdb):
         #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
         #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
         #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
+        #   * function - ["FUNC", unique_id, return annotation, [arg1, annotation1 default1], [arg2, annotation2, default2], ..., [argN, annotationN, defaultN]]
         #   * instance - ["INSTANCE", unique_id, class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
         #   * class    - ["CLASS", unique_id, class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
         #   * circular reference - ["CIRCULAR_REF", unique_id]
@@ -381,6 +386,25 @@ class PGLogger(bdb.Bdb):
                      recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.items()
                 ]]
+            if inspect.isfunction(data):
+                signature = inspect.signature(data)
+                ra = signature.return_annotation
+                ra = ra.__name__ if ra != inspect_empty else None
+                ret = ["FUNC", my_small_id, ra]
+                for argument in signature.parameters.values():
+                    n = argument.name
+                    a = argument.annotation
+                    d = argument.default
+                    k = argument.kind
+                    if k == inspect_position:
+                        n = f"*{n}"
+                    elif k == inspect_keyword:
+                        n = f"**{n}"
+                    a = a.__name__ if a != inspect_empty else None
+                    d = d if d != inspect_empty else None
+                    ret.append(
+                        [n, a, recursive_encode(d, new_compound_obj_ids)])
+                return ret
             if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
                 if "." in str(data_type):
                     ret = ["INSTANCE", my_small_id, data.__class__.__name__]

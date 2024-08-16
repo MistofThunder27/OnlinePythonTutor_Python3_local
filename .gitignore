@@ -1,6 +1,6 @@
 .venv/
-.vscode/
 __pycache__/
 output.json
-scratch.py
+output.txt
+scratch*.py
 example_code/aaatest2.py

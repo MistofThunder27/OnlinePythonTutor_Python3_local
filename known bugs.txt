@@ -1,37 +1,7 @@
 - removing class calls from trace fails if there is a function call during initialisation
-- make function rendering better by showing arguments???
+- arrows cover other values
 - assertion fails with questions
 
----
-2010-09-29
-
-Chas Leichner (chaoslichen@gmail.com) emailed me to show me his related
-project:
-
-  http://www.youtube.com/watch?v=ZiS4MZF5eDQ
-  http://code.google.com/p/idlecarpentry/
-
-He had an interesting idea of annotating lines of code with special
-comments, and those comments would display when those lines were being
-executed.  That way, you can have sorta like 'literate programming
-tutorials' that intermix code and comments.  I could think about
-implementing something similar within my Online Python Tutor.
-
-e.g.,
-
-#> declare a variable
-x = 5
-
-#> an if statement tests a condition
-if x < 5:
-  y = x + 5
-else:
-  y = x - 5
-
-the appropriate annotations would display when you stepped through the
-line of code immediately below each annotation.
-
----
 2011-09-24
 
 Ron's suggestion:
