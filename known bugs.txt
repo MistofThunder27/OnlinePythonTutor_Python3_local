@@ -1,5 +1,4 @@
 - removing class calls from trace fails if there is a function call during initialisation
-- arrows cover other values
 - assertion fails with questions
 
 2011-09-24

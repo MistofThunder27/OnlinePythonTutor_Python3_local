@@ -400,7 +400,14 @@ class PGLogger(bdb.Bdb):
                         n = f"*{n}"
                     elif k == inspect_keyword:
                         n = f"**{n}"
-                    a = a.__name__ if a != inspect_empty else None
+
+                    if a == inspect_empty:
+                        a = None
+                    elif isinstance(a, type):
+                        a = a.__name__
+                    else:
+                        a = str(a)
+                        
                     d = d if d != inspect_empty else None
                     ret.append(
                         [n, a, recursive_encode(d, new_compound_obj_ids)])

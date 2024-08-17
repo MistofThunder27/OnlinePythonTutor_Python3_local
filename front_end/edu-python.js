@@ -165,6 +165,22 @@ function updateOutput() {
   // to make global
   encodedFrames = curEntry.encoded_frames;
 
+  // set vertical scroll
+  const lineAverage = lineGroup.reduce((a, b) => a + b);
+  const scrollControl = [lineAverage - 25, lineAverage - 8, lineAverage].map(
+    (n) => {
+      return n / (lineGroup.length * tblAllLineNo.length);
+    }
+  );
+
+  const pyCodeOutputDiv = document.getElementById("pyCodeOutputDiv");
+  const curScrollRatio =
+    pyCodeOutputDiv.scrollTop / pyCodeOutputDiv.scrollHeight;
+
+  if (scrollControl[0] > curScrollRatio || scrollControl[2] < curScrollRatio) {
+    pyCodeOutputDiv.scrollTop = scrollControl[1] * pyCodeOutputDiv.scrollHeight;
+  }
+
   // Set visited lines
   if (visitedLines) {
     visitedLines.forEach((line) => {
@@ -493,8 +509,7 @@ function renderDataVizDiv() {
 
               // Draw a line from the source element to the target element
               // add 5 pixels of buffer on both sides
-              const fromX =
-                sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
+              const fromX = sourceRect.right - 5 + window.scrollX;
               const toX = targetRect.left + 5 + window.scrollX;
               const diffX = toX - fromX;
               const midX = diffX / 2;
