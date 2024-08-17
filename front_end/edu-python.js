@@ -539,8 +539,11 @@ function renderDataVizDiv() {
 
               // Draw the curved line
               const ctx = canvas.getContext("2d");
+              ctx.strokeStyle = ctx.fillStyle = lineColor;
+              ctx.lineWidth = isSelectedFrame ? 2 : 1;
               ctx.beginPath();
               if (fromY < toY) {
+                ctx.fillRect(3, 3, 4, 4);
                 ctx.moveTo(5, 5);
                 ctx.bezierCurveTo(
                   midX,
@@ -551,11 +554,10 @@ function renderDataVizDiv() {
                   diffY - 5
                 );
               } else {
+                ctx.fillRect(3, diffY - 7, 4, 4);
                 ctx.moveTo(5, diffY - 5);
                 ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
               }
-              ctx.strokeStyle = lineColor;
-              ctx.lineWidth = isSelectedFrame ? 2 : 1;
               ctx.stroke();
 
               // Draw the arrowhead at the midpoint
