@@ -1,28 +1,6 @@
 - removing class calls from trace fails if there is a function call during initialisation
 - assertion fails with questions
 
-2011-09-24
-
-Ron's suggestion:
-
-Ron Yeh - Feedback: It'd be nice if (for longer programs) the text
-window would auto scroll to the current line. For your "Philip's
-10-minute intro to Python" example, I was stepping through your code but
-then the current line went off screen. I had to manually scroll down a
-few times.
-
-Philip Guo - great idea! do you know if there's any jQuery or other js
-tricks to do this sort of scrolling?
-
-Ron Yeh - Pretty sure I've done this before, a while back. Basicaly you
-just need a named div or anchor in your document, and then you can
-scroll to it. This page might help:
-http://css-tricks.com/snippets/jquery/smooth-scrolling/
-
-(also auto-scroll the program's stdout output as well as the code
-display ... that one is easy --- always auto-scroll to BOTTOM!)
-
----
 2011-09-26
 
 A subset of the suggestions from MIT folks (see more in my private notes

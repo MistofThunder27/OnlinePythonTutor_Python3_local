@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bdb
+import ast
 import sys
 import io
 import inspect
@@ -54,16 +55,20 @@ class PGLogger(bdb.Bdb):
 
         script_lines = script_str.splitlines()
         line_groups = []
-        group_starting_line_no = 1
-        line_group_content_so_far = ""
-        for line_no, line_content in enumerate(script_lines, 1):
-            line_group_content_so_far += f"\n{line_content}"
-            if self.line_is_complete(line_group_content_so_far):
-                line_groups.append(range(group_starting_line_no, line_no + 1))
-                line_group_content_so_far = ""
-                group_starting_line_no = line_no + 1
-        else:
-            line_groups.append(range(group_starting_line_no, line_no + 1))
+        current_group_start = line_no = 1
+        group_content = []
+
+        for line_no, line in enumerate(script_lines, start=1):
+            group_content.append(line)
+
+            if self.is_line_complete("".join(group_content)):
+                line_groups.append(range(current_group_start, line_no + 1))
+                group_content = []
+                current_group_start = line_no + 1
+
+        # Ensure any remaining lines are included
+        if group_content:
+            line_groups.append(range(current_group_start, line_no + 1))
 
         self.script_lines = script_lines
         self.line_groups = line_groups
@@ -105,64 +110,15 @@ class PGLogger(bdb.Bdb):
         return self.trace
 
     @staticmethod
-    def line_is_complete(s: str) -> bool:  # TODO: improve and test
-        # Initialize variables
-        in_string = False
-        in_triple_string = False
-        in_comment = False
-        skip_char = False
-        string_type = ""
-        unclosed_normal_brackets = 0
-        unclosed_square_brackets = 0
-        unclosed_curly_brackets = 0
-
-        # Iterate through each character in the string
-        for i, char in enumerate(s):
-            if in_comment:
-                # Check for newline to exit the comment
-                if char == "\n":
-                    in_comment = False
-            elif not in_string:
-                # Check for comment
-                if char == "#":
-                    in_comment = True
-                # Update bracket counts
-                elif char == "(":
-                    unclosed_normal_brackets += 1
-                elif char == ")":
-                    unclosed_normal_brackets -= 1
-                elif char == "[":
-                    unclosed_square_brackets += 1
-                elif char == "]":
-                    unclosed_square_brackets -= 1
-                elif char == "{":
-                    unclosed_curly_brackets += 1
-                elif char == "}":
-                    unclosed_curly_brackets -= 1
-                elif char in {'"', "'"}:
-                    # Enter string literal
-                    in_string = True
-                    string_type = char
-                    if char * 3 in s[i:i + 3]:
-                        in_triple_string = True
-                        string_type = char*3
-            else:
-                if char == "\\":
-                    skip_char = True
-                # Check for end of string literal
-                elif char in {'"', "'"}:
-                    if skip_char:
-                        skip_char = False
-                    elif not in_triple_string:
-                        in_string = False
-                    elif len(s) - i >= 3 and s[i:i + len(string_type)] == string_type:
-                        in_string = False
-                        in_triple_string = False
-                elif skip_char:
-                    skip_char = False
-
-        # Check if the line is complete
-        return not in_string and unclosed_normal_brackets == 0 and unclosed_square_brackets == 0 and unclosed_curly_brackets == 0
+    def is_line_complete(line: str) -> bool:
+        try:
+            ast.parse(line.strip())
+            return True
+        except SyntaxError as e:
+            e = str(e)
+            if "expected an indented block" in e or "invalid syntax" in e:
+                return True
+            return False
 
     def get_current_line_group(self, line_no):
         for group in self.line_groups:
@@ -236,7 +192,7 @@ class PGLogger(bdb.Bdb):
         if frame.f_back.f_code.co_filename != "<string>":
             self.set_quit()
 
-        # return immediately after another return
+        # returned immediately after another return
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()

@@ -264,12 +264,7 @@ function updateOutput() {
 
   // render stdout:
   const stdoutElement = document.getElementById("pyStdout");
-
-  // keep original horizontal scroll level:
-  const oldLeft = stdoutElement.scrollLeft;
   stdoutElement.value = curEntry.stdout;
-  stdoutElement.scrollLeft = oldLeft;
-  // scroll to bottom, though:
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
@@ -277,9 +272,6 @@ function updateOutput() {
 }
 
 function renderDataVizDiv() {
-  const inlineRendering = document.getElementById(
-    "inlineRenderingCheckbox"
-  ).checked;
   const stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
 
   const dataViz = document.getElementById("dataViz");
@@ -292,7 +284,7 @@ function renderDataVizDiv() {
       orderedFrames = orderedFrames.reverse();
     }
 
-    if (inlineRendering) {
+    if (document.getElementById("inlineRenderingCheckbox").checked) {
       orderedFrames.forEach(([frameName, frameContent]) => {
         const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
