@@ -19,11 +19,14 @@ import bdb
 import ast
 import sys
 import io
+import bisect
 import inspect
+
 inspect_param = inspect.Parameter
 inspect_position = inspect_param.VAR_POSITIONAL
 inspect_keyword = inspect_param.VAR_KEYWORD
 inspect_empty = inspect_param.empty
+
 
 # This is the meat of the Online Python Tutor back-end. It implements a
 # full logger for Python program execution (based on pdb, the standard
@@ -54,24 +57,19 @@ class PGLogger(bdb.Bdb):
         self.relative_position_shifts = [[]]
 
         script_lines = script_str.splitlines()
-        line_groups = []
-        current_group_start = line_no = 1
-        group_content = []
-
-        for line_no, line in enumerate(script_lines, start=1):
-            group_content.append(line)
-
-            if self.is_line_complete("".join(group_content)):
-                line_groups.append(range(current_group_start, line_no + 1))
-                group_content = []
-                current_group_start = line_no + 1
-
-        # Ensure any remaining lines are included
-        if group_content:
-            line_groups.append(range(current_group_start, line_no + 1))
+        if not script_lines:
+            line_group_start = [1, 2]
+        else:
+            line_group_start = [1]
+            group_content = []
+            for line_no, line in enumerate(script_lines, start=1):
+                group_content.append(line)
+                if self.is_line_complete("".join(group_content)):
+                    line_group_start.append(line_no + 1)
+                    group_content = []
 
         self.script_lines = script_lines
-        self.line_groups = line_groups
+        self.line_group_start = line_group_start
         self.visited_lines = set()
         self.last_trace_entry = {}
 
@@ -97,8 +95,7 @@ class PGLogger(bdb.Bdb):
             }
 
             if hasattr(exc, "lineno"):
-                trace_entry["line_group"] = self.get_current_line_group(
-                    exc.lineno)
+                trace_entry["line_group"] = self.get_current_line_group(exc.lineno)
             if hasattr(exc, "offset"):
                 trace_entry["offset"] = exc.offset
 
@@ -116,14 +113,14 @@ class PGLogger(bdb.Bdb):
             return True
         except SyntaxError as e:
             e = str(e)
-            if "expected an indented block" in e or "invalid syntax" in e:
+            if e.startswith("expected an indented block") or e.startswith("invalid syntax"):
                 return True
             return False
 
     def get_current_line_group(self, line_no):
-        for group in self.line_groups:
-            if line_no in group:
-                return list(group)
+        lst = self.line_group_start
+        idx = bisect.bisect_right(lst, line_no)
+        return list(range(lst[idx - 1], lst[idx]))
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -139,21 +136,16 @@ class PGLogger(bdb.Bdb):
         line_group = self.get_current_line_group(calling_frame.f_lineno)
 
         # relative positions
-        code_so_far = "\n".join(
-            self.script_lines[line_group[0] - 1: start_line]).strip("\n")
-        relative_start_position = len(
-            code_so_far) - len(self.script_lines[start_line - 1]) + start_offset
+        code_so_far = "\n".join(self.script_lines[line_group[0] - 1: start_line]).strip("\n")
+        relative_start_position = len(code_so_far) - len(self.script_lines[start_line - 1]) + start_offset
         # this weird way of calculating it is necessary because it accounts for "\n"s that may or may not be there
 
-        code_so_far = "\n".join(
-            [code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
-        relative_end_position = len(
-            code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
+        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
+        relative_end_position = len(code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
 
         # new function call
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            code_so_far = "\n".join(
-                [code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
+            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
 
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
@@ -213,13 +205,10 @@ class PGLogger(bdb.Bdb):
             [pos_start, pos_end] = last_caller["relative_positions"]
             ret = str(return_value)
 
-            last_caller["code"] = code.replace(
-                code[pos_start: pos_end], ret, 1)
-            last_caller["relative_positions"] = [
-                pos_start, pos_start + len(ret)]
+            last_caller["code"] = code.replace(code[pos_start: pos_end], ret, 1)
+            last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
 
-            self.relative_position_shifts[-1].append(
-                [pos_end, pos_end - pos_start - len(ret)])
+            self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return")
@@ -243,8 +232,7 @@ class PGLogger(bdb.Bdb):
             trace_entry["caller_info"] = self.calling_function_info[-1].copy()
 
         if exception_info:
-            trace_entry["exception_msg"] = f"{
-                exception_info[0].__name__}: {exception_info[-1]}"
+            trace_entry["exception_msg"] = f"{exception_info[0].__name__}: {exception_info[-1]}"
 
         # each element is a pair of (function name, ENCODED locals dict)
         encoded_frames = []
@@ -285,7 +273,7 @@ class PGLogger(bdb.Bdb):
             self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
-                               "infinite loop)"})
+                                                "infinite loop)"})
 
     def encode(self, outer_data):
         # Given an arbitrary piece of Python data, encode it in such a manner
@@ -338,8 +326,7 @@ class PGLogger(bdb.Bdb):
                 return ["SET", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
             if data_type == dict:
                 return ["DICT", my_small_id, *[
-                    [recursive_encode(k, new_compound_obj_ids),
-                     recursive_encode(v, new_compound_obj_ids)]
+                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
                     for k, v in data.items()
                 ]]
             if inspect.isfunction(data):
@@ -363,7 +350,7 @@ class PGLogger(bdb.Bdb):
                         a = a.__name__
                     else:
                         a = str(a)
-                        
+
                     d = d if d != inspect_empty else None
                     ret.append(
                         [n, a, recursive_encode(d, new_compound_obj_ids)])
@@ -372,17 +359,15 @@ class PGLogger(bdb.Bdb):
                 if "." in str(data_type):
                     ret = ["INSTANCE", my_small_id, data.__class__.__name__]
                 else:
-                    ret = ["CLASS", my_small_id, data.__name__,
-                           [e.__name__ for e in data.__bases__]]
+                    ret = ["CLASS", my_small_id, data.__name__, [e.__name__ for e in data.__bases__]]
 
                 # traverse inside its __dict__ to grab attributes
                 # (filter out useless-seeming ones):
                 ret.extend([
-                    [recursive_encode(k, new_compound_obj_ids),
-                     recursive_encode(v, new_compound_obj_ids)]
-                    for k, v in data.__dict__.items() if
-                    k not in {"__doc__", "__module__",
-                              "__return__", "__dict__", "__weakref__"}
+                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
+                    for k, v in data.__dict__.items() if k not in
+                                                         {"__doc__", "__module__", "__return__", "__dict__",
+                                                          "__weakref__"}
                 ])
 
                 return ret
