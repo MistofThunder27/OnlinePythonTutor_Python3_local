@@ -3,6 +3,7 @@ import json
 import os
 
 from m_pg_logger import PGLogger
+
 logger = PGLogger()
 
 PORT = 8000
@@ -41,15 +42,13 @@ class LocalServer(BaseHTTPRequestHandler):
             else:  # fetch files in the directory
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps(
-                    [filename for filename in os.listdir(full_path)]).encode())
+                self.wfile.write(json.dumps([filename for filename in os.listdir(full_path)]).encode())
         except Exception as e:
             self.send_error(500, f"Server error: {str(e)}")
 
     def do_POST(self):
         try:
-            output_json = json.dumps(process_post(json.loads(
-                self.rfile.read(int(self.headers["Content-Length"])))))
+            output_json = json.dumps(process_post(json.loads(self.rfile.read(int(self.headers["Content-Length"])))))
 
             with open("output.json", "w") as f:
                 f.write(output_json)
@@ -87,7 +86,9 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
                 cur_parts.append(line)
                 continue
 
-            for delimiter in ("Test:", "Expect:", "Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "MaxLineDelta:", "MaxInstructions:"):
+            for delimiter in (
+            "Test:", "Expect:", "Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "MaxLineDelta:",
+            "MaxInstructions:"):
                 if line.startswith(delimiter):
                     process_record()
                     cur_delimiter = delimiter[:-1].lower()
@@ -96,15 +97,14 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
             else:
                 cur_parts.append(line)
 
-        # don"t forget to process the FINAL record
+        # don't forget to process the FINAL record
         process_record()
         assert len(ret["test"]) == len(ret["expect"])
         return ret
 
     # =================================================================================
     user_script = post_dict["user_script"]
-    changed_max_executed_lines = int(post_dict.get(
-        "max_instructions", MAX_EXECUTED_LINES))
+    changed_max_executed_lines = int(post_dict.get("max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
         return logger.runscript(user_script, changed_max_executed_lines, False)
@@ -121,8 +121,7 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    vars_to_compare = list(
-        expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
+    vars_to_compare = list(expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
@@ -130,8 +129,7 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
            'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
 
-    user_trace = logger.runscript(
-        user_script, changed_max_executed_lines, True)
+    user_trace = logger.runscript(user_script, changed_max_executed_lines, True)
 
     # Grab the 'inputs' by finding all global vars that are in scope
     # prior to making the first function call.

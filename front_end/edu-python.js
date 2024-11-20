@@ -23,9 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 var appMode = "edit"; // 'edit', 'visualize', or 'grade' (only for question.html)
 
-var inlineRendering;
-var stackGrowsUp;
-
 /* colors - see edu-python.css */
 var lightLineColor = "#FFE536";
 var errorColor = "#F87D76";
@@ -43,6 +40,7 @@ var darkRed = "#9D1E18";
 // ugh globals!
 var curTrace = null;
 var curInstr = 0;
+var encodedFrames;
 
 // true iff trace ended prematurely since maximum instruction limit has been reached
 var instrLimitReached = false;
@@ -98,9 +96,7 @@ function updateOutput() {
     return;
   }
 
-  inlineRendering = document.getElementById("inlineRenderingCheckbox").checked;
-  stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
-  var curEntry = curTrace[curInstr];
+  const curEntry = curTrace[curInstr];
   const totalInstrs = curTrace.length;
 
   // render VCR controls:
@@ -145,31 +141,50 @@ function updateOutput() {
 
   // render code output: --
   const tbl = document.querySelector("table#pyCodeOutput");
+  const tblAllLineNo = tbl.querySelectorAll("td.lineNo");
+  const tblAllCod = tbl.querySelectorAll("td.cod");
 
   // Reset color and font-weight of line number cells
-  tbl.querySelectorAll("td.lineNo").forEach((cell) => {
+  tblAllLineNo.forEach((cell) => {
     cell.style.color = "";
     cell.style.fontWeight = "";
   });
   // Reset background color of code lines
-  tbl.querySelectorAll("td.cod").forEach((line) => {
+  tblAllCod.forEach((line) => {
     line.style.backgroundColor = "";
     line.innerHTML = line.innerHTML
       .replace(/<br\/?>.*$/g, "")
       .replace(/<span.*?>(.*?)<\/span>/g, "$1");
   });
 
-  var {
+  const {
     line_group: lineGroup,
-    encoded_frames: encodedFrames,
     caller_info: callerInfo,
     visited_lines: visitedLines,
   } = curEntry;
+  // to make global
+  encodedFrames = curEntry.encoded_frames;
+
+  // set vertical scroll
+  const lineAverage = lineGroup.reduce((a, b) => a + b);
+  const scrollControl = [lineAverage - 25, lineAverage - 8, lineAverage].map(
+    (n) => {
+      return n / (lineGroup.length * tblAllLineNo.length);
+    }
+  );
+
+  const pyCodeOutputDiv = document.getElementById("pyCodeOutputDiv");
+  const curScrollRatio =
+    pyCodeOutputDiv.scrollTop / pyCodeOutputDiv.scrollHeight;
+
+  if (scrollControl[0] > curScrollRatio || scrollControl[2] < curScrollRatio) {
+    pyCodeOutputDiv.scrollTop = scrollControl[1] * pyCodeOutputDiv.scrollHeight;
+  }
 
   // Set visited lines
   if (visitedLines) {
     visitedLines.forEach((line) => {
-      var lineNoCell = tbl.querySelectorAll("td.lineNo")[line - 1];
+      const lineNoCell = tblAllLineNo[line - 1];
       lineNoCell.style.color = visitedLineColor;
       lineNoCell.style.fontWeight = "bold";
     });
@@ -177,23 +192,22 @@ function updateOutput() {
 
   // Highlight and duplicate calling function:
   if (callerInfo) {
-    var {
+    const {
       code: evaluatedCode,
       line_group: callingLines,
       true_positions: [startLine, startIndex, endLine, endIndex],
       relative_positions: [relativeStart, relativeEnd],
     } = callerInfo;
 
-    let callingLineColor =
+    const callingLineColor =
       encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
     callingLines.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor =
-        callingLineColor;
+      tblAllCod[line - 1].style.backgroundColor = callingLineColor;
     });
 
     var cell, content;
     if (startLine === endLine) {
-      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      cell = tblAllCod[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -202,7 +216,7 @@ function updateOutput() {
         "</span>" +
         content.substring(endIndex);
     } else {
-      cell = tbl.querySelectorAll("td.cod")[startLine - 1];
+      cell = tblAllCod[startLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         content.substring(0, startIndex) +
@@ -211,14 +225,14 @@ function updateOutput() {
         "</span>";
 
       for (var line = startLine + 1; line <= endLine - 1; line++) {
-        cell = tbl.querySelectorAll("td.cod")[line - 1];
+        cell = tblAllCod[line - 1];
         cell.innerHTML =
           '<span style="background-color: orange;">' +
           cell.textContent +
           "</span>";
       }
 
-      cell = tbl.querySelectorAll("td.cod")[endLine - 1];
+      cell = tblAllCod[endLine - 1];
       content = cell.textContent;
       cell.innerHTML =
         '<span style="background-color: orange;">' +
@@ -227,9 +241,7 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tbl.querySelectorAll("td.cod")[
-      callingLines[callingLines.length - 1] - 1
-    ].innerHTML +=
+    tblAllCod[callingLines[callingLines.length - 1] - 1].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -242,7 +254,7 @@ function updateOutput() {
   // Highlight curLineGroup:
   if (lineGroup) {
     lineGroup.forEach((line) => {
-      tbl.querySelectorAll("td.cod")[line - 1].style.backgroundColor = hasError
+      tblAllCod[line - 1].style.backgroundColor = hasError
         ? errorColor
         : !instrLimitReached && curInstr === totalInstrs - 1
         ? terminatingColor
@@ -251,16 +263,17 @@ function updateOutput() {
   }
 
   // render stdout:
-  var stdoutElement = document.getElementById("pyStdout");
-
-  // keep original horizontal scroll level:
-  var oldLeft = stdoutElement.scrollLeft;
+  const stdoutElement = document.getElementById("pyStdout");
   stdoutElement.value = curEntry.stdout;
-  stdoutElement.scrollLeft = oldLeft;
-  // scroll to bottom, though:
   stdoutElement.scrollTop = stdoutElement.scrollHeight;
 
   // finally, render all the data structures!!!
+  renderDataVizDiv();
+}
+
+function renderDataVizDiv() {
+  const stackGrowsUp = document.getElementById("stackGrowUpCheckbox").checked;
+
   const dataViz = document.getElementById("dataViz");
   dataViz.innerHTML = ""; // Clear the content
 
@@ -271,44 +284,43 @@ function updateOutput() {
       orderedFrames = orderedFrames.reverse();
     }
 
-    if (inlineRendering) {
-      orderedFrames.forEach((frame) => {
+    if (document.getElementById("inlineRenderingCheckbox").checked) {
+      orderedFrames.forEach(([frameName, frameContent]) => {
         const vizFrame = document.createElement("div");
         vizFrame.className = "vizFrame";
-        vizFrame.innerText = htmlSpecialChars(frame[0]) + " variables:"
+        vizFrame.innerText = htmlSpecialChars(frameName) + " variables:";
         vizFrame.appendChild(document.createElement("br"));
 
-        var encodedVars = Object.entries(frame[1]);
+        const encodedVars = Object.entries(frameContent);
         if (encodedVars.length > 0) {
           const frameDataViz = document.createElement("table");
           frameDataViz.className = "frameDataViz";
           vizFrame.appendChild(frameDataViz);
 
-          encodedVars.forEach((entry) => {
+          encodedVars.forEach(([varname, val]) => {
             const tr = document.createElement("tr");
             frameDataViz.appendChild(tr);
-        
+
             const varnameTd = document.createElement("td");
             tr.appendChild(varnameTd);
-            varnameTd.className = "varname"
-            const varname = entry[0];
+            varnameTd.className = "varname";
             varnameTd.innerHTML =
               varname === "__return__"
                 ? '<span style="font-size: 10pt; font-style: italic;">return value</span>'
                 : varname;
-            
+
             const valTd = document.createElement("td");
             tr.appendChild(valTd);
-            valTd.className = "val"
-            renderData(entry[1], valTd, false);
+            valTd.className = "val";
+            renderData(val, valTd, false);
           });
 
           const lastRow = frameDataViz.lastElementChild;
           lastRow.querySelector("td:first-child").style.borderBottom = "0px";
           lastRow.querySelector("td:last-child").style.borderBottom = "0px";
         } else {
-          const noneText = document.createElement("i")
-          noneText.innerText = "none"
+          const noneText = document.createElement("i");
+          noneText.innerText = "none";
           vizFrame.appendChild(noneText);
         }
         dataViz.appendChild(vizFrame);
@@ -349,7 +361,7 @@ function updateOutput() {
       var connectionEndpointIDs = {};
 
       // first render the vars
-      orderedFrames.forEach((frame, i) => {
+      orderedFrames.forEach(([frameName, frameContent], i) => {
         var stackDiv = document.createElement("div");
         var divID = "stack" + i;
         stackDiv.className = "stackFrame";
@@ -359,24 +371,21 @@ function updateOutput() {
         var headerDiv = document.createElement("div");
         headerDiv.id = "stack_header" + i;
         headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
-        headerDiv.innerHTML = htmlSpecialChars(frame[0]);
+        headerDiv.innerHTML = htmlSpecialChars(frameName);
         stackDiv.appendChild(headerDiv);
 
-        var encodedVars = Object.entries(frame[1]);
+        var encodedVars = Object.entries(frameContent);
         if (encodedVars.length > 0) {
           var table = document.createElement("table");
           table.className = "stackFrameVarTable";
           table.id = divID + "_table";
           stackDiv.appendChild(table);
 
-          encodedVars.forEach((entry) => {
-            var [varname, val] = entry;
-
+          encodedVars.forEach(([varname, val]) => {
             var tr = document.createElement("tr");
             // special treatment for displaying return value and indicating
             // that the function is about to return to its caller
             if (varname == "__return__") {
-              assert(curEntry.event == "return"); // sanity check
               tr.innerHTML =
                 '<td colspan="2" class="returnWarning">About to return to caller</td>';
               table.appendChild(tr);
@@ -439,7 +448,7 @@ function updateOutput() {
       // function, we want to render L when rendering the global frame.
 
       var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
-      curEntry.encoded_frames.forEach((frame) => {
+      encodedFrames.forEach((frame) => {
         Object.entries(frame[1]).forEach((entry) => {
           var val = entry[1];
           // primitive types are already rendered in the stack
@@ -482,33 +491,34 @@ function updateOutput() {
                 .getElementById(targetID)
                 .getBoundingClientRect();
 
-              // Find the parent stack frame of the source element
+              // Find the parent stackFrame of the source element and highlight if
+              // the stackFrame ID matches the selectedStackFrame ID
               // IMPORTANT: assumes stackFrame is 5 elements up!!!!!
-              const enclosingStackFrame =
+              const isSelectedFrame =
                 sourceElem.parentElement.parentElement.parentElement
-                  .parentElement;
+                  .parentElement.id ===
+                selectedEnclosingStackFrame.getAttribute("id");
 
               // Draw a line from the source element to the target element
               // add 5 pixels of buffer on both sides
-              const fromX = sourceRect.left + sourceRect.width / 2 - 5 + window.scrollX;
+              const fromX = sourceRect.right - 5 + window.scrollX;
               const toX = targetRect.left + 5 + window.scrollX;
               const diffX = toX - fromX;
               const midX = diffX / 2;
 
-              // Highlight if the stack frame ID matches the selected stack frame ID
-              const highlight =
-                enclosingStackFrame.id ===
-                selectedEnclosingStackFrame.getAttribute("id");
-
-              const lineColor = highlight ? "darkBlue" : "lightGray";
+              const lineColor = isSelectedFrame ? "darkBlue" : "lightGray";
 
               const canvas = document.createElement("canvas");
+              canvas.style.zIndex = isSelectedFrame ? 1 : 0;
+
               canvas.style.left = fromX + "px";
               canvas.width = diffX;
 
               // as heap item can be above or bellow stack item, use if statement to correctly add 5 pixels of buffer on both sides
-              const fromY = sourceRect.top + sourceRect.height / 2  + window.scrollY;
-              const toY = targetRect.top + targetRect.height / 2  + window.scrollY;
+              const fromY =
+                sourceRect.top + sourceRect.height / 2 + window.scrollY;
+              const toY =
+                targetRect.top + targetRect.height / 2 + window.scrollY;
               if (fromY < toY) {
                 var diffY = toY - fromY + 10;
                 canvas.style.top = fromY - 5 + "px";
@@ -521,8 +531,11 @@ function updateOutput() {
 
               // Draw the curved line
               const ctx = canvas.getContext("2d");
+              ctx.strokeStyle = ctx.fillStyle = lineColor;
+              ctx.lineWidth = isSelectedFrame ? 2 : 1;
               ctx.beginPath();
               if (fromY < toY) {
+                ctx.fillRect(3, 3, 4, 4);
                 ctx.moveTo(5, 5);
                 ctx.bezierCurveTo(
                   midX,
@@ -533,11 +546,10 @@ function updateOutput() {
                   diffY - 5
                 );
               } else {
+                ctx.fillRect(3, diffY - 7, 4, 4);
                 ctx.moveTo(5, diffY - 5);
                 ctx.bezierCurveTo(midX, diffY - 5, midX, 5, diffX - 5, 5);
               }
-              ctx.strokeStyle = lineColor;
-              ctx.lineWidth = highlight ? 2 : 1;
               ctx.stroke();
 
               // Draw the arrowhead at the midpoint
@@ -585,7 +597,7 @@ function updateOutput() {
         document.getElementById("stack_header0").click();
       } else {
         document
-          .getElementById("stack_header" + (curEntry.encoded_frames.length - 1))
+          .getElementById("stack_header" + (encodedFrames.length - 1))
           .click();
       }
     }
@@ -744,7 +756,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
         var table = document.createElement("table");
         table.className = "dictTbl";
         jDomElt.appendChild(table);
-        obj.slice(2).forEach((kvPair) => {
+        obj.slice(2).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "dictKey";
 
@@ -758,23 +770,64 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           table.appendChild(newDictTr);
 
-          renderData(kvPair[0], newKeyTd, ignoreIDs);
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(key, newKeyTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
+      }
+    } else if (obj[0] == "FUNC") {
+      assert(obj.length >= 3);
+
+      var newDiv = document.createElement("div");
+      newDiv.className = "typeLabel";
+      newDiv.textContent = "function" + idStr;
+      jDomElt.appendChild(newDiv);
+
+      if (obj.length > 3) {
+        var table = document.createElement("table");
+        table.className = "funcTbl";
+        jDomElt.appendChild(table);
+        const tr = document.createElement("tr");
+        table.appendChild(tr);
+        obj.slice(3).forEach(([arg, annotation, def]) => {
+          const td = document.createElement("td");
+          td.className = "funcArg";
+          td.innerHTML =
+            '<span class="keyObj">' + htmlSpecialChars(arg) + "</span>";
+          if (annotation) {
+            td.innerHTML +=
+              " <span style='color: red;'>(" + annotation + ")</span>";
+          }
+          if (def) {
+            td.appendChild(document.createElement("br"));
+            td.innerHTML += "defaults to: ";
+            defaultDiv = document.createElement("div");
+            defaultDiv.className = "funcDef";
+            td.appendChild(defaultDiv);
+            renderData(def, defaultDiv, ignoreIDs);
+          }
+          tr.appendChild(td);
+        });
+        if (obj[2]) {
+          returnsTd = document.createElement("td");
+          returnsTd.className = "funcArg";
+          returnsTd.innerHTML =
+            "returns: <span style='color: red;'>(" + obj[2] + ")</span>";
+          tr.appendChild(returnsTd);
+        }
       }
     } else if (obj[0] == "INSTANCE") {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
-      newDiv.textContent = obj[1] + " instance" + idStr;
+      newDiv.textContent = obj[2] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
         var table = document.createElement("table");
         table.className = "instTbl";
         jDomElt.appendChild(table);
-        obj.slice(3).forEach((kvPair) => {
+        obj.slice(3).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "instKey";
 
@@ -789,12 +842,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
           table.appendChild(newInstTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
+          assert(typeof key == "string");
           newKeyTd.innerHTML +=
-            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+            '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CLASS") {
@@ -807,14 +860,14 @@ function renderData(obj, jDomElt, ignoreIDs) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
 
-      newDiv.textContent = obj[1] + " class " + superclassStr + idStr;
+      newDiv.textContent = obj[2] + " class " + superclassStr + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
         var table = document.createElement("table");
         table.className = "classTbl";
         jDomElt.appendChild(table);
-        obj.slice(4).forEach((kvPair) => {
+        obj.slice(4).forEach(([key, val]) => {
           var newKeyTd = document.createElement("td");
           newKeyTd.className = "classKey";
 
@@ -829,12 +882,12 @@ function renderData(obj, jDomElt, ignoreIDs) {
           table.appendChild(newClassTr);
 
           // the keys should always be strings, so render them directly (and without quotes):
-          assert(typeof kvPair[0] == "string");
+          assert(typeof key == "string");
           newKeyTd.innerHTML +=
-            '<span class="keyObj">' + htmlSpecialChars(kvPair[0]) + "</span>";
+            '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(kvPair[1], newValTd, ignoreIDs);
+          renderData(val, newValTd, ignoreIDs);
         });
       }
     } else if (obj[0] == "CIRCULAR_REF") {
@@ -1003,10 +1056,10 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpToStepBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpToStepText").value;
+      const inputValue = document.getElementById("jmpToStepText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let number = parseInt(inputValue) - 1;
-        if (number >= 0 && number <= curTrace.length) {
+        const number = parseInt(inputValue) - 1;
+        if (number >= 0 && number <= curTrace.length - 1) {
           curInstr = number;
           updateOutput();
         }
@@ -1016,9 +1069,9 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpFwdToLineBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpFwdToLineText").value;
+      const inputValue = document.getElementById("jmpFwdToLineText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let lineNumber = parseInt(inputValue);
+        const lineNumber = parseInt(inputValue);
         if (lineNumber >= 1 && curInstr <= curTrace.length - 2) {
           curInstr += 1;
           while (
@@ -1035,9 +1088,9 @@ function eduPythonCommonInit() {
   document
     .getElementById("jmpBackToLineBtn")
     .addEventListener("click", function () {
-      let inputValue = document.getElementById("jmpBackToLineText").value;
+      const inputValue = document.getElementById("jmpBackToLineText").value;
       if (!isNaN(inputValue) && Number.isInteger(parseFloat(inputValue))) {
-        let lineNumber = parseInt(inputValue);
+        const lineNumber = parseInt(inputValue);
         if (lineNumber >= 1 && curInstr >= 1) {
           curInstr -= 1;
           while (
@@ -1086,7 +1139,7 @@ function eduPythonCommonInit() {
   // TODO: can be SLOW on older browsers!!!
   window.addEventListener("resize", function () {
     if (appMode == "visualize") {
-      updateOutput();
+      renderDataVizDiv();
     }
   });
 
@@ -1094,7 +1147,7 @@ function eduPythonCommonInit() {
     .getElementById("stackGrowUpCheckbox")
     .addEventListener("click", function () {
       if (appMode == "visualize") {
-        updateOutput();
+        renderDataVizDiv();
       }
     });
 
@@ -1102,7 +1155,7 @@ function eduPythonCommonInit() {
     .getElementById("inlineRenderingCheckbox")
     .addEventListener("click", function () {
       if (appMode == "visualize") {
-        updateOutput();
+        renderDataVizDiv();
       }
     });
 }
