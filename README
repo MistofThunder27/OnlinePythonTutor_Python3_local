@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------
 
-The full version of the original author message is in original_readme.
+The full version of the original author message is in readme_original.
 This version of the repository has been updated to python 3 and is being
 changed significantly to work exclusively as a standalone program running
 on a custom local python server. This is part of a personal project and

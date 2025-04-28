@@ -1,7 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
-
 from m_pg_logger import PGLogger
 
 logger = PGLogger()
@@ -31,9 +30,8 @@ class LocalServer(BaseHTTPRequestHandler):
                 return
 
             self.send_response(200)
-            extension = os.path.splitext(requested_path)[1]
-            if extension:
-                file_type = extension_type_mapping.get(extension, "")
+            if os.path.isfile(full_path):
+                file_type = extension_type_mapping.get(os.path.splitext(requested_path)[1], "")
                 if file_type:
                     self.send_header("Content-type", file_type)
                 self.end_headers()
@@ -75,20 +73,19 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
                 ret[cur_delimiter] = "\n".join(cur_parts).strip()
 
         for line in open(f"questions/{post_dict["question_file"]}"):
+            line = line.rstrip()
             # comments are denoted by a leading "//", so ignore those lines.
             # Note that I don"t use "#" as the comment token since sometimes I
             # want to include Python comments in the skeleton code.
             if line.startswith("//"):
                 continue
 
-            line = line.rstrip()
             if ":" not in line:
                 cur_parts.append(line)
                 continue
 
-            for delimiter in (
-            "Test:", "Expect:", "Name:", "Question:", "Hint:", "Solution:", "Skeleton:", "MaxLineDelta:",
-            "MaxInstructions:"):
+            for delimiter in ("Test:", "Expect:", "Name:", "Question:", "Hint:", "Solution:",
+                              "Skeleton:", "MaxLineDelta:", "MaxInstructions:"):
                 if line.startswith(delimiter):
                     process_record()
                     cur_delimiter = delimiter[:-1].lower()
@@ -99,7 +96,6 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
 
         # don't forget to process the FINAL record
         process_record()
-        assert len(ret["test"]) == len(ret["expect"])
         return ret
 
     # =================================================================================
@@ -121,13 +117,14 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     # - The final line in expectResults should be a 'return' from
     #   '<module>' that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    vars_to_compare = list(expect_trace_final_entry['encoded_frames'][0][-1])  # list(globals)
+    expect_globals = expect_trace_final_entry['encoded_frames'][0][-1]
+    vars_to_compare = list(expect_globals)
     if len(vars_to_compare) != 1:
         return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
 
     single_var_to_compare = vars_to_compare[0]
     ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
-           'expect_val': expect_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]}
+           'expect_val': expect_globals[single_var_to_compare]}
 
     user_trace = logger.runscript(user_script, changed_max_executed_lines, True)
 
@@ -143,12 +140,13 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
             break
 
     user_trace_final_entry = user_trace[-1]
+    user_globals = user_trace_final_entry['encoded_frames'][0][-1]
     if user_trace_final_entry['event'] == 'return':  # normal termination
-        if single_var_to_compare not in user_trace_final_entry['encoded_frames'][0][-1]:
+        if single_var_to_compare not in user_globals:
             ret.update({'status': 'error',
                         'error_msg': f"Error: output has no global var named '{single_var_to_compare}'"})
         else:
-            ret['test_val'] = user_trace_final_entry['encoded_frames'][0][-1][single_var_to_compare]
+            ret['test_val'] = user_globals[single_var_to_compare]
             if ret['expect_val'] == ret['test_val']:  # do the actual comparison here!
                 ret['passed_test'] = True
 
