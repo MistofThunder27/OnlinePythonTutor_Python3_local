@@ -56,7 +56,7 @@ class PGLogger(bdb.Bdb):
         self.calling_function_info = []
         self.relative_position_shifts = [[]]
 
-        script_lines = script_str.splitlines()
+        script_lines = script_str.splitlines(keepends=True)
         if not script_lines:
             line_group_start = [1, 2]
         else:
@@ -84,7 +84,7 @@ class PGLogger(bdb.Bdb):
                         "__stdout__": user_stdout}
 
         try:
-            self.run(script_str, user_globals, user_globals)
+            self.run(script_str, user_globals)
         except Exception as exc:
             import traceback
             traceback.print_exc()
@@ -101,9 +101,7 @@ class PGLogger(bdb.Bdb):
 
             self.trace.append(trace_entry)
 
-        # clean up
         sys.stdout = sys.__stdout__
-        assert len(self.trace) <= (max_executed_lines + 1)
         return self.trace
 
     @staticmethod
@@ -136,20 +134,17 @@ class PGLogger(bdb.Bdb):
         line_group = self.get_current_line_group(calling_frame.f_lineno)
 
         # relative positions
-        code_so_far = "\n".join(self.script_lines[line_group[0] - 1: start_line]).strip("\n")
-        relative_start_position = len(code_so_far) - len(self.script_lines[start_line - 1]) + start_offset
-        # this weird way of calculating it is necessary because it accounts for "\n"s that may or may not be there
+        code_so_far = "".join(self.script_lines[line_group[0] - 1: start_line - 1])
+        relative_start_position = len(code_so_far) + start_offset
 
-        code_so_far = "\n".join([code_so_far, *self.script_lines[start_line: end_line]]).strip("\n")
-        relative_end_position = len(code_so_far) - len(self.script_lines[end_line - 1]) + end_offset
+        code_so_far = "".join([code_so_far, *self.script_lines[start_line - 1: end_line - 1]])
+        relative_end_position = len(code_so_far) + end_offset
 
         # new function call
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
-            code_so_far = "\n".join([code_so_far, *self.script_lines[end_line: line_group[-1]]]).strip("\n")
-
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
-                "code": code_so_far,
+                "code": "".join([code_so_far, *self.script_lines[end_line - 1: line_group[-1]]]),
                 "line_group": line_group,
                 "true_positions": [start_line, start_offset, end_line, end_offset],
                 "relative_positions": [relative_start_position, relative_end_position]
@@ -189,14 +184,15 @@ class PGLogger(bdb.Bdb):
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
+        # TODO
         # erase function calls during class definitions
-        class_name = frame.f_locals.get("__qualname__")
-        if class_name:
-            while self.trace[-1]["encoded_frames"][-1][0] == class_name:
-                self.trace.pop()
-            self.trace[-1]["line_group"] = list(
-                self.visited_lines.difference(self.trace[-1]["visited_lines"]))
-            return
+        #class_name = frame.f_locals.get("__qualname__")
+        #if class_name:
+        #    while self.trace[-1]["encoded_frames"][-1][0] == class_name:
+        #        self.trace.pop()
+        #    self.trace[-1]["line_group"] = list(
+        #        self.visited_lines.difference(self.trace[-1]["visited_lines"]))
+        #    return
 
         # normal return, do not pop call information as a second function call might happen immediately
         if self.calling_function_info:
@@ -222,7 +218,7 @@ class PGLogger(bdb.Bdb):
         trace_entry = {
             "line_group": line_group, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
-                ("global", {k: self.encode(v) for k, v in frame.f_globals.items() if
+                ("global", {k: self.recursive_encode(v, set()) for k, v in frame.f_globals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
             ],
             "stdout": frame.f_globals["__stdout__"].getvalue(),
@@ -250,7 +246,7 @@ class PGLogger(bdb.Bdb):
                 cur_name = "unnamed function"
 
             encoded_frames.append(
-                (cur_name, {k: self.encode(v) for k, v in cur_frame.f_locals.items() if
+                (cur_name, {k: self.recursive_encode(v, set()) for k, v in cur_frame.f_locals.items() if
                             k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__module__"}})
             )
             cur_frame = cur_frame.f_back
@@ -265,8 +261,7 @@ class PGLogger(bdb.Bdb):
             self.duplicate_frames_no = 0
             self.last_trace_entry = trace_entry.copy()
             trace_entry["visited_lines"] = list(self.visited_lines)
-            # done after assigning as currently highlighted line has not been processed yet
-            self.visited_lines.update(line_group)
+            self.visited_lines.update(line_group) # done after assigning as currently highlighted line has not been processed yet
             self.trace.append(trace_entry)
 
         if len(self.trace) >= self.max_executed_lines or self.duplicate_frames_no >= self.max_executed_lines:
@@ -275,103 +270,99 @@ class PGLogger(bdb.Bdb):
                                "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
                                                 "infinite loop)"})
 
-    def encode(self, outer_data):
-        # Given an arbitrary piece of Python data, encode it in such a manner
-        # that it can be later encoded into JSON.
-        #
-        # We use this function to encode run-time traces of data structures
-        # to send to the front-end.
-        #
-        # Format:
-        #   * None, int, long, float, str, bool - unchanged
-        #     (json.dumps encodes these fine verbatim)
-        #   * list     - ["LIST", unique_id, elt1, elt2, elt3, ..., eltN]
-        #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
-        #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
-        #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
-        #   * function - ["FUNC", unique_id, return annotation, [arg1, annotation1 default1], [arg2, annotation2, default2], ..., [argN, annotationN, defaultN]]
-        #   * instance - ["INSTANCE", unique_id, class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-        #   * class    - ["CLASS", unique_id, class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-        #   * circular reference - ["CIRCULAR_REF", unique_id]
-        #   * other    - [<type name>, unique_id, string representation of object]
-        #
-        # the unique_id is derived from id(), which allows us to explicitly
-        # capture aliasing of compound values
+    # Given an arbitrary piece of Python data, encode it in such a manner
+    # that it can be later encoded into JSON.
+    #
+    # We use this function to encode run-time traces of data structures
+    # to send to the front-end.
+    #
+    # Format:
+    #   * None, int, long, float, str, bool - unchanged
+    #     (json.dumps encodes these fine verbatim)
+    #   * list     - ["LIST", unique_id, elt1, elt2, elt3, ..., eltN]
+    #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
+    #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
+    #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
+    #   * function - ["FUNC", unique_id, return annotation, [arg1, annotation1, default1], [arg2, annotation2, default2], ..., [argN, annotationN, defaultN]]
+    #   * instance - ["INSTANCE", unique_id, class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+    #   * class    - ["CLASS", unique_id, class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+    #   * circular reference - ["CIRCULAR_REF", unique_id]
+    #   * other    - [<type name>, unique_id, string representation of object]
+    #
+    # the unique_id is derived from id(), which allows us to explicitly
+    # capture aliasing of compound values
 
-        def recursive_encode(data, compound_obj_ids):
-            data_type = type(data)
+    def recursive_encode(self, data, compound_obj_ids):
+        data_type = type(data)
 
-            # primitive type
-            if data is None or data_type in {int, float, str, bool}:
-                return data
+        # primitive type
+        if data is None or data_type in {int, float, str, bool}:
+            return data
 
-            # compound type
-            my_id = id(data)
+        # compound type
+        true_id = id(data)
 
-            if my_id in compound_obj_ids:
-                return ["CIRCULAR_REF", self.real_to_small_IDs[my_id]]
+        if true_id in compound_obj_ids:
+            return ["CIRCULAR_REF", self.real_to_small_IDs[true_id]]
 
-            if my_id not in self.real_to_small_IDs:
-                self.real_to_small_IDs[my_id] = 0 if self.ignore_id else self.cur_small_id
-                self.cur_small_id += 1
+        if true_id not in self.real_to_small_IDs:
+            self.real_to_small_IDs[true_id] = 0 if self.ignore_id else self.cur_small_id
+            self.cur_small_id += 1
 
-            new_compound_obj_ids = compound_obj_ids.union({my_id})
-            my_small_id = self.real_to_small_IDs[my_id]
+        new_compound_obj_ids = compound_obj_ids.union({true_id})
+        small_id = self.real_to_small_IDs[true_id]
 
-            if data_type == list:
-                return ["LIST", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-            if data_type == tuple:
-                return ["TUPLE", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-            if data_type == set:
-                return ["SET", my_small_id, *[recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-            if data_type == dict:
-                return ["DICT", my_small_id, *[
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
-                    for k, v in data.items()
-                ]]
-            if inspect.isfunction(data):
-                signature = inspect.signature(data)
-                ra = signature.return_annotation
-                ra = ra.__name__ if ra != inspect_empty else None
-                ret = ["FUNC", my_small_id, ra]
-                for argument in signature.parameters.values():
-                    n = argument.name
-                    a = argument.annotation
-                    d = argument.default
-                    k = argument.kind
-                    if k == inspect_position:
-                        n = f"*{n}"
-                    elif k == inspect_keyword:
-                        n = f"**{n}"
+        if data_type == list:
+            return ["LIST", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
+        if data_type == tuple:
+            return ["TUPLE", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
+        if data_type == set:
+            return ["SET", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
+        if data_type == dict:
+            return ["DICT", small_id, *[
+                [self.recursive_encode(k, new_compound_obj_ids), self.recursive_encode(v, new_compound_obj_ids)]
+                for k, v in data.items()
+            ]]
+        if inspect.isfunction(data):
+            signature = inspect.signature(data)
+            ra = signature.return_annotation
+            ra = ra.__name__ if ra != inspect_empty else None
+            ret = ["FUNC", small_id, ra]
+            for argument in signature.parameters.values():
+                n = argument.name
+                a = argument.annotation
+                d = argument.default
+                k = argument.kind
+                if k == inspect_position:
+                    n = f"*{n}"
+                elif k == inspect_keyword:
+                    n = f"**{n}"
 
-                    if a == inspect_empty:
-                        a = None
-                    elif isinstance(a, type):
-                        a = a.__name__
-                    else:
-                        a = str(a)
-
-                    d = d if d != inspect_empty else None
-                    ret.append(
-                        [n, a, recursive_encode(d, new_compound_obj_ids)])
-                return ret
-            if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
-                if "." in str(data_type):
-                    ret = ["INSTANCE", my_small_id, data.__class__.__name__]
+                if a == inspect_empty:
+                    a = None
+                elif isinstance(a, type):
+                    a = a.__name__
                 else:
-                    ret = ["CLASS", my_small_id, data.__name__, [e.__name__ for e in data.__bases__]]
+                    a = str(a)
 
-                # traverse inside its __dict__ to grab attributes
-                # (filter out useless-seeming ones):
-                ret.extend([
-                    [recursive_encode(k, new_compound_obj_ids), recursive_encode(v, new_compound_obj_ids)]
-                    for k, v in data.__dict__.items() if k not in
-                                                         {"__doc__", "__module__", "__return__", "__dict__",
-                                                          "__weakref__"}
-                ])
+                d = d if d != inspect_empty else None
+                ret.append(
+                    [n, a, self.recursive_encode(d, new_compound_obj_ids)])
+            return ret
+        if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
+            if "." in str(data_type):
+                ret = ["INSTANCE", small_id, data.__class__.__name__]
+            else:
+                ret = ["CLASS", small_id, data.__name__, [e.__name__ for e in data.__bases__]]
 
-                return ret
+            # traverse inside its __dict__ to grab attributes
+            # (filter out useless-seeming ones):
+            ret.extend([
+                [self.recursive_encode(k, new_compound_obj_ids), self.recursive_encode(v, new_compound_obj_ids)]
+                for k, v in data.__dict__.items() if k not in {"__doc__", "__module__", "__return__",
+                                                               "__dict__", "__weakref__"}
+            ])
 
-            return [data_type.__name__, my_small_id, str(data)]
+            return ret
 
-        return recursive_encode(outer_data, set())
+        return [data_type.__name__, small_id, str(data)]
