@@ -123,15 +123,18 @@ class PGLogger(bdb.Bdb):
     # Override Bdb methods
     def user_call(self, frame, argument_list):
         calling_frame = frame.f_back
+        line_group = self.get_current_line_group(calling_frame.f_lineno)
 
         # find true positions of the function on the last frame
         positions = inspect.getframeinfo(calling_frame).positions
         start_line = positions.lineno
-        start_offset = positions.col_offset
         end_line = positions.end_lineno
-        end_offset = positions.end_col_offset
 
-        line_group = self.get_current_line_group(calling_frame.f_lineno)
+        if (end_line - start_line + 1) > len(line_group): # not a true function call
+            return
+
+        start_offset = positions.col_offset
+        end_offset = positions.end_col_offset
 
         # relative positions
         code_so_far = "".join(self.script_lines[line_group[0] - 1: start_line - 1])
@@ -173,26 +176,21 @@ class PGLogger(bdb.Bdb):
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
-        self.interaction(frame, "step_line")
+        self.interaction(frame, "step_line", self.get_current_line_group(frame.f_lineno))
 
     def user_return(self, frame, return_value):
         if frame.f_back.f_code.co_filename != "<string>":
             self.set_quit()
 
+        line_group = self.get_current_line_group(frame.f_lineno)
+        positions = inspect.getframeinfo(frame.f_back).positions
+        if (positions.end_lineno - positions.lineno + 1) > len(line_group): # return from a false function call
+            return
+
         # returned immediately after another return
         if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
-
-        # TODO
-        # erase function calls during class definitions
-        #class_name = frame.f_locals.get("__qualname__")
-        #if class_name:
-        #    while self.trace[-1]["encoded_frames"][-1][0] == class_name:
-        #        self.trace.pop()
-        #    self.trace[-1]["line_group"] = list(
-        #        self.visited_lines.difference(self.trace[-1]["visited_lines"]))
-        #    return
 
         # normal return, do not pop call information as a second function call might happen immediately
         if self.calling_function_info:
@@ -207,19 +205,18 @@ class PGLogger(bdb.Bdb):
             self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(ret)])
 
         frame.f_locals["__return__"] = return_value
-        self.interaction(frame, "return")
+        self.interaction(frame, "return", line_group)
 
     def user_exception(self, frame, exc_info):
-        self.interaction(frame, "exception", exc_info[:2])
+        self.interaction(frame, "exception", self.get_current_line_group(frame.f_lineno), exc_info[:2])
 
     # General interaction function
-    def interaction(self, frame, event_type, exception_info=None):
-        line_group = self.get_current_line_group(frame.f_lineno)
+    def interaction(self, frame, event_type, line_group, exception_info=None):
         trace_entry = {
             "line_group": line_group, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [
-                ("global", {k: self.recursive_encode(v, set()) for k, v in frame.f_globals.items() if
-                            k not in {"__stdout__", "__builtins__", "__name__", "__exception__", "__return__"}})
+                ("global", {k: self.recursive_encode(v, set()) for k, v in
+                            frame.f_globals.items() if not k.startswith("__")})
             ],
             "stdout": frame.f_globals["__stdout__"].getvalue(),
         }
@@ -326,8 +323,7 @@ class PGLogger(bdb.Bdb):
         if inspect.isfunction(data):
             signature = inspect.signature(data)
             ra = signature.return_annotation
-            ra = ra.__name__ if ra != inspect_empty else None
-            ret = ["FUNC", small_id, ra]
+            ret = ["FUNC", small_id, None if ra == inspect_empty else ra.__name__]
             for argument in signature.parameters.values():
                 n = argument.name
                 a = argument.annotation
@@ -355,8 +351,6 @@ class PGLogger(bdb.Bdb):
             else:
                 ret = ["CLASS", small_id, data.__name__, [e.__name__ for e in data.__bases__]]
 
-            # traverse inside its __dict__ to grab attributes
-            # (filter out useless-seeming ones):
             ret.extend([
                 [self.recursive_encode(k, new_compound_obj_ids), self.recursive_encode(v, new_compound_obj_ids)]
                 for k, v in data.__dict__.items() if k not in {"__doc__", "__module__", "__return__",

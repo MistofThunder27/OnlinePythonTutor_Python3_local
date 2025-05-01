@@ -1,4 +1,5 @@
-- removing class calls from trace fails if there is a function call during initialisation
+- fix many __ values, suggestion "__return__" (or equivalent) or not startswith("__")
+- allow more recently changed values to appear at top
 - assertion fails with questions
 
 2011-09-26
