@@ -101,7 +101,7 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
 
     # =================================================================================
     user_script = post_dict["user_script"]
-    changed_max_executed_lines = int(post_dict.get("max_instructions", MAX_EXECUTED_LINES))
+    changed_max_executed_lines = int(post_dict.get("maxinstructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
         return logger.runscript(user_script, changed_max_executed_lines)
@@ -117,7 +117,7 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     #   "<module>" that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
     expect_globals = expect_trace_final_entry["encoded_frames"][0][-1]
-    vars_to_compare = expect_globals.keys()
+    vars_to_compare = list(expect_globals)
     if len(vars_to_compare) != 1:
         return {"status": "error", "error_msg": "Fatal error: expected output has more than one global var!"}
 

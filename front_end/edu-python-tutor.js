@@ -1,5 +1,4 @@
 /*
-
 Online Python Tutor
 Copyright (C) 2010-2011 Philip J. Guo (philip@pgbovine.net)
 https://github.com/pgbovine/OnlinePythonTutor/
@@ -20,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // The Online Python Tutor front-end, which calls the back-end with a string
-// representing the user's script POST['user_script'] and receives a complete
+// representing the user's script POST 'user_script' and receives a complete
 // execution trace, which it parses and displays to HTML.
 
 // Pre-req: edu-python.js should be imported BEFORE this file
@@ -52,10 +51,10 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .catch((error) => console.error("Error fetching filenames:", error));
 
-  var pyInput = document.getElementById("pyInput");
-  var pyInputPane = document.getElementById("pyInputPane");
-  var pyOutputPane = document.getElementById("pyOutputPane");
-  var executeBtn = document.getElementById("executeBtn");
+  const pyInput = document.getElementById("pyInput");
+  const pyInputPane = document.getElementById("pyInputPane");
+  const pyOutputPane = document.getElementById("pyOutputPane");
+  const executeBtn = document.getElementById("executeBtn");
 
   addTabSupport(pyInput);
 
@@ -78,9 +77,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       executeBtn.textContent = "Visualize execution";
       executeBtn.disabled = false;
-
-      // do this AFTER making #pyOutputPane visible, or else
-      // jsPlumb connectors won't render properly
       processTrace(curTrace);
     }
   });
@@ -92,7 +88,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   executeBtn.disabled = false;
   executeBtn.addEventListener("click", function () {
-    var pyInputValue = pyInput.value;
+    const pyInputValue = pyInput.value;
     this.textContent = "Please wait ... processing your code";
     this.disabled = true;
     pyOutputPane.style.display = "none";

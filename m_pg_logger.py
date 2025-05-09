@@ -129,7 +129,7 @@ class PGLogger(bdb.Bdb):
         end_line = positions.end_lineno
 
         # not a true function call
-        if (end_line - start_line) > (line_group[-1] - line_group[0]):
+        if (end_line - start_line + 1) > (line_group[-1] - line_group[0]):
             return
 
         start_offset = positions.col_offset
@@ -146,7 +146,7 @@ class PGLogger(bdb.Bdb):
         if not self.calling_function_info or id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.append({
                 "calling_frame_id": id(calling_frame),
-                "code": "".join([code_so_far, *self.script_lines[end_line - 1: line_group[-1]]]),
+                "code": "".join([code_so_far, *self.script_lines[end_line - 1: line_group[-1] - 1]]),
                 "line_group": line_group,
                 "true_positions": [start_line, start_offset, end_line, end_offset],
                 "relative_positions": [relative_start_position, relative_end_position]
@@ -172,25 +172,26 @@ class PGLogger(bdb.Bdb):
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
             a = self.calling_function_info[-1]["line_group"]
             b = frame.f_lineno
-            if b > a[0] and b < a[-1]: # current line still within the line group
+            if b >= a[0] and b < a[-1]: # current line still within the line group
                 return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
-        self.interaction(frame, "step_line", self.get_current_line_group(frame.f_lineno))
+        self.interaction(frame, "step_line")
 
     def user_return(self, frame, return_value):
-        if frame.f_back.f_code.co_filename != "<string>":
+        calling_frame = frame.f_back
+        if calling_frame.f_code.co_filename != "<string>":
             self.set_quit()
-
-        line_group = self.get_current_line_group(frame.f_lineno)
-        positions = inspect.getframeinfo(frame.f_back).positions
-        # return from a false function call
-        if (positions.end_lineno - positions.lineno) > (line_group[-1] - line_group[0]):
-            return
+        else:
+            line_group = self.get_current_line_group(calling_frame.f_lineno)
+            positions = inspect.getframeinfo(calling_frame).positions
+            # return from a false function call
+            if (positions.end_lineno - positions.lineno + 1) > (line_group[-1] - line_group[0]):
+                return
 
         # returned immediately after another return
-        if self.calling_function_info and id(frame.f_back) != self.calling_function_info[-1]["calling_frame_id"]:
+        if self.calling_function_info and id(calling_frame) != self.calling_function_info[-1]["calling_frame_id"]:
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
@@ -208,12 +209,13 @@ class PGLogger(bdb.Bdb):
             self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(str_ret)])
 
         frame.f_locals["__return__"] = return_value
-        self.interaction(frame, "return", line_group)
+        self.interaction(frame, "return")
 
     def user_exception(self, frame, exc_info):
-        self.interaction(frame, "exception", self.get_current_line_group( frame.f_lineno), exc_info[:2])
+        self.interaction(frame, "exception", exc_info[:2])
 
-    def interaction(self, frame, event_type, line_group, exception_info=None):
+    def interaction(self, frame, event_type, exception_info=None):
+        line_group = self.get_current_line_group(frame.f_lineno)
         trace_entry = {
             "line_group": line_group, "event": event_type, "scope_name": frame.f_code.co_name,
             "encoded_frames": [

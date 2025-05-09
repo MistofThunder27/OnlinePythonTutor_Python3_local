@@ -30,7 +30,7 @@ var curTestIndex = -1;
 
 // the results returned by executing the respective 'tests' and 'expects'
 // Python code.  See resetTestResults for invariants.
-var testResults = null;
+var testResults = [];
 
 // Pre: 'tests' and 'expects' are non-null
 function resetTestResults() {
@@ -38,9 +38,6 @@ function resetTestResults() {
   tests.forEach(function () {
     testResults.push(null);
   });
-
-  assert(testResults.length > 0);
-  assert(testResults.length == tests.length);
 }
 
 // concatenate solution code and test code:
@@ -120,28 +117,26 @@ function loadQuestion() {
 
         document.getElementById("testCodeInput").value = tests[curTestIndex];
 
-        var executeBtn = document.getElementById("executeBtn");
+        const executeBtn = document.getElementById("executeBtn");
         executeBtn.disabled = false;
         executeBtn.addEventListener("click", function () {
           if (curQuestion.max_line_delta) {
             // if the question has a 'max_line_delta' field, then check to see
             // if > curQuestion.max_line_delta lines have changed from
             // curQuestion.skeleton, and reject the attempt if that's the case
-            var numChangedLines = 0;
+            let numChangedLines = 0;
 
             // split on newlines to do a line-level diff
             // (rtrim both strings to discount the effect of trailing
             // whitespace and newlines)
-            var diffResults = diff(
+            diff(
               // TODO: remove dependacy
               document
                 .getElementById("actualCodeInput")
                 .value.replace(/\s+$/, "")
                 .split(/\n/),
               data.skeleton.replace(/\s+$/, "").split(/\n/)
-            );
-            //console.log(diffResults);
-            diffResults.forEach((e) => {
+            ).forEach((e) => {
               if (e.file1 && e.file2) {
                 // i THINK this is the right way to calculate the number of
                 // changed lines ... taking the MAXIMUM of the delta lengths
@@ -166,14 +161,14 @@ function loadQuestion() {
           this.disabled = true;
           document.getElementById("pyOutputPane").style.display = "none";
 
-          var submittedCode = concatSolnTestCode(
+          const submittedCode = concatSolnTestCode(
             document.getElementById("actualCodeInput").value,
             document.getElementById("testCodeInput").value
           );
 
-          var postParams = { request: "execute", user_script: submittedCode };
-          if (data.max_instructions) {
-            postParams.max_instructions = data.max_instructions;
+          let postParams = { request: "execute", user_script: submittedCode };
+          if (data.maxinstructions) {
+            postParams.maxinstructions = data.maxinstructions;
           }
 
           fetch("../main.py", {
@@ -196,7 +191,7 @@ function loadQuestion() {
             location.hash = "#edit";
           });
 
-        var submitBtn = document.getElementById("submitBtn");
+        const submitBtn = document.getElementById("submitBtn");
         submitBtn.addEventListener("click", function () {
           this.textContent = "Please wait ... submitting ...";
           this.disabled = true;
@@ -205,20 +200,20 @@ function loadQuestion() {
 
           // remember that these results come in asynchronously and probably
           // out-of-order, so code very carefully here!!!
-          for (var i = 0; i < tests.length; i++) {
+          for (let i = 0; i < tests.length; i++) {
             const ind = i;
-            var submittedCode = concatSolnTestCode(
+            const submittedCode = concatSolnTestCode(
               document.getElementById("actualCodeInput").value,
               tests[i]
             );
 
-            var postParams = {
+            const postParams = {
               request: "run test",
               user_script: submittedCode,
               expect_script: expects[i],
             };
-            if (data.max_instructions) {
-              postParams.max_instructions = data.max_instructions;
+            if (data.maxinstructions) {
+              postParams.maxinstructions = data.maxinstructions;
             }
 
             fetch("../main.py", {
@@ -228,7 +223,6 @@ function loadQuestion() {
             })
               .then((response) => response.json())
               .then((data) => {
-                assert(testResults[ind] === null);
                 testResults[ind] = data;
 
                 if (testResults.every((result) => result !== null)) {
@@ -260,14 +254,14 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .catch((error) => console.error("Error fetching filenames:", error));
 
-  var pyInputPane = document.getElementById("pyInputPane");
-  var pyOutputPane = document.getElementById("pyOutputPane");
-  var executeBtn = document.getElementById("executeBtn");
+  const pyInputPane = document.getElementById("pyInputPane");
+  const pyOutputPane = document.getElementById("pyOutputPane");
+  const executeBtn = document.getElementById("executeBtn");
 
-  var pyGradingPane = document.getElementById("pyGradingPane");
-  var HintStatement = document.getElementById("HintStatement");
-  var SolutionStatement = document.getElementById("SolutionStatement");
-  var submitBtn = document.getElementById("submitBtn");
+  const pyGradingPane = document.getElementById("pyGradingPane");
+  const HintStatement = document.getElementById("HintStatement");
+  const SolutionStatement = document.getElementById("SolutionStatement");
+  const submitBtn = document.getElementById("submitBtn");
 
   addTabSupport(document.getElementById("actualCodeInput"));
   addTabSupport(document.getElementById("testCodeInput"));
@@ -308,8 +302,8 @@ document.addEventListener("DOMContentLoaded", function () {
       processTrace(curTrace);
 
       // don't let the user submit answer when there's an error
-      for (var i = 0; i < curTrace.length; i++) {
-        var curEntry = curTrace[i];
+      for (let i = 0; i < curTrace.length; i++) {
+        const curEntry = curTrace[i];
         if (
           curEntry.event == "exception" ||
           curEntry.event == "uncaught_exception"
@@ -440,7 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
         renderData(result.expect_val, expectedValCell, true /* ignoreIDs */);
       });
 
-      var numPassed = 0;
+      let numPassed = 0;
       testResults.forEach((result) => {
         if (result.passed_test) {
           numPassed++;

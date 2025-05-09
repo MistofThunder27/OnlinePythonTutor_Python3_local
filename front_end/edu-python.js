@@ -97,7 +97,7 @@ function updateOutput() {
   }
 
   const curEntry = curTrace[curInstr];
-  const totalInstrs = curTrace.length;
+  const totalInstructions = curTrace.length;
 
   // render VCR controls:
   const vcrControls = document.getElementById("vcrControls");
@@ -105,11 +105,11 @@ function updateOutput() {
   // to be user-friendly, if we're on the LAST instruction, print "Program has terminated"
   // and DON'T highlight any lines of code in the code display
   vcrControls.querySelector("#curInstr").innerHTML =
-    curInstr === totalInstrs - 1
+    curInstr === totalInstructions - 1
       ? instrLimitReached
         ? "Instruction limit reached"
         : "Program has terminated"
-      : "About to do step " + (curInstr + 1) + " of " + (totalInstrs - 1);
+      : "About to do step " + (curInstr + 1) + " of " + (totalInstructions - 1);
 
   vcrControls.querySelector("#jmpFirstInstr").disabled =
     vcrControls.querySelector("#jmp1StepBack").disabled = curInstr === 0;
@@ -117,15 +117,15 @@ function updateOutput() {
   vcrControls.querySelector("#jmp25StepBack").disabled = curInstr < 25;
   vcrControls.querySelector("#jmpLastInstr").disabled =
     vcrControls.querySelector("#jmp1StepFwd").disabled =
-      curInstr === totalInstrs - 1;
+      curInstr === totalInstructions - 1;
   vcrControls.querySelector("#jmp5StepFwd").disabled =
-    curInstr > totalInstrs - 6;
+    curInstr > totalInstructions - 6;
   vcrControls.querySelector("#jmp25StepFwd").disabled =
-    curInstr > totalInstrs - 26;
+    curInstr > totalInstructions - 26;
 
   // render error (if applicable):
   const errorOutput = document.getElementById("errorOutput");
-  var hasError;
+  let hasError;
   if (
     curEntry.event === "exception" ||
     curEntry.event === "uncaught_exception"
@@ -168,9 +168,7 @@ function updateOutput() {
   // set vertical scroll
   const lineAverage = lineGroup.reduce((a, b) => a + b) / 2;
   const scrollControl = [lineAverage - 25, lineAverage - 8, lineAverage].map(
-    (n) => {
-      return n / tblAllLineNo.length;
-    }
+    (n) => n / tblAllLineNo.length
   );
 
   const pyCodeOutputDiv = document.getElementById("pyCodeOutputDiv");
@@ -180,17 +178,6 @@ function updateOutput() {
   if (curScrollRatio < scrollControl[0] || curScrollRatio > scrollControl[2]) {
     pyCodeOutputDiv.scrollTop = scrollControl[1] * pyCodeOutputDiv.scrollHeight;
   }
-
-  Array.from(
-    { length: lineGroup[1] - lineGroup[0] },
-    (_, k) => k + lineGroup[0]
-  ).forEach((line) => {
-    tblAllCod[line - 1].style.backgroundColor = hasError
-      ? errorColor
-      : !instrLimitReached && curInstr === totalInstrs - 1
-      ? terminatingColor
-      : lightLineColor;
-  });
 
   // Set visited lines
   if (visitedLines) {
@@ -212,11 +199,13 @@ function updateOutput() {
 
     const callingLineColor =
       encodedFrames.length % 2 == 1 ? callingLineColor1 : callingLineColor2;
-    callingLines.forEach((line) => {
-      tblAllCod[line - 1].style.backgroundColor = callingLineColor;
-    });
 
-    var cell, content;
+    // Highlight calling lines
+    for (let line = callingLines[0]; line < callingLines[1]; line++) {
+      tblAllCod[line - 1].style.backgroundColor = callingLineColor;
+    }
+
+    let cell, content;
     if (startLine === endLine) {
       cell = tblAllCod[startLine - 1];
       content = cell.textContent;
@@ -235,7 +224,7 @@ function updateOutput() {
         content.substring(startIndex) +
         "</span>";
 
-      for (var line = startLine + 1; line <= endLine - 1; line++) {
+      for (let line = startLine + 1; line <= endLine - 1; line++) {
         cell = tblAllCod[line - 1];
         cell.innerHTML =
           '<span style="background-color: orange;">' +
@@ -252,7 +241,7 @@ function updateOutput() {
         content.substring(endIndex);
     }
 
-    tblAllCod[callingLines[callingLines.length - 1] - 1].innerHTML +=
+    tblAllCod[callingLines[1] - 2].innerHTML +=
       '<br/><span style="font-style: italic; color: green;">' +
       htmlSpecialChars(evaluatedCode.substring(0, relativeStart)) +
       '<span style="background-color: orange;">' +
@@ -260,6 +249,15 @@ function updateOutput() {
       "</span>" +
       htmlSpecialChars(evaluatedCode.substring(relativeEnd)) +
       "</span>";
+  }
+
+  // Highlight current lines
+  for (let line = lineGroup[0]; line < lineGroup[1]; line++) {
+    tblAllCod[line - 1].style.backgroundColor = hasError
+      ? errorColor
+      : !instrLimitReached && curInstr === totalInstructions - 1
+      ? terminatingColor
+      : lightLineColor;
   }
 
   // render stdout:
@@ -279,7 +277,7 @@ function renderDataVizDiv() {
 
   // organize frames based on settings
   if (encodedFrames) {
-    var orderedFrames = encodedFrames.slice();
+    let orderedFrames = encodedFrames.slice();
     if (stackGrowsUp) {
       orderedFrames = orderedFrames.reverse();
     }
@@ -332,23 +330,23 @@ function renderDataVizDiv() {
         header.removeEventListener("click", handleClick);
       });
 
-      var stackHeapTable = document.createElement("table");
+      const stackHeapTable = document.createElement("table");
       stackHeapTable.id = "stackHeapTable";
 
-      var tr = document.createElement("tr");
+      const tr = document.createElement("tr");
 
-      var stack_td = document.createElement("td");
+      const stack_td = document.createElement("td");
       stack_td.id = "stack_td";
 
-      var stack_master_div = document.createElement("div");
+      const stack_master_div = document.createElement("div");
       stack_master_div.id = "stack";
       stack_td.appendChild(stack_master_div);
       tr.appendChild(stack_td);
 
-      var heap_td = document.createElement("td");
+      const heap_td = document.createElement("td");
       heap_td.id = "heap_td";
 
-      var heap_master_div = document.createElement("div");
+      const heap_master_div = document.createElement("div");
       heap_master_div.id = "heap";
       heap_td.appendChild(heap_master_div);
       tr.appendChild(heap_td);
@@ -358,25 +356,25 @@ function renderDataVizDiv() {
 
       // Key:   CSS ID of the div element representing the variable
       // Value: CSS ID of the div element representing the value rendered in the heap
-      var connectionEndpointIDs = {};
+      let connectionEndpointIDs = {};
 
       // first render the vars
       orderedFrames.forEach(([frameName, frameContent], i) => {
-        var stackDiv = document.createElement("div");
-        var divID = "stack" + i;
+        const stackDiv = document.createElement("div");
+        const divID = "stack" + i;
         stackDiv.className = "stackFrame";
         stackDiv.id = divID;
         stack_master_div.appendChild(stackDiv);
 
-        var headerDiv = document.createElement("div");
+        const headerDiv = document.createElement("div");
         headerDiv.id = "stack_header" + i;
         headerDiv.className = "stackFrameHeader inactiveStackFrameHeader";
         headerDiv.innerHTML = htmlSpecialChars(frameName);
         stackDiv.appendChild(headerDiv);
 
-        var encodedVars = Object.entries(frameContent);
+        const encodedVars = Object.entries(frameContent);
         if (encodedVars.length > 0) {
-          var table = document.createElement("table");
+          const table = document.createElement("table");
           table.className = "stackFrameVarTable";
           table.id = divID + "_table";
           stackDiv.appendChild(table);
@@ -416,13 +414,13 @@ function renderDataVizDiv() {
               // I also threw in '{', '}', '(', ')', '<', '>' as illegal characters.
               //
               // TODO: what other characters are illegal???
-              var varDivID =
+              const varDivID =
                 divID +
                 "__" +
                 varname
                   .replace(/[\[{|(<>]/g, "LeftB_")
                   .replace(/[\]}|)<>]/g, "_RightB");
-              var divElement = document.createElement("div");
+              const divElement = document.createElement("div");
               divElement.id = varDivID;
               divElement.innerHTML = "&nbsp;";
               tr.querySelector("td.stackFrameValue").appendChild(divElement);
@@ -436,7 +434,7 @@ function renderDataVizDiv() {
       });
 
       // then render the heap
-      var heapHeaderDiv = document.createElement("div");
+      const heapHeaderDiv = document.createElement("div");
       heapHeaderDiv.id = "heapHeader";
       heapHeaderDiv.textContent = "Heap";
       heap_master_div.appendChild(heapHeaderDiv);
@@ -447,16 +445,16 @@ function renderDataVizDiv() {
       // e.g., if a list L appears as a global variable and as a local in a
       // function, we want to render L when rendering the global frame.
 
-      var alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
+      let alreadyRenderedObjectIDs = new Set(); // set of object IDs that have already been rendered
       encodedFrames.forEach((frame) => {
         Object.entries(frame[1]).forEach((entry) => {
-          var val = entry[1];
+          const val = entry[1];
           // primitive types are already rendered in the stack
           if (typeof val == "object" && val != null) {
-            var objectID = val[0];
+            const objectID = val[0];
 
             if (!alreadyRenderedObjectIDs.has(objectID)) {
-              var heapObjID = "heap_object_" + objectID;
+              const heapObjID = "heap_object_" + objectID;
               dataViz.querySelector("#heap").innerHTML +=
                 '<div class="heapObject" id="' + heapObjID + '"></div>';
               renderData(val, dataViz.querySelector("#heap #" + heapObjID));
@@ -515,11 +513,12 @@ function renderDataVizDiv() {
                 sourceRect.top + sourceRect.height / 2 + window.scrollY;
               const toY =
                 targetRect.top + targetRect.height / 2 + window.scrollY;
+              let diffY;
               if (fromY < toY) {
-                var diffY = toY - fromY + 10;
+                diffY = toY - fromY + 10;
                 canvas.style.top = fromY - 5 + "px";
               } else {
-                var diffY = fromY - toY + 10;
+                diffY = fromY - toY + 10;
                 canvas.style.top = toY - 5 + "px";
               }
               const midY = diffY / 2;
@@ -605,26 +604,26 @@ function renderDataVizDiv() {
 // (obj is in a format encoded by back_end/pg_encoder.py)
 function renderData(obj, jDomElt) {
   // dispatch on types:
-  var typ = typeof obj;
+  const typ = typeof obj;
 
   if (obj == null) {
     jDomElt.innerHTML = '<span class="nullObj">None</span>';
   } else if (typ == "number") {
     jDomElt.innerHTML = '<span class="numberObj">' + obj + "</span>";
   } else if (typ == "boolean") {
-    jDomElt.innerHTML = '<span class="boolObj">' + obj + '</span>';
+    jDomElt.innerHTML = '<span class="boolObj">' + obj + "</span>";
   } else if (typ == "string") {
     jDomElt.innerHTML =
       '<span class="stringObj">"' +
       htmlSpecialChars(obj).replaceAll('"', '\\"') +
       '"</span>';
   } else if (typ == "object") {
-    var idStr = " (id=" + obj[0] + ")";
+    const idStr = " (id=" + obj[0] + ")";
 
     if (obj[1] == "LIST") {
       assert(obj.length >= 2);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty list" + idStr;
@@ -633,20 +632,20 @@ function renderData(obj, jDomElt) {
         newDiv.textContent = "list" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "listTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
-        var headerTr = table.querySelector("tr:first-child");
-        var contentTr = table.querySelector("tr:last-child");
+        const headerTr = table.querySelector("tr:first-child");
+        const contentTr = table.querySelector("tr:last-child");
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
-          var headerCell = document.createElement("td");
+          const headerCell = document.createElement("td");
           headerCell.className = "listHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
-          var contentCell = document.createElement("td");
+          const contentCell = document.createElement("td");
           contentCell.className = "listElt";
           contentTr.appendChild(contentCell);
 
@@ -657,7 +656,7 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "TUPLE") {
       assert(obj.length >= 2);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty tuple" + idStr;
@@ -666,20 +665,20 @@ function renderData(obj, jDomElt) {
         newDiv.textContent = "tuple" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "tupleTbl";
         table.innerHTML = "<tr></tr><tr></tr>";
         jDomElt.appendChild(table);
-        var headerTr = table.querySelector("tr:first-child");
-        var contentTr = table.querySelector("tr:last-child");
+        const headerTr = table.querySelector("tr:first-child");
+        const contentTr = table.querySelector("tr:last-child");
         obj.slice(2).forEach((val, ind) => {
           // create a new column for both header and content rows
-          var headerCell = document.createElement("td");
+          const headerCell = document.createElement("td");
           headerCell.className = "tupleHeader";
           headerCell.textContent = ind;
           headerTr.appendChild(headerCell);
 
-          var contentCell = document.createElement("td");
+          const contentCell = document.createElement("td");
           contentCell.className = "tupleElt";
           contentTr.appendChild(contentCell);
 
@@ -690,7 +689,7 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "SET") {
       assert(obj.length >= 2);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty set" + idStr;
@@ -699,19 +698,19 @@ function renderData(obj, jDomElt) {
         newDiv.textContent = "set" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "setTbl";
         jDomElt.appendChild(table);
         // create an R x C matrix:
-        var numElts = obj.length - 2;
+        const numElts = obj.length - 2;
         // gives roughly a 3x5 rectangular ratio, square is too, err,
         // 'square' and boring
-        var numRows = Math.round(Math.sqrt(numElts));
+        let numRows = Math.round(Math.sqrt(numElts));
         if (numRows > 3) {
           numRows -= 1;
         }
 
-        var numCols = Math.round(numElts / numRows);
+        let numCols = Math.round(numElts / numRows);
         // round up if not a perfect multiple:
         if (numElts % numRows) {
           numCols += 1;
@@ -719,12 +718,12 @@ function renderData(obj, jDomElt) {
 
         obj.slice(2).forEach((val, ind) => {
           if (ind % numCols == 0) {
-            var newTr = document.createElement("tr");
+            const newTr = document.createElement("tr");
             table.appendChild(newTr);
           }
 
-          var curTr = table.querySelector("tr:last-child");
-          var newTd = document.createElement("td");
+          const curTr = table.querySelector("tr:last-child");
+          const newTd = document.createElement("td");
           newTd.className = "setElt";
           curTr.appendChild(newTd);
           renderData(val, curTr.querySelector("td:last-child"));
@@ -733,7 +732,7 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "DICT") {
       assert(obj.length >= 2);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       if (obj.length == 2) {
         newDiv.textContent = "empty dict" + idStr;
@@ -742,17 +741,17 @@ function renderData(obj, jDomElt) {
         newDiv.textContent = "dict" + idStr + ":";
         jDomElt.appendChild(newDiv);
 
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "dictTbl";
         jDomElt.appendChild(table);
         obj.slice(2).forEach(([key, val]) => {
-          var newKeyTd = document.createElement("td");
+          const newKeyTd = document.createElement("td");
           newKeyTd.className = "dictKey";
 
-          var newValTd = document.createElement("td");
+          const newValTd = document.createElement("td");
           newValTd.className = "dictVal";
 
-          var newDictTr = document.createElement("tr");
+          const newDictTr = document.createElement("tr");
           newDictTr.className = "dictEntry";
           newDictTr.appendChild(newKeyTd);
           newDictTr.appendChild(newValTd);
@@ -766,13 +765,13 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "FUNC") {
       assert(obj.length >= 3);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       newDiv.textContent = "function" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "funcTbl";
         jDomElt.appendChild(table);
         const tr = document.createElement("tr");
@@ -807,23 +806,23 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "INSTANCE") {
       assert(obj.length >= 3);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
       newDiv.textContent = obj[2] + " instance" + idStr;
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 3) {
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "instTbl";
         jDomElt.appendChild(table);
         obj.slice(3).forEach(([key, val]) => {
-          var newKeyTd = document.createElement("td");
+          const newKeyTd = document.createElement("td");
           newKeyTd.className = "instKey";
 
-          var newValTd = document.createElement("td");
+          const newValTd = document.createElement("td");
           newValTd.className = "instVal";
 
-          var newInstTr = document.createElement("tr");
+          const newInstTr = document.createElement("tr");
           newInstTr.className = "instEntry";
           newInstTr.appendChild(newKeyTd);
           newInstTr.appendChild(newValTd);
@@ -842,9 +841,9 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "CLASS") {
       assert(obj.length >= 4);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "typeLabel";
-      var superclassStr = "";
+      let superclassStr = "";
       if (obj[3].length > 0) {
         superclassStr += "[extends " + obj[3].join(",") + "] ";
       }
@@ -853,17 +852,17 @@ function renderData(obj, jDomElt) {
       jDomElt.appendChild(newDiv);
 
       if (obj.length > 4) {
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "classTbl";
         jDomElt.appendChild(table);
         obj.slice(4).forEach(([key, val]) => {
-          var newKeyTd = document.createElement("td");
+          const newKeyTd = document.createElement("td");
           newKeyTd.className = "classKey";
 
-          var newValTd = document.createElement("td");
+          const newValTd = document.createElement("td");
           newValTd.className = "classVal";
 
-          var newClassTr = document.createElement("tr");
+          const newClassTr = document.createElement("tr");
           newClassTr.className = "classEntry";
           newClassTr.appendChild(newKeyTd);
           newClassTr.appendChild(newValTd);
@@ -882,22 +881,22 @@ function renderData(obj, jDomElt) {
     } else if (obj[1] == "CIRCULAR_REF") {
       assert(obj.length == 2);
 
-      var newDiv = document.createElement("div");
+      const newDiv = document.createElement("div");
       newDiv.className = "circRefLabel";
       newDiv.textContent = "circular reference to id=" + obj[1];
       jDomElt.appendChild(newDiv);
     } else {
       // render custom data type
       assert(obj.length == 3);
-      var id = obj[0];
-      var typeName = obj[1];
-      var strRepr = obj[2];
+      const id = obj[0];
+      const typeName = obj[1];
+      let strRepr = obj[2];
 
       // if obj[2] is like '<generator object <genexpr> at 0x84760>',
       // then display an abbreviated version rather than the gory details
       noStrReprRE = /<.* at 0x.*>/;
       if (noStrReprRE.test(strRepr)) {
-        var customObjSpan = document.createElement("span");
+        const customObjSpan = document.createElement("span");
         customObjSpan.className = "customObj";
         customObjSpan.textContent = typeName + idStr;
         jDomElt.appendChild(customObjSpan);
@@ -905,15 +904,15 @@ function renderData(obj, jDomElt) {
         strRepr = htmlSpecialChars(strRepr); // escape strings!
 
         // warning: we're overloading tuple elts for custom data types
-        var typeLabelDiv = document.createElement("div");
+        const typeLabelDiv = document.createElement("div");
         typeLabelDiv.className = "typeLabel";
         typeLabelDiv.textContent = typeName + idStr + ":";
         jDomElt.appendChild(typeLabelDiv);
 
-        var table = document.createElement("table");
+        const table = document.createElement("table");
         table.className = "tupleTbl";
-        var row = document.createElement("tr");
-        var cell = document.createElement("td");
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
         cell.className = "tupleElt";
         cell.textContent = strRepr;
         row.appendChild(cell);
@@ -925,7 +924,7 @@ function renderData(obj, jDomElt) {
 }
 
 function renderPyCodeOutput(codeStr) {
-  var tbl = document.getElementById("pyCodeOutput");
+  const tbl = document.getElementById("pyCodeOutput");
   tbl.innerHTML = ""; // Clear table content
 
   codeStr.split("\n").forEach((cod, i) => {
@@ -950,12 +949,12 @@ function addTabSupport(textElement) {
     //TODO: change to proper tab
     if (k.key === "Tab") {
       k.preventDefault();
-      var start = textElement.selectionStart;
-      var end = textElement.selectionEnd;
+      const start = textElement.selectionStart;
+      const end = textElement.selectionEnd;
 
       if (k.shiftKey) {
-        var lines = textElement.value.substring(start, end).split("\n");
-        for (var i = 0; i < lines.length; i++) {
+        let lines = textElement.value.substring(start, end).split("\n");
+        for (let i = 0; i < lines.length; i++) {
           if (lines[i].startsWith("    ")) {
             lines[i] = lines[i].substring(4);
           }

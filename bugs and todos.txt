@@ -4,6 +4,9 @@
 - consider turning traces into a list, intead of a dictionary to save on json file size
 - prepare the return statements to deal with imports
 - assertion fails with questions
+- max instructions not loading
+- deal with final entry when instruction limit reached
+- fuse questions and tutor??????
 
 2011-09-26
 
