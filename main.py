@@ -24,7 +24,7 @@ class LocalServer(BaseHTTPRequestHandler):
             requested_path = "/front_end/index.html"
 
         try:
-            full_path = os.path.join(os.getcwd(), requested_path[1:])
+            full_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), requested_path[1:])
             if not os.path.exists(full_path):
                 self.send_error(404, "File not found")
                 return
@@ -67,10 +67,11 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
         cur_delimiter = "name"
 
         def process_record():
+            a = "\n".join(cur_parts).strip()
             if cur_delimiter in {"test", "expect"}:
-                ret[cur_delimiter].append("\n".join(cur_parts).strip())
+                ret[cur_delimiter].append(a)
             else:
-                ret[cur_delimiter] = "\n".join(cur_parts).strip()
+                ret[cur_delimiter] = a
 
         for line in open(f"questions/{post_dict["question_file"]}"):
             line = line.rstrip()
@@ -103,56 +104,56 @@ def process_post(post_dict: dict[str: any]) -> dict[str: any] | list[dict[str: a
     changed_max_executed_lines = int(post_dict.get("max_instructions", MAX_EXECUTED_LINES))
 
     if request == "execute":
-        return logger.runscript(user_script, changed_max_executed_lines, False)
+        return logger.runscript(user_script, changed_max_executed_lines)
 
     # else: request == "run test"
-    # Make sure to ignore IDs so that we can do direct object comparisons!
-    expect_trace_final_entry = logger.runscript(
-        post_dict["expect_script"], MAX_EXECUTED_LINES, True)[-1]
+    expect_trace_final_entry = logger.runscript(post_dict["expect_script"], MAX_EXECUTED_LINES).pop()
 
-    if expect_trace_final_entry['event'] != 'return' or expect_trace_final_entry['scope_name'] != '<module>':
-        return {'status': 'error', 'error_msg': "Fatal error: expected output is malformed!"}
+    if expect_trace_final_entry["event"] != "return" or expect_trace_final_entry["scope_name"] != "<module>":
+        return {"status": "error", "error_msg": "Fatal error: expected output is malformed!"}
 
     # Procedure for grading testResults vs. expectResults:
-    # - The final line in expectResults should be a 'return' from
-    #   '<module>' that contains only ONE global variable.  THAT'S
+    # - The final line in expectResults should be a "return" from
+    #   "<module>" that contains only ONE global variable.  THAT'S
     #   the variable that we're going to compare against testResults.
-    expect_globals = expect_trace_final_entry['encoded_frames'][0][-1]
-    vars_to_compare = list(expect_globals)
+    expect_globals = expect_trace_final_entry["encoded_frames"][0][-1]
+    vars_to_compare = expect_globals.keys()
     if len(vars_to_compare) != 1:
-        return {'status': 'error', 'error_msg': "Fatal error: expected output has more than one global var!"}
+        return {"status": "error", "error_msg": "Fatal error: expected output has more than one global var!"}
 
     single_var_to_compare = vars_to_compare[0]
-    ret = {'status': 'ok', 'passed_test': False, 'output_var_to_compare': single_var_to_compare,
-           'expect_val': expect_globals[single_var_to_compare]}
+    ret = {"status": "ok", "passed_test": False, "output_var_to_compare": single_var_to_compare,
+           "expect_val": expect_globals[single_var_to_compare]}
 
-    user_trace = logger.runscript(user_script, changed_max_executed_lines, True)
+    user_trace = logger.runscript(user_script, changed_max_executed_lines)
 
-    # Grab the 'inputs' by finding all global vars that are in scope
+    # Grab the "inputs" by finding all global vars that are in scope
     # prior to making the first function call.
     #
     # NB: This means that you can't call any functions to initialize
     # your input data, since the FIRST function call must be the function
     # that you're testing.
     for entry in user_trace:
-        if entry.get('caller_info'):
-            ret['input_globals'] = entry['encoded_frames'][0][-1]
+        if entry.get("caller_info"):
+            ret["input_globals"] = entry["encoded_frames"][0][-1]
             break
 
-    user_trace_final_entry = user_trace[-1]
-    user_globals = user_trace_final_entry['encoded_frames'][0][-1]
-    if user_trace_final_entry['event'] == 'return':  # normal termination
+    user_trace_final_entry = user_trace.pop()
+    user_globals = user_trace_final_entry["encoded_frames"][0][-1]
+    if user_trace_final_entry["event"] == "return":  # normal termination
         if single_var_to_compare not in user_globals:
-            ret.update({'status': 'error',
-                        'error_msg': f"Error: output has no global var named '{single_var_to_compare}'"})
+            ret.update({"status": "error", "error_msg": f"Error: output has no global var named \"{single_var_to_compare}\""})
         else:
-            ret['test_val'] = user_globals[single_var_to_compare]
-            if ret['expect_val'] == ret['test_val']:  # do the actual comparison here!
-                ret['passed_test'] = True
+            tv = user_globals[single_var_to_compare]
+            ev = ret["expect_val"]
+            ret["test_val"] = tv
+            # do the actual comparison here!
+            if ev[1:] == tv[1:] if isinstance(ev, list) else ev == tv:
+                ret["passed_test"] = True
 
     else:
         ret.update(
-            {'status': 'error', 'error_msg': user_trace_final_entry['exception_msg']})
+            {"status": "error", "error_msg": user_trace_final_entry["exception_msg"]})
 
     return ret
 

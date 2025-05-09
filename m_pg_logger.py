@@ -40,11 +40,9 @@ class PGLogger(bdb.Bdb):
         # all variables declared in self.runscript
 
     # The main method that sets up then runs the debugger and returns the final execution trace list
-    def runscript(self, script_str: str, max_executed_lines: int, ignore_id: bool) -> list:
-        # create an execution trace list where each entry contains a dict with the information for a single executed line
+    # where each entry contains a dict with the information for a single executed line
+    def runscript(self, script_str: str, max_executed_lines: int) -> list:
         self.trace = []
-        # if True, don't print out a custom ID for each object (used only for regression testing)
-        self.ignore_id = ignore_id
         # upper-bound of executed lines, to guard against infinite loops
         self.max_executed_lines = max_executed_lines
         self.duplicate_frames_no = 0
@@ -118,7 +116,7 @@ class PGLogger(bdb.Bdb):
     def get_current_line_group(self, line_no):
         lst = self.line_group_start
         idx = bisect.bisect_right(lst, line_no)
-        return list(range(lst[idx - 1], lst[idx]))
+        return lst[idx - 1], lst[idx]
 
     # Override Bdb methods
     def user_call(self, frame, argument_list):
@@ -130,7 +128,8 @@ class PGLogger(bdb.Bdb):
         start_line = positions.lineno
         end_line = positions.end_lineno
 
-        if (end_line - start_line + 1) > len(line_group): # not a true function call
+        # not a true function call
+        if (end_line - start_line) > (line_group[-1] - line_group[0]):
             return
 
         start_offset = positions.col_offset
@@ -171,7 +170,9 @@ class PGLogger(bdb.Bdb):
     def user_line(self, frame):
         # if just returned from a function call
         if self.calling_function_info and id(frame) == self.calling_function_info[-1]["calling_frame_id"]:
-            if frame.f_lineno in self.calling_function_info[-1]["line_group"]:
+            a = self.calling_function_info[-1]["line_group"]
+            b = frame.f_lineno
+            if b > a[0] and b < a[-1]: # current line still within the line group
                 return
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
@@ -184,7 +185,8 @@ class PGLogger(bdb.Bdb):
 
         line_group = self.get_current_line_group(frame.f_lineno)
         positions = inspect.getframeinfo(frame.f_back).positions
-        if (positions.end_lineno - positions.lineno + 1) > len(line_group): # return from a false function call
+        # return from a false function call
+        if (positions.end_lineno - positions.lineno) > (line_group[-1] - line_group[0]):
             return
 
         # returned immediately after another return
@@ -192,25 +194,25 @@ class PGLogger(bdb.Bdb):
             self.calling_function_info.pop()
             self.relative_position_shifts.pop()
 
+        return_value = getattr(return_value, "__name__", return_value)
         # normal return, do not pop call information as a second function call might happen immediately
         if self.calling_function_info:
             last_caller = self.calling_function_info[-1]
             code = last_caller["code"]
             [pos_start, pos_end] = last_caller["relative_positions"]
-            ret = str(return_value)
 
-            last_caller["code"] = code.replace(code[pos_start: pos_end], ret, 1)
-            last_caller["relative_positions"] = [pos_start, pos_start + len(ret)]
+            str_ret = str(return_value)
+            last_caller["code"] = code.replace(code[pos_start: pos_end], str_ret, 1)
+            last_caller["relative_positions"] = [pos_start, pos_start + len(str_ret)]
 
-            self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(ret)])
+            self.relative_position_shifts[-1].append([pos_end, pos_end - pos_start - len(str_ret)])
 
         frame.f_locals["__return__"] = return_value
         self.interaction(frame, "return", line_group)
 
     def user_exception(self, frame, exc_info):
-        self.interaction(frame, "exception", self.get_current_line_group(frame.f_lineno), exc_info[:2])
+        self.interaction(frame, "exception", self.get_current_line_group( frame.f_lineno), exc_info[:2])
 
-    # General interaction function
     def interaction(self, frame, event_type, line_group, exception_info=None):
         trace_entry = {
             "line_group": line_group, "event": event_type, "scope_name": frame.f_code.co_name,
@@ -258,14 +260,14 @@ class PGLogger(bdb.Bdb):
             self.duplicate_frames_no = 0
             self.last_trace_entry = trace_entry.copy()
             trace_entry["visited_lines"] = list(self.visited_lines)
-            self.visited_lines.update(line_group) # done after assigning as currently highlighted line has not been processed yet
+            # done after assigning as currently highlighted line has not been processed yet
+            self.visited_lines.update(range(*line_group))
             self.trace.append(trace_entry)
 
         if len(self.trace) >= self.max_executed_lines or self.duplicate_frames_no >= self.max_executed_lines:
             self.set_quit()
             self.trace.append({"event": "instruction_limit_reached",
-                               "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible "
-                                                "infinite loop)"})
+                               "exception_msg": f"(stopped after {self.max_executed_lines} steps to prevent possible infinite loop)"})
 
     # Given an arbitrary piece of Python data, encode it in such a manner
     # that it can be later encoded into JSON.
@@ -276,15 +278,15 @@ class PGLogger(bdb.Bdb):
     # Format:
     #   * None, int, long, float, str, bool - unchanged
     #     (json.dumps encodes these fine verbatim)
-    #   * list     - ["LIST", unique_id, elt1, elt2, elt3, ..., eltN]
-    #   * tuple    - ["TUPLE", unique_id, elt1, elt2, elt3, ..., eltN]
-    #   * set      - ["SET", unique_id, elt1, elt2, elt3, ..., eltN]
-    #   * dict     - ["DICT", unique_id, [key1, value1], [key2, value2], ..., [keyN, valueN]]
-    #   * function - ["FUNC", unique_id, return annotation, [arg1, annotation1, default1], [arg2, annotation2, default2], ..., [argN, annotationN, defaultN]]
-    #   * instance - ["INSTANCE", unique_id, class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-    #   * class    - ["CLASS", unique_id, class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
-    #   * circular reference - ["CIRCULAR_REF", unique_id]
-    #   * other    - [<type name>, unique_id, string representation of object]
+    #   * list     - [unique_id, "LIST", elt1, elt2, elt3, ..., eltN]
+    #   * tuple    - [unique_id, "TUPLE", elt1, elt2, elt3, ..., eltN]
+    #   * set      - [unique_id, "SET", elt1, elt2, elt3, ..., eltN]
+    #   * dict     - [unique_id, "DICT", [key1, value1], [key2, value2], ..., [keyN, valueN]]
+    #   * function - [unique_id, "FUNC", return annotation, [arg1, annotation1, default1], [arg2, annotation2, default2], ..., [argN, annotationN, defaultN]]
+    #   * instance - [unique_id, "INSTANCE", class name, [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+    #   * class    - [unique_id, "CLASS", class name, [list of superclass names], [attr1, value1], [attr2, value2], ..., [attrN, valueN]]
+    #   * circular reference - [unique_id, "CIRCULAR_REF"]
+    #   * other    - [unique_id, <type name>, string representation of object]
     #
     # the unique_id is derived from id(), which allows us to explicitly
     # capture aliasing of compound values
@@ -298,32 +300,31 @@ class PGLogger(bdb.Bdb):
 
         # compound type
         true_id = id(data)
-
         if true_id in compound_obj_ids:
             return ["CIRCULAR_REF", self.real_to_small_IDs[true_id]]
 
         if true_id not in self.real_to_small_IDs:
-            self.real_to_small_IDs[true_id] = 0 if self.ignore_id else self.cur_small_id
+            self.real_to_small_IDs[true_id] = self.cur_small_id
             self.cur_small_id += 1
 
         new_compound_obj_ids = compound_obj_ids.union({true_id})
-        small_id = self.real_to_small_IDs[true_id]
+        ret = [self.real_to_small_IDs[true_id]]
 
         if data_type == list:
-            return ["LIST", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-        if data_type == tuple:
-            return ["TUPLE", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-        if data_type == set:
-            return ["SET", small_id, *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]]
-        if data_type == dict:
-            return ["DICT", small_id, *[
+            ret.extend(["LIST", *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]])
+        elif data_type == tuple:
+            ret.extend(["TUPLE", *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]])
+        elif data_type == set:
+            ret.extend(["SET", *[self.recursive_encode(entry, new_compound_obj_ids) for entry in data]])
+        elif data_type == dict:
+            ret.extend(["DICT", *[
                 [self.recursive_encode(k, new_compound_obj_ids), self.recursive_encode(v, new_compound_obj_ids)]
                 for k, v in data.items()
-            ]]
-        if inspect.isfunction(data):
+            ]])
+        elif inspect.isfunction(data):
             signature = inspect.signature(data)
             ra = signature.return_annotation
-            ret = ["FUNC", small_id, None if ra == inspect_empty else ra.__name__]
+            ret.extend(["FUNC", None if ra == inspect_empty else ra.__name__])
             for argument in signature.parameters.values():
                 n = argument.name
                 a = argument.annotation
@@ -342,21 +343,18 @@ class PGLogger(bdb.Bdb):
                     a = str(a)
 
                 d = d if d != inspect_empty else None
-                ret.append(
-                    [n, a, self.recursive_encode(d, new_compound_obj_ids)])
-            return ret
-        if (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
+                ret.append([n, a, self.recursive_encode(d, new_compound_obj_ids)])
+        elif (isinstance(data, type) and data.__module__ != "builtins") or "." in str(data_type):
             if "." in str(data_type):
-                ret = ["INSTANCE", small_id, data.__class__.__name__]
+                ret.extend(["INSTANCE", data.__class__.__name__])
             else:
-                ret = ["CLASS", small_id, data.__name__, [e.__name__ for e in data.__bases__]]
+                ret.extend(["CLASS", data.__name__, [e.__name__ for e in data.__bases__]])
 
             ret.extend([
                 [self.recursive_encode(k, new_compound_obj_ids), self.recursive_encode(v, new_compound_obj_ids)]
-                for k, v in data.__dict__.items() if k not in {"__doc__", "__module__", "__return__",
-                                                               "__dict__", "__weakref__"}
+                for k, v in data.__dict__.items() if k not in {"__doc__", "__module__", "__return__", "__dict__", "__weakref__"}
             ])
+        else:
+            ret.extend([data_type.__name__, str(data)])
+        return ret
 
-            return ret
-
-        return [data_type.__name__, small_id, str(data)]

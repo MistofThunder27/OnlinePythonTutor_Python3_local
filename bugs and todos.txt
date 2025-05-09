@@ -1,5 +1,8 @@
 - fix many __ values, suggestion "__return__" (or equivalent) or not startswith("__")
 - allow more recently changed values to appear at top
+- make annotations similiar to list indexes
+- consider turning traces into a list, intead of a dictionary to save on json file size
+- prepare the return statements to deal with imports
 - assertion fails with questions
 
 2011-09-26
@@ -47,7 +50,7 @@ can you tell i've been doing crazy python oop stuff recently?
 ps here's an even more painful instance of the bug report:
 
 x=[1,2,3]
-wtfpwn = type('list',(list,),{})
+wtfpwn = type("list",(list,),{})
 INCEPTION = [wtfpwn()]
 print x
 

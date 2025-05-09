@@ -166,10 +166,10 @@ function updateOutput() {
   encodedFrames = curEntry.encoded_frames;
 
   // set vertical scroll
-  const lineAverage = lineGroup.reduce((a, b) => a + b);
+  const lineAverage = lineGroup.reduce((a, b) => a + b) / 2;
   const scrollControl = [lineAverage - 25, lineAverage - 8, lineAverage].map(
     (n) => {
-      return n / (lineGroup.length * tblAllLineNo.length);
+      return n / tblAllLineNo.length;
     }
   );
 
@@ -177,9 +177,20 @@ function updateOutput() {
   const curScrollRatio =
     pyCodeOutputDiv.scrollTop / pyCodeOutputDiv.scrollHeight;
 
-  if (scrollControl[0] > curScrollRatio || scrollControl[2] < curScrollRatio) {
+  if (curScrollRatio < scrollControl[0] || curScrollRatio > scrollControl[2]) {
     pyCodeOutputDiv.scrollTop = scrollControl[1] * pyCodeOutputDiv.scrollHeight;
   }
+
+  Array.from(
+    { length: lineGroup[1] - lineGroup[0] },
+    (_, k) => k + lineGroup[0]
+  ).forEach((line) => {
+    tblAllCod[line - 1].style.backgroundColor = hasError
+      ? errorColor
+      : !instrLimitReached && curInstr === totalInstrs - 1
+      ? terminatingColor
+      : lightLineColor;
+  });
 
   // Set visited lines
   if (visitedLines) {
@@ -251,17 +262,6 @@ function updateOutput() {
       "</span>";
   }
 
-  // Highlight curLineGroup:
-  if (lineGroup) {
-    lineGroup.forEach((line) => {
-      tblAllCod[line - 1].style.backgroundColor = hasError
-        ? errorColor
-        : !instrLimitReached && curInstr === totalInstrs - 1
-        ? terminatingColor
-        : lightLineColor;
-    });
-  }
-
   // render stdout:
   const stdoutElement = document.getElementById("pyStdout");
   stdoutElement.value = curEntry.stdout;
@@ -312,7 +312,7 @@ function renderDataVizDiv() {
             const valTd = document.createElement("td");
             tr.appendChild(valTd);
             valTd.className = "val";
-            renderData(val, valTd, false);
+            renderData(val, valTd);
           });
 
           const lastRow = frameDataViz.lastElementChild;
@@ -402,7 +402,7 @@ function renderDataVizDiv() {
 
             // render primitives inline and compound types on the heap
             if (val == null || typeof val != "object") {
-              renderData(val, tr.querySelector("td.stackFrameValue"), false);
+              renderData(val, tr.querySelector("td.stackFrameValue"));
             } else {
               // add a stub so that we can connect it with a connector later.
               // IE needs this div to be NON-EMPTY in order to properly
@@ -428,7 +428,7 @@ function renderDataVizDiv() {
               tr.querySelector("td.stackFrameValue").appendChild(divElement);
 
               if (connectionEndpointIDs[varDivID] === undefined) {
-                connectionEndpointIDs[varDivID] = "heap_object_" + val[1]; // val[1] is object ID
+                connectionEndpointIDs[varDivID] = "heap_object_" + val[0];
               }
             }
           });
@@ -453,17 +453,13 @@ function renderDataVizDiv() {
           var val = entry[1];
           // primitive types are already rendered in the stack
           if (typeof val == "object" && val != null) {
-            var objectID = val[1];
+            var objectID = val[0];
 
             if (!alreadyRenderedObjectIDs.has(objectID)) {
               var heapObjID = "heap_object_" + objectID;
               dataViz.querySelector("#heap").innerHTML +=
                 '<div class="heapObject" id="' + heapObjID + '"></div>';
-              renderData(
-                val,
-                dataViz.querySelector("#heap #" + heapObjID),
-                false
-              );
+              renderData(val, dataViz.querySelector("#heap #" + heapObjID));
 
               alreadyRenderedObjectIDs.add(objectID);
             }
@@ -607,7 +603,7 @@ function renderDataVizDiv() {
 // render the JS data object obj inside of jDomElt,
 // which is a jQuery wrapped DOM object
 // (obj is in a format encoded by back_end/pg_encoder.py)
-function renderData(obj, jDomElt, ignoreIDs) {
+function renderData(obj, jDomElt) {
   // dispatch on types:
   var typ = typeof obj;
 
@@ -616,23 +612,16 @@ function renderData(obj, jDomElt, ignoreIDs) {
   } else if (typ == "number") {
     jDomElt.innerHTML = '<span class="numberObj">' + obj + "</span>";
   } else if (typ == "boolean") {
-    if (obj) {
-      jDomElt.innerHTML = '<span class="boolObj">True</span>';
-    } else {
-      jDomElt.innerHTML = '<span class="boolObj">False</span>';
-    }
+    jDomElt.innerHTML = '<span class="boolObj">' + obj + '</span>';
   } else if (typ == "string") {
     jDomElt.innerHTML =
       '<span class="stringObj">"' +
       htmlSpecialChars(obj).replaceAll('"', '\\"') +
       '"</span>';
   } else if (typ == "object") {
-    var idStr = "";
-    if (!ignoreIDs) {
-      idStr = " (id=" + obj[1] + ")";
-    }
+    var idStr = " (id=" + obj[0] + ")";
 
-    if (obj[0] == "LIST") {
+    if (obj[1] == "LIST") {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
@@ -662,10 +651,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
-          renderData(val, contentCell, ignoreIDs);
+          renderData(val, contentCell);
         });
       }
-    } else if (obj[0] == "TUPLE") {
+    } else if (obj[1] == "TUPLE") {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
@@ -695,10 +684,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
           contentTr.appendChild(contentCell);
 
           // pass in the newly-added content cell to renderData
-          renderData(val, contentCell, ignoreIDs);
+          renderData(val, contentCell);
         });
       }
-    } else if (obj[0] == "SET") {
+    } else if (obj[1] == "SET") {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
@@ -738,10 +727,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
           var newTd = document.createElement("td");
           newTd.className = "setElt";
           curTr.appendChild(newTd);
-          renderData(val, curTr.querySelector("td:last-child"), ignoreIDs);
+          renderData(val, curTr.querySelector("td:last-child"));
         });
       }
-    } else if (obj[0] == "DICT") {
+    } else if (obj[1] == "DICT") {
       assert(obj.length >= 2);
 
       var newDiv = document.createElement("div");
@@ -770,11 +759,11 @@ function renderData(obj, jDomElt, ignoreIDs) {
 
           table.appendChild(newDictTr);
 
-          renderData(key, newKeyTd, ignoreIDs);
-          renderData(val, newValTd, ignoreIDs);
+          renderData(key, newKeyTd);
+          renderData(val, newValTd);
         });
       }
-    } else if (obj[0] == "FUNC") {
+    } else if (obj[1] == "FUNC") {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
@@ -803,7 +792,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
             defaultDiv = document.createElement("div");
             defaultDiv.className = "funcDef";
             td.appendChild(defaultDiv);
-            renderData(def, defaultDiv, ignoreIDs);
+            renderData(def, defaultDiv);
           }
           tr.appendChild(td);
         });
@@ -815,7 +804,7 @@ function renderData(obj, jDomElt, ignoreIDs) {
           tr.appendChild(returnsTd);
         }
       }
-    } else if (obj[0] == "INSTANCE") {
+    } else if (obj[1] == "INSTANCE") {
       assert(obj.length >= 3);
 
       var newDiv = document.createElement("div");
@@ -847,10 +836,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
             '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(val, newValTd, ignoreIDs);
+          renderData(val, newValTd);
         });
       }
-    } else if (obj[0] == "CLASS") {
+    } else if (obj[1] == "CLASS") {
       assert(obj.length >= 4);
 
       var newDiv = document.createElement("div");
@@ -887,10 +876,10 @@ function renderData(obj, jDomElt, ignoreIDs) {
             '<span class="keyObj">' + htmlSpecialChars(key) + "</span>";
 
           // values can be arbitrary objects, so recurse:
-          renderData(val, newValTd, ignoreIDs);
+          renderData(val, newValTd);
         });
       }
-    } else if (obj[0] == "CIRCULAR_REF") {
+    } else if (obj[1] == "CIRCULAR_REF") {
       assert(obj.length == 2);
 
       var newDiv = document.createElement("div");
@@ -900,8 +889,8 @@ function renderData(obj, jDomElt, ignoreIDs) {
     } else {
       // render custom data type
       assert(obj.length == 3);
-      var typeName = obj[0];
-      var id = obj[1];
+      var id = obj[0];
+      var typeName = obj[1];
       var strRepr = obj[2];
 
       // if obj[2] is like '<generator object <genexpr> at 0x84760>',
